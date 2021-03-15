@@ -27,7 +27,7 @@ function NoteMain(props) {
             <div className="page-header">
                 <h2 id="notetitle-view">{notesData.notetitle}</h2>
             </div>
-            <div className="markdown-body" id="notebody-view" dangerouslySetInnerHTML={{ __html: md.render(notesData.notebody)}}>
+            <div className="markdown-body" id="notebody-view" dangerouslySetInnerHTML={{ __html: md.render(notesData.notebody)}} onCopy={((e) => props.handleCopyEvent(e))}>
             </div>
         </div>
     )

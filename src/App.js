@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import NavbarSidebar from "./NavbarSidebar"
+import NoteSort from "./NoteSort"
 import NavbarMain from "./NavbarMain"
 import NoteList from "./NoteList"
 import NoteMain from "./NoteMain"
@@ -34,7 +35,8 @@ class App extends Component {
           notetitle: '',
           notebody: '',
           activepage: "viewnote", // editnote // previewnote // viewnote 
-          action:'', // addnote // updatenote
+          action: '', // addnote // updatenote
+          sortby: '4', //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
           allnotes: []
         };
         this.handleNoteListItemClick = this.handleNoteListItemClick.bind(this)
@@ -43,6 +45,7 @@ class App extends Component {
         this.handleEditNote = this.handleEditNote.bind(this)
         this.handleSaveNote = this.handleSaveNote.bind(this)
         this.handleDeleteNote = this.handleDeleteNote.bind(this)
+        this.handleDownloadNote = this.handleDownloadNote.bind(this)
         this.handlePaste = this.handlePaste.bind(this)
         this.processInput = this.processInput.bind(this)
         this.handleKeyEvent = this.handleKeyEvent.bind(this)
@@ -50,18 +53,21 @@ class App extends Component {
         this.handleSearchNotes = this.handleSearchNotes.bind(this)
         this.handleIndexedDB = this.handleIndexedDB.bind(this)
         this.handleCancel = this.handleCancel.bind(this)
+        this.handleCopyNote = this.handleCopyNote.bind(this)
+        this.handleCopyEvent = this.handleCopyEvent.bind(this)
+        this.handleSortNotes = this.handleSortNotes.bind(this)
         this.updateCodeSyntaxHighlighting();
       }
 
       async componentDidMount() {
-          const getnotesdb = await this.handleIndexedDB("getall")
-          if(getnotesdb.length == 0){      
+          const getnotes = await this.handleIndexedDB("getall")
+          if(getnotes.length == 0){      
             this.handleClickHomeBtn()
           } else {
             this.setState({ 
-              allnotes: getnotesdb
+              allnotes: getnotes
             })
-            document.getElementById(getnotesdb[0].noteid).click();
+            document.getElementById(getnotes[0].noteid).click();
           }
           this.updateCodeSyntaxHighlighting();
       }
@@ -78,46 +84,46 @@ class App extends Component {
 
       // Indexed DB class 
       async handleIndexedDB (cmd = "", note = "") {
-          const db =  await openDB('Notes', 1, {
+          const db =  await openDB('notesdb', 1, {
               upgrade(db) {
                   // Create a store of objects
-                  const store = db.createObjectStore('notesdb', {
+                  const store = db.createObjectStore('notes', {
                   // The 'noteid' property of the object will be the key.
                   keyPath: 'noteid',
                   // If it isn't explicitly set, create a value by auto incrementing.
                   autoIncrement: true,
                   });
-                  // Create an index on the 'noteid' & date property of the objects.
-                  store.createIndex('created_at', 'date');
+                  // Create an index on all fields of the objects.
+                  store.createIndex('created_at', 'created_at');
                   store.createIndex('noteid', 'noteid');
               }
           });
           // 1. Create single note
           if(cmd==="addnote"){
-              await db.add("notesdb", note)
+              await db.add("notes", note)
           }
           // 2.1 Read all notes
           if(cmd==="getall"){
-              let notes = await db.getAll('notesdb')
+              let notes = await db.getAll('notes')
               return notes
           }
           // 2.2 Read single note
           if(cmd==="getone"){
-              const db = await openDB('Notes', 1);
-              const tx = db.transaction('notesdb');
+              const db = await openDB('notesdb', 1);
+              const tx = db.transaction('notes');
               const idx = tx.store.index('noteid');
               let onenote = await idx.get(note)
               return onenote
           }
           // 3. Update single note
           if(cmd==="update"){
-              const db = await openDB('Notes', 1);
-              db.put('notesdb', note)
+              const db = await openDB('notesdb', 1);
+              db.put('notes', note)
           }
           // 4. Delete single note
           if(cmd==="delete"){
-              const db = await openDB('Notes', 1);
-              db.delete('notesdb', note.noteid)
+              const db = await openDB('notesdb', 1);
+              db.delete('notes', note.noteid)
           }
           db.close()
       }
@@ -173,13 +179,54 @@ class App extends Component {
         })
       }
 
+      handleSortNotes = (sortby) => {
+        // "0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
+        var notesArray = [...this.state.allnotes]      
+        var sortvalue = event ? event.target.value : sortby;
+        switch (sortvalue) {
+          case "0":
+              notesArray.sort(function (a, b) {
+                let x = a.title.toUpperCase(),
+                    y = b.title.toUpperCase();
+                return x == y ? 0 : x > y ? 1 : -1;
+              });
+              break;
+          case "1":
+              notesArray.sort(function (a, b) {
+                let x = a.title.toUpperCase(),
+                    y = b.title.toUpperCase();
+                return x == y ? 0 : x > y ? -1 : 1;
+              });
+              break;
+          case "2":
+              notesArray.sort((a, b) => b.created_at - a.created_at)
+              break;
+            case "3":
+              notesArray.sort((a, b) =>  a.created_at - b.created_at) 
+              break;
+          case "4":
+              notesArray.sort((a, b) => b.updated_at - a.updated_at)
+              break;
+          case "5":
+              notesArray.sort((a, b) => a.updated_at - b.updated_at)
+              break;
+          default:
+        }
+        this.setState({
+          sortby: sortvalue,
+          allnotes: notesArray
+        })
+        document.getElementById(notesArray[0].noteid).click();
+      }
+
       handleCancel = (e, note) => {
         if(note.action === "updatenote") {
-          document.getElementById(note.noteid).click();
-        } else {
-          document.querySelectorAll(".note-list-item")[0].click();
+          return document.getElementById(note.noteid).click();
+        }  
+        if(document.querySelectorAll(".note-list-item").length > 0){
+          return document.querySelectorAll(".note-list-item")[0].click();
         }
-        
+        return this.handleClickHomeBtn()   
       }
       handleEditNote = (e, note) => {
         this.setState(
@@ -219,11 +266,12 @@ class App extends Component {
       }
 
       handleSaveNote(e, note) {
+        var notebody = turndownService.turndown(marked(marked(document.getElementById('notebody').value)));
          this.setState((prevState) => {
               const updatedNotes = prevState.allnotes.map((noteitem) => {
                   if (noteitem.noteid === note.noteid) {
                       noteitem.title = document.getElementById('notetitle').value
-                      noteitem.body = document.getElementById('notebody').value
+                      noteitem.body = notebody
                       noteitem.activepage = "viewnote"
                   }
                   return noteitem;
@@ -231,36 +279,39 @@ class App extends Component {
               return {
                 noteid: note.noteid,
                 notetitle: document.getElementById('notetitle').value,
-                notebody: document.getElementById('notebody').value,
+                notebody: notebody,
                 activepage: "viewnote",
                 action: note.action,
                 allnotes: updatedNotes
               };
           });
+          // Update List View
           if(note.action == "addnote"){
             this.state.allnotes.push(
             { 
               noteid: note.noteid,
               notetitle: document.getElementById('notetitle').value,
-              notebody: document.getElementById('notebody').value,
+              notebody: notebody,
               activepage: "viewnote",
+              created_at: Date.now(),
+              updated_at: Date.now(),
               action: note.action
             })
-
+            // Update IndexedDB
             this.handleIndexedDB("addnote",             
             { 
               noteid: note.noteid,
               title: document.getElementById('notetitle').value,
-              body: document.getElementById('notebody').value,
+              body: notebody,
               created_at: Date.now(),
-              updated_at: ""
+              updated_at: Date.now()
             })
           } else { // if note.action == "editnote"
               this.handleIndexedDB("update",             
               { 
                 noteid: note.noteid,
                 title: document.getElementById('notetitle').value,
-                body: document.getElementById('notebody').value,
+                body: notebody,
                 updated_at: Date.now()
               })
           }   
@@ -281,10 +332,8 @@ class App extends Component {
                 ? (e.originalEvent || e).clipboardData.getData('text/html')
                 // For IE
                 : (window.clipboardData ? window.clipboardData.getData('Html') : '');
-            // var pasteData = html ? turndownService.turndown(marked(html)) : turndownService.turndown(text)  
-            // /<:__|[*#]|\[.*?\]\(.*>/.test(val) // detect MD
-            let pasteData;
-            
+
+            let pasteData; 
             if(html) {
               pasteData = turndownService.turndown(html)
             } else {
@@ -311,6 +360,56 @@ class App extends Component {
             }
         }
       };
+
+      handleCopyNote(e, content) {
+        var textArea = document.createElement("textarea");
+        // Place in top-left corner of screen regardless of scroll position.
+        textArea.style.position = 'fixed';
+        textArea.style.top = 0;
+        textArea.style.left = 0;
+        // Ensure it has a small width and height. Setting to 1px / 1em
+        // doesn't work as this gives a negative w/h on some browsers.
+        textArea.style.width = '2em';
+        textArea.style.height = '2em';
+        // We don't need padding, reducing the size if it does flash render.
+        textArea.style.padding = 0;
+        // Clean up any borders.
+        textArea.style.border = 'none';
+        textArea.style.outline = 'none';
+        textArea.style.boxShadow = 'none';
+        // Avoid flash of white box if rendered for any reason.
+        textArea.style.background = 'transparent';
+        textArea.value = ((typeof content === "object")? `## ${content.notetitle}\n${content.notebody}` : content)
+        document.body.appendChild(textArea); 
+        textArea.focus();
+        textArea.select();
+        try {
+            var successful = document.execCommand('copy');
+        } catch (err) {
+            console.log('Oops, unable to copy');
+        }
+        document.body.removeChild(textArea);
+      }
+ 
+      handleCopyEvent(e) {
+        e.preventDefault();
+        var html = "";
+        if (typeof window.getSelection != "undefined") {
+            var sel = window.getSelection();
+            if (sel.rangeCount) {
+                var container = document.createElement("div");
+                for (var i = 0, len = sel.rangeCount; i < len; ++i) {
+                    container.appendChild(sel.getRangeAt(i).cloneContents());
+                }
+                html = container.innerHTML;
+            }
+        } else if (typeof document.selection != "undefined") {
+            if (document.selection.type == "Text") {
+                html = document.selection.createRange().htmlText;
+            }
+        }
+        this.handleCopyNote("",turndownService.turndown(html));
+      }
 
       handleKeyEvent(event) {
         if ( event.code === "Tab" ) {
@@ -422,8 +521,26 @@ class App extends Component {
       }
       DisplayList.length > 0 && DisplayList[0].click();
     }
+
+    handleDownloadNote(e) {
+      const html = document.getElementById("notebody-view").innerHTML;
+      const data = turndownService.turndown(marked(html));
+      const title = turndownService.turndown(marked(document.getElementById("notetitle-view").innerHTML)).replace(/ /g,"_");
+      const fileName = `${title || "note"}.md`
+      var a = document.createElement("a");
+      document.body.appendChild(a);
+      a.style = "display: none";
+      var blob = new Blob([data], { type: "text/plain;charset=utf-8" }),
+          url = window.URL.createObjectURL(blob);
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      e.preventDefault();
+    }
+
     render() {
-        const noteListItems = this.state.allnotes.map((note) => (
+        const noteListItems = (this.state.allnotes).map((note) => (
           <NoteList key={note.noteid} note={note} 
           handleClick={this.handleNoteListItemClick} 
           handleMouseOver={this.handleNoteListItemMouseOver} 
@@ -437,9 +554,12 @@ class App extends Component {
             notesData={{noteid: this.state.noteid, notetitle: this.state.notetitle, notebody: this.state.notebody, action:this.state.action}}
             handleEditNote={this.handleEditNote} 
             handleDeleteNote={this.handleDeleteNote}
+            handleCopyNote={this.handleCopyNote}
+            handleDownloadNote = {this.handleDownloadNote}
           />
           ActivePage = <NoteMain 
-            notesData={{noteid: this.state.noteid, notetitle: this.state.notetitle, notebody: this.state.notebody, action:this.state.action}}
+          notesData={{noteid: this.state.noteid, notetitle: this.state.notetitle, notebody: this.state.notebody, action:this.state.action}}
+          handleCopyEvent={this.handleCopyEvent}
           />
         } 
         if (this.state.activepage === "editnote"){
@@ -453,6 +573,7 @@ class App extends Component {
             handleKeyEvent={this.handleKeyEvent} 
             processInput={this.processInput} 
             handleCancel={this.handleCancel}
+            handleImageUpload={this.handleImageUpload}
           />
         }   
 
@@ -464,9 +585,10 @@ class App extends Component {
                     handleEditNote={this.handleEditNote} 
                     handleSearchNotes={this.handleSearchNotes}
                   />
-                  <div className="note-list">
-                      {noteListItems}
-                  </div>
+                  <ul className="note-list">
+                        {noteListItems}
+                  </ul>
+                  <NoteSort handleSortNotes={this.handleSortNotes}/>
               </div>
               <div className="right">
                   {RightNavbar}

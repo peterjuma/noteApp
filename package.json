@@ -7,7 +7,7 @@
     "starter"
   ],
   "main": "src/index.js",
-  "homepage": "https://apps.peterjuma.com/noteAppReact",
+  "homepage": "https://apps.peterjuma.com/noteApp",
   "dependencies": {
     "@github/markdown-toolbar-element": "^1.3.2",
     "@tailwindcss/postcss7-compat": "^2.0.2",
