@@ -45,6 +45,7 @@ class App extends Component {
         this.handleEditNote = this.handleEditNote.bind(this)
         this.handleSaveNote = this.handleSaveNote.bind(this)
         this.handleDeleteNote = this.handleDeleteNote.bind(this)
+        this.handleDownloadNote = this.handleDownloadNote.bind(this)
         this.handlePaste = this.handlePaste.bind(this)
         this.processInput = this.processInput.bind(this)
         this.handleKeyEvent = this.handleKeyEvent.bind(this)
@@ -220,11 +221,12 @@ class App extends Component {
 
       handleCancel = (e, note) => {
         if(note.action === "updatenote") {
-          document.getElementById(note.noteid).click();
-        } else {
-          document.querySelectorAll(".note-list-item")[0].click();
+          return document.getElementById(note.noteid).click();
+        }  
+        if(document.querySelectorAll(".note-list-item").length > 0){
+          return document.querySelectorAll(".note-list-item")[0].click();
         }
-        
+        return this.handleClickHomeBtn()   
       }
       handleEditNote = (e, note) => {
         this.setState(
@@ -519,6 +521,24 @@ class App extends Component {
       }
       DisplayList.length > 0 && DisplayList[0].click();
     }
+
+    handleDownloadNote(e) {
+      const html = document.getElementById("notebody-view").innerHTML;
+      const data = turndownService.turndown(marked(html));
+      const title = turndownService.turndown(marked(document.getElementById("notetitle-view").innerHTML)).replace(/ /g,"_");
+      const fileName = `${title || "note"}.md`
+      var a = document.createElement("a");
+      document.body.appendChild(a);
+      a.style = "display: none";
+      var blob = new Blob([data], { type: "text/plain;charset=utf-8" }),
+          url = window.URL.createObjectURL(blob);
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      e.preventDefault();
+    }
+
     render() {
         const noteListItems = (this.state.allnotes).map((note) => (
           <NoteList key={note.noteid} note={note} 
@@ -535,6 +555,7 @@ class App extends Component {
             handleEditNote={this.handleEditNote} 
             handleDeleteNote={this.handleDeleteNote}
             handleCopyNote={this.handleCopyNote}
+            handleDownloadNote = {this.handleDownloadNote}
           />
           ActivePage = <NoteMain 
           notesData={{noteid: this.state.noteid, notetitle: this.state.notetitle, notebody: this.state.notebody, action:this.state.action}}
@@ -552,6 +573,7 @@ class App extends Component {
             handleKeyEvent={this.handleKeyEvent} 
             processInput={this.processInput} 
             handleCancel={this.handleCancel}
+            handleImageUpload={this.handleImageUpload}
           />
         }   
 
