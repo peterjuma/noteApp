@@ -45,7 +45,6 @@ body {
 /* Main area */
 .right {
   width: 77%;
-  padding-top: 5px;
   font-size: 18px;
   height: 100%;
   display: flex;
@@ -93,6 +92,9 @@ body {
 
 /* Navbar icons - right  */
 .nav-right-icon {
+  margin: 0 auto;
+  max-width: 1440px;
+  width: 100%;
   padding: 7px 40px;
 }
 
@@ -304,7 +306,12 @@ h3 {
 }
 
 .title-header {
-  margin: 0;
+  margin: 0 auto;
+  display: flex;
+  max-width: 1440px;
+  width: 100%;
+  flex-direction: column;
+  font-size: x-large;
 }
 
 .page-header {
@@ -315,32 +322,31 @@ h3 {
 
 #notetitle {
   height: 50px;
-  padding: 16px 50px;
-  width: 100%;
-  border: none;
-  border-bottom: 1px solid #dcdcde;
-  background-color: #fff;
-  outline: none;
+  padding: 40px 50px;
+  border: 1px solid #dcdcde;
+  border-top: 0.5px;
 }
 
 /* Editor Textarea */
+
 textarea {
-  padding-left: 50px;
-  padding-right: 50px;
-  padding-top: 50px;
-  padding-bottom: 50px;
+  display: flex;
+  flex-direction: column;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 50px;
   font-size: 16px;
   font-weight: 400;
-  width: 100%;
   overflow: auto;
   line-height: 1.45;
-  background-color: #fff;
-  border-radius: 0px;
+  border-radius: 0;
   resize: none;
-  outline: none;
-  border: none;
   box-shadow: none;
-  border-top: 1px solid #dcdcde;
+  border: none;
+  /* border-top: 1px solid #dcdcde; */
+  border-right: 1px solid #dcdcde;
+  border-left: 1px solid #dcdcde;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI",
     "HelveticaNeue-Light", "Ubuntu", "Droid Sans", sans-serif;
   height: calc(100% - 50px);
@@ -352,14 +358,23 @@ textarea {
 
 /* Editor Tools */
 .md-editor-tools {
-  border: none;
   display: flex;
-  padding: 16.5px 50px;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+  border: none;
+  border-right: 1px solid #dcdcde;
+  border-left: 1px solid #dcdcde;
+  border-bottom: 1px solid #dcdcde;
+  display: flex;
+  padding: 10px;
 }
 
 .saveCancelBar {
-  width: 100%;
+  margin: 0 auto;
   display: flex;
+  max-width: 1440px;
+  width: 100%;
   justify-content: space-between;
   padding-right: 30px;
   padding-left: 30px;
