@@ -28,7 +28,7 @@ body {
 /* Left Sidebar */
 .left {
   height: 100%;
-  width: 23%;
+  width: 20%;
   position: absolute;
   left: 0;
   top: 0;
@@ -44,7 +44,7 @@ body {
 
 /* Main area */
 .right {
-  width: 77%;
+  width: 80%;
   font-size: 18px;
   height: 100%;
   display: flex;
@@ -64,14 +64,23 @@ body {
 
 .nav-bar-left {
   position: relative;
+  border-bottom: 1px solid #eee;
+  border-top: none;
+  height: 50px;
+  background-color: #fff;
+  width: 100%;
 }
 
 /* Navbar */
 .nav-bar {
+  padding: 8px;
+  margin: 0 auto;
+  max-width: 1440px;
+  border: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  border-top: none;
   height: 50px;
-  padding-bottom: 20px;
   background-color: #fff;
-  border-bottom: 1px solid #dcdcde;
   width: 100%;
 }
 
@@ -88,14 +97,6 @@ body {
   justify-content: space-between;
   position: relative;
   bottom: 0px;
-}
-
-/* Navbar icons - right  */
-.nav-right-icon {
-  margin: 0 auto;
-  max-width: 1440px;
-  width: 100%;
-  padding: 7px 40px;
 }
 
 /* Search Bar */
@@ -172,8 +173,7 @@ ol {
   transition: 0.3s;
 }
 
-.sort-order-selector,
-.right-bottom-bar {
+.sort-order-selector {
   position: absolute;
   width: 100%;
   height: 50px;
@@ -183,6 +183,16 @@ ol {
   padding: 0 24px 0 24px;
   font-size: 14px;
   bottom: 0;
+}
+
+.right-bottom-bar {
+  height: 50px;
+  line-height: 44px;
+  border: 1px solid #dcdcde;
+  margin: 0;
+  font-size: 14px;
+  max-width: 1440px;
+  margin: 0 auto;
 }
 
 .sort-order-selector option {
@@ -283,9 +293,12 @@ h3 {
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;
-  padding: 50px;
+  padding: 50px 150px;
   overflow-y: scroll;
-  height: calc(100% - 100px);
+  border: 1px solid #eee;
+  border-bottom: none;
+  border-top: none;
+  height: calc(100% - 50px);
   display: flex;
   flex-direction: column;
 }
@@ -335,7 +348,7 @@ textarea {
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;
-  padding: 50px;
+  padding: 50px 150px;
   font-size: 16px;
   font-weight: 400;
   overflow: auto;
@@ -347,8 +360,8 @@ textarea {
   /* border-top: 1px solid #dcdcde; */
   border-right: 1px solid #dcdcde;
   border-left: 1px solid #dcdcde;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI",
-    "HelveticaNeue-Light", "Ubuntu", "Droid Sans", sans-serif;
+  font-family: -apple-system, "Segoe UI", "Roboto", "Oxygen-Sans", "Ubuntu",
+    "Cantarell", "Helvetica Neue", sans-serif, sans-serif;
   height: calc(100% - 50px);
 }
 
