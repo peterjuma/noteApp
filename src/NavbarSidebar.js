@@ -1,4 +1,4 @@
-import react from "react";
+import React from "react";
 
 function NavbarSidebar(props) {
   // console.log(props.homeContent);
@@ -9,6 +9,8 @@ function NavbarSidebar(props) {
     activepage: "",
     action: "addnote",
   };
+  const searchRef = React.useRef();
+
   return (
     <div>
       <div className="nav-bar-left">
@@ -30,11 +32,18 @@ function NavbarSidebar(props) {
         </div>
       </div>
       <div className="search-bar">
-        <i className="fa fa-search searchButton" aria-hidden="true"></i>
+        <i
+          className="fa fa-search searchButton"
+          aria-hidden="true"
+          onClick={() => {
+            searchRef.current.focus();
+          }}
+        ></i>
         <input
           type="search"
           placeholder="Search Notes"
           className="search-field"
+          ref={searchRef}
           onChange={(e) => props.handleSearchNotes(e)}
         />
       </div>
