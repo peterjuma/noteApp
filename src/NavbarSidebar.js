@@ -19,7 +19,7 @@ function NavbarSidebar(props) {
             className="fa fa-home btn"
             aria-hidden="true"
           ></i>
-          <h4>All Notes</h4>
+          <h4>Notes</h4>
           <i
             id="addNoteBtn"
             data-action="addnote"

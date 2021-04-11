@@ -71,6 +71,12 @@ body {
   width: 100%;
 }
 
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Navbar */
 .nav-bar {
   padding: 8px;
@@ -111,7 +117,6 @@ body {
 
 /* Search Bar */
 .search-bar {
-  padding: 0;
   background-color: #ced9f2;
   border-bottom: 1px solid #dcdcde;
   display: flex;
@@ -119,13 +124,16 @@ body {
 
 /* Search button */
 .searchButton {
-  padding: 20px;
+  padding: 22px;
   border: none;
   color: #646970;
   background-color: #fff;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 1.3rem;
   outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Search Input fieled */
@@ -315,7 +323,8 @@ h3 {
 }
 
 .main-editor {
-  padding: 0;
+  padding-left: 5px;
+  padding-right: 1px;
   height: 100%;
   display: flex;
   flex-direction: column;
