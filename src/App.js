@@ -9,6 +9,7 @@ import NoteEditor from "./NoteEditor";
 import FooterBar from "./FooterBar";
 import hljs from "highlight.js";
 import keyCodes from "./KeyCodes";
+import { styles } from "./reactStyles";
 import { openDB } from "idb/with-async-ittr.js";
 // Markdown
 import markdownitEmoji from "markdown-it-emoji";
@@ -37,6 +38,7 @@ class App extends Component {
       activepage: "viewnote", // editnote // previewnote // viewnote
       action: "", // addnote // updatenote
       sortby: "4", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
+      isSplit: true,
       allnotes: [],
     };
     this.handleNoteListItemClick = this.handleNoteListItemClick.bind(this);
@@ -58,6 +60,7 @@ class App extends Component {
     this.handleCopyNote = this.handleCopyNote.bind(this);
     this.handleCopyEvent = this.handleCopyEvent.bind(this);
     this.handleSortNotes = this.handleSortNotes.bind(this);
+    this.handleSplitScreen = this.handleSplitScreen.bind(this);
     this.updateCodeSyntaxHighlighting;
     this.addCopyButtons;
     this.handleCopyCodeButtonClick;
@@ -629,6 +632,10 @@ class App extends Component {
     e.preventDefault();
   }
 
+  handleSplitScreen = () => {
+    this.setState({ isSplit: !this.state.isSplit });
+  };
+
   render() {
     const noteListItems = this.state.allnotes.map((note) => (
       <NoteList
@@ -655,6 +662,7 @@ class App extends Component {
           handleDeleteNote={this.handleDeleteNote}
           handleCopyNote={this.handleCopyNote}
           handleDownloadNote={this.handleDownloadNote}
+          handleSplitScreen={this.handleSplitScreen}
         />
       );
       ActivePage = (
@@ -693,9 +701,15 @@ class App extends Component {
       );
     }
 
+    const sidebarStyle = this.state.isSplit ? styles.leftSplit : styles.leftOff;
+
+    const mainviewStyle = this.state.isSplit
+      ? styles.rightSplit
+      : styles.rightFull;
+
     return (
       <div className="container">
-        <div className="left">
+        <div style={sidebarStyle}>
           <NavbarSidebar
             handleClickHomeBtn={this.handleClickHomeBtn}
             handleEditNote={this.handleEditNote}
@@ -704,7 +718,7 @@ class App extends Component {
           <ul className="note-list">{noteListItems}</ul>
           <NoteSort handleSortNotes={this.handleSortNotes} />
         </div>
-        <div className="right">
+        <div style={mainviewStyle}>
           {RightNavbar}
           {ActivePage}
         </div>

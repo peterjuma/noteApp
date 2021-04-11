@@ -25,35 +25,6 @@ body {
   padding-left: 0;
 }
 
-/* Left Sidebar */
-.left {
-  height: 100%;
-  width: 20%;
-  position: absolute;
-  left: 0;
-  top: 0;
-  padding-top: 5px;
-  background-color: #fff;
-  border-left: none;
-  border-right: 1px solid #dcdcde;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  transition: transform 200ms ease-in-out;
-}
-
-/* Main area */
-.right {
-  width: 80%;
-  font-size: 18px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  position: absolute;
-  right: 0;
-}
-
 /* Cennter any element */
 .center {
   position: absolute;

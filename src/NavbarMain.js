@@ -7,6 +7,11 @@ function NavbarMain(props) {
     <div className={isActive === true ? "nav-bar" : "hidden"}>
       <div>
         <i
+          className="fa fa-columns btn"
+          id="splitBtn"
+          onClick={(e) => props.handleSplitScreen(e)}
+        ></i>
+        <i
           className="far fa-copy btn"
           id="copyBtn"
           onClick={(e) => props.handleCopyNote(e, note)}
