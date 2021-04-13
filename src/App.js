@@ -504,7 +504,7 @@ class App extends Component {
       this.processInput("anglebrackets");
       event.preventDefault();
     } else if (event.key === "`") {
-      this.processInput("backquote");
+      this.processInput("backticks");
       event.preventDefault();
     }
   }
