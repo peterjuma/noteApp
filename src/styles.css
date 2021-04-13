@@ -158,9 +158,6 @@ body {
 .note-list-item {
   height: 60px;
   padding: 10px 20px 0 25px;
-  display: flex;
-  /* border: none;
-  border-bottom: 1px solid #dcdcde; */
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
