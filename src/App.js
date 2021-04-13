@@ -106,8 +106,16 @@ class App extends Component {
 
   addCopyButtons = (clipboard) => {
     document.querySelectorAll("pre code").forEach(function (codeBlock) {
+      var pre = codeBlock.parentNode;
+      var prevElem = pre.previousElementSibling;
+
+      if (prevElem.type === "button") {
+        return;
+      }
+
       var button = document.createElement("button");
       button.className = "copy-code-button";
+      button.setAttribute("id", "copy-code-button");
       button.type = "button";
       button.innerText = "Copy";
 
@@ -128,7 +136,6 @@ class App extends Component {
         );
       });
 
-      var pre = codeBlock.parentNode;
       if (pre.parentNode.classList.contains("highlight")) {
         var highlight = pre.parentNode;
         highlight.parentNode.insertBefore(button, highlight);
