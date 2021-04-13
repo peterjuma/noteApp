@@ -507,3 +507,7 @@ button[disabled]:hover {
   /* Avoid pushing up the copy buttons. */
   margin: 0;
 }
+
+::selection {
+  background-color: yellow;
+}

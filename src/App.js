@@ -509,6 +509,12 @@ class App extends Component {
     } else if (event.key === "`") {
       this.processInput("backticks");
       event.preventDefault();
+    } else if (event.ctrlKey && event.code === "KeyB") {
+      this.processInput("bold");
+    } else if (event.ctrlKey && event.code === "KeyI") {
+      this.processInput("italic");
+    } else if (event.ctrlKey && event.code === "KeyL") {
+      this.processInput("link");
     }
   }
 
