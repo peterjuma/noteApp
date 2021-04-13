@@ -84,7 +84,7 @@ class App extends Component {
 
   updateCodeSyntaxHighlighting = () => {
     document.querySelectorAll("pre code").forEach((block) => {
-      hljs.highlightBlock(block);
+      hljs.highlightElement(block);
     });
   };
 
@@ -105,42 +105,45 @@ class App extends Component {
   };
 
   addCopyButtons = (clipboard) => {
-    document.querySelectorAll("pre code").forEach(function (codeBlock) {
+    const codeBlockElems = document.querySelectorAll("pre code");
+
+    if (codeBlockElems.length === 0) {
+      return;
+    }
+    codeBlockElems.forEach(function (codeBlock) {
       var pre = codeBlock.parentNode;
       var prevElem = pre.previousElementSibling;
 
-      if (prevElem.type === "button") {
-        return;
-      }
+      if (prevElem.type !== "button") {
+        var button = document.createElement("button");
+        button.className = "copy-code-button";
+        button.setAttribute("id", "copy-code-button");
+        button.type = "button";
+        button.innerText = "Copy";
 
-      var button = document.createElement("button");
-      button.className = "copy-code-button";
-      button.setAttribute("id", "copy-code-button");
-      button.type = "button";
-      button.innerText = "Copy";
-
-      button.addEventListener("click", function () {
-        clipboard.writeText(codeBlock.innerText).then(
-          function () {
-            /* Chrome doesn't seem to blur automatically,
+        button.addEventListener("click", function () {
+          clipboard.writeText(codeBlock.innerText).then(
+            function () {
+              /* Chrome doesn't seem to blur automatically,
                    leaving the button in a focused state. */
-            button.blur();
-            button.innerText = "Copied!";
-            setTimeout(function () {
-              button.innerText = "Copy";
-            }, 2000);
-          },
-          function (error) {
-            button.innerText = "Error";
-          }
-        );
-      });
+              button.blur();
+              button.innerText = "Copied!";
+              setTimeout(function () {
+                button.innerText = "Copy";
+              }, 2000);
+            },
+            function (error) {
+              button.innerText = "Error";
+            }
+          );
+        });
 
-      if (pre.parentNode.classList.contains("highlight")) {
-        var highlight = pre.parentNode;
-        highlight.parentNode.insertBefore(button, highlight);
-      } else {
-        pre.parentNode.insertBefore(button, pre);
+        if (pre.parentNode.classList.contains("highlight")) {
+          var highlight = pre.parentNode;
+          highlight.parentNode.insertBefore(button, highlight);
+        } else {
+          pre.parentNode.insertBefore(button, pre);
+        }
       }
     });
   };
