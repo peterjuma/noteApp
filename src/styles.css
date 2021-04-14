@@ -356,7 +356,6 @@ h3 {
   padding: 40px 50px;
   border: 1px solid #dcdcde;
   border-top: 0.5px;
-  color: #337ab7;
 }
 
 /* Editor Textarea */
@@ -445,6 +444,10 @@ button[disabled]:hover {
 
 .notebody-view {
   margin-top: 10px;
+}
+
+#notetitle-view {
+  color: #337ab7;
 }
 
 /* Style scrollbar */
