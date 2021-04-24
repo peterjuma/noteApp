@@ -10,22 +10,8 @@ import FooterBar from "./FooterBar";
 import hljs from "highlight.js";
 import keyCodes from "./KeyCodes";
 import { openDB } from "idb/with-async-ittr.js";
-// Markdown
-import markdownitEmoji from "markdown-it-emoji";
-import markdownitTaskLists from "markdown-it-task-lists";
-import * as marked from "marked";
-import MarkdownIt from "markdown-it";
-import TurndownService from "turndown";
-import * as turndownPluginGfm from "turndown-plugin-gfm";
-// Turndown
-var turndownService = new TurndownService();
-var gfm = turndownPluginGfm.gfm;
-turndownService.use(gfm);
-// Markdown-It & markdownitEmoji
-var md = new MarkdownIt();
-md.use(markdownitEmoji);
-// Task List
-md.use(markdownitTaskLists);
+import { html2md, md2html } from "./useMarkDown";
+import marked from "marked";
 
 class App extends Component {
   constructor(props) {
@@ -37,6 +23,7 @@ class App extends Component {
       activepage: "viewnote", // editnote // previewnote // viewnote
       action: "", // addnote // updatenote
       sortby: "4", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
+      split: false, //
       allnotes: [],
     };
     this.handleNoteListItemClick = this.handleNoteListItemClick.bind(this);
@@ -61,6 +48,7 @@ class App extends Component {
     this.updateCodeSyntaxHighlighting;
     this.addCopyButtons;
     this.handleCopyCodeButtonClick;
+    this.handleSplitScreen = this.handleSplitScreen.bind(this);
   }
 
   async componentDidMount() {
@@ -339,7 +327,7 @@ class App extends Component {
   }
 
   handleSaveNote(e, note) {
-    var notebody = turndownService.turndown(
+    var notebody = html2md.turndown(
       marked(marked(document.getElementById("notebody").value))
     );
     this.setState((prevState) => {
@@ -411,11 +399,11 @@ class App extends Component {
       let pasteData;
       if (html) {
         // console.log(html);
-        turndownService.keep(["pre", "code"]);
-        pasteData = turndownService.turndown(html);
+        html2md.keep(["pre", "code"]);
+        pasteData = html2md.turndown(html);
       } else {
         /<[a-z][\s\S]*>/i.test(text)
-          ? (pasteData = turndownService.turndown(marked(text)))
+          ? (pasteData = html2md.turndown(marked(text)))
           : (pasteData = text);
       }
       if (document.queryCommandSupported("insertText")) {
@@ -485,7 +473,7 @@ class App extends Component {
         copiedContent = document.selection.createRange().htmlText;
       }
     }
-    this.handleCopyNote("", turndownService.turndown(copiedContent));
+    this.handleCopyNote("", html2md.turndown(copiedContent));
   }
 
   handleKeyEvent(event) {
@@ -629,8 +617,8 @@ class App extends Component {
 
   handleDownloadNote(e) {
     const html = document.getElementById("notebody-view").innerHTML;
-    const data = turndownService.turndown(marked(html));
-    const title = turndownService
+    const data = html2md.turndown(marked(html));
+    const title = html2md
       .turndown(marked(document.getElementById("notetitle-view").innerHTML))
       .replace(/ /g, "_");
     const fileName = `${title || "note"}.md`;
@@ -644,6 +632,12 @@ class App extends Component {
     a.click();
     window.URL.revokeObjectURL(url);
     e.preventDefault();
+  }
+
+  handleSplitScreen() {
+    this.setState((prevState) => ({
+      split: !prevState.split,
+    }));
   }
 
   render() {
@@ -699,6 +693,7 @@ class App extends Component {
             notebody: this.state.notebody,
             action: this.state.action,
           }}
+          splitscreen={this.state.split}
           handleEditNote={this.handleEditNote}
           handleSaveNote={this.handleSaveNote}
           handlePaste={this.handlePaste}
@@ -706,6 +701,7 @@ class App extends Component {
           processInput={this.processInput}
           handleCancel={this.handleCancel}
           handleImageUpload={this.handleImageUpload}
+          handleSplitScreen={this.handleSplitScreen}
         />
       );
     }
