@@ -92,55 +92,81 @@ function NoteEditor(props) {
           <i
             className="fas fa-bold btn"
             onClick={(e) => props.processInput("bold")}
-          ></i>
+          >
+            <span className="tooltiptext">Bold</span>
+          </i>
           <i
             className="fas fa-italic btn"
             onClick={(e) => props.processInput("italic")}
-          ></i>
+          >
+            <span className="tooltiptext">Italic</span>
+          </i>
           <i
             className="fas fa-heading btn"
             onClick={(e) => props.processInput("heading")}
-          ></i>
+          >
+            <span className="tooltiptext">Header</span>
+          </i>
           <i
             className="fas fa-link btn"
             onClick={(e) => props.processInput("link")}
-          ></i>
+          >
+            <span className="tooltiptext">Link</span>
+          </i>
           <i
             className="fas fa-list-ol btn"
             onClick={(e) => props.processInput("olist")}
-          ></i>
+          >
+            <span className="tooltiptext">Ordered List</span>
+          </i>
           <i
             className="fas fa-list btn"
             onClick={(e) => props.processInput("ulist")}
-          ></i>
+          >
+            <span className="tooltiptext">Unordered List</span>
+          </i>
           <i
             className="fas fa-quote-left btn"
             onClick={(e) => props.processInput("blockquote")}
-          ></i>
+          >
+            <span className="tooltiptext">Quote</span>
+          </i>
           <i
             className="far fa-image btn"
             onClick={(e) => props.processInput("image")}
-          ></i>
+          >
+            <span className="tooltiptext">Image Link</span>
+          </i>
           <i
             className="fas fa-terminal btn"
             onClick={(e) => props.processInput("backticks")}
-          ></i>
+          >
+            <span className="tooltiptext">Backticks</span>
+          </i>
           <i
             className="fas fa-code btn"
             onClick={(e) => props.processInput("codeblock")}
-          ></i>
+          >
+            <span className="tooltiptext">Fenced Code</span>
+          </i>
           <i
             className="far fa-check-square btn"
             onClick={(e) => props.processInput("tasklist")}
-          ></i>
+          >
+            <span className="tooltiptext">Tasklist</span>
+          </i>
           <i
             className="fas fa-table btn"
             onClick={(e) => props.processInput("table")}
-          ></i>
+          >
+            <span className="tooltiptext">Table</span>
+          </i>
           <i
             className="fas fa-strikethrough btn"
             onClick={(e) => props.processInput("strike")}
-          ></i>
+          >
+            <span className="tooltiptext">Strikethrough</span>
+          </i>
           <div style={styles.buttons}>
             <i
               className={screenSize.buttonClass}
@@ -148,10 +174,10 @@ function NoteEditor(props) {
                 toggleScreen();
               }}
             >
-              <span class="tooltiptext">{screenSize.description}</span>
+              <span className="tooltiptext">{screenSize.description}</span>
             </i>
             <i className={toggleState.themeclass} onClick={() => toggleTheme()}>
-              <span class="tooltiptext">{toggleState.description}</span>
+              <span className="tooltiptext">{toggleState.description}</span>
             </i>
           </div>
         </div>
@@ -161,12 +187,12 @@ function NoteEditor(props) {
               theme={toggleState.theme}
               language="markdown"
               defaultLanguage="markdown"
-              defaultValue="## Enter Markdown text here..."
+              defaultValue="[comment]: <> (This is a comment, it will not be included. Enter your notes here using markdown text)"
               data-action={note.action}
               value={note.notebody}
               id="notetitle"
               onChange={(e) => props.handleNoteEditor("body", e)}
-              onPaste={(e) => props.handlePaste(e)}
+              onDidPaste={(e) => props.handlePaste(e)}
               onKeyDown={(e) => props.handleKeyEvent(e)}
               loading={"Loading..."}
               options={{
