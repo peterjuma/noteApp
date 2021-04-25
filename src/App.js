@@ -23,7 +23,7 @@ class App extends Component {
       activepage: "viewnote", // editnote // previewnote // viewnote
       action: "", // addnote // updatenote
       sortby: "4", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
-      split: false, //
+      split: true, //
       allnotes: [],
     };
     this.handleNoteListItemClick = this.handleNoteListItemClick.bind(this);
@@ -391,6 +391,7 @@ class App extends Component {
   handlePaste(e) {
     // Prevent the default action
     e.preventDefault();
+    alert("Paste");
     if (e.clipboardData) {
       // Get the copied text from the clipboard
       const text = e.clipboardData
