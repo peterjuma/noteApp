@@ -1,4 +1,4 @@
-import React, { Fragment, useRef } from "react";
+import React, { Fragment, useRef, useState } from "react";
 import NotePreview from "./NotePreview";
 import Editor from "@monaco-editor/react";
 
@@ -16,6 +16,35 @@ function NoteEditor(props) {
       flexDirection: "column",
       width: props.splitscreen ? "50%" : "100%",
     },
+    buttons: {
+      display: "inline-flex",
+      float: "right",
+      borderLeft: "1px solid #dcdcde",
+    },
+  };
+
+  const [toggleState, setToggleState] = useState({
+    theme: "vs-dark",
+    description: "Light Mode",
+    themeclass: "fas fa-sun btn fa-lg",
+  });
+
+  const toggleTheme = () => {
+    toggleDarkMode(toggleState, setToggleState);
+  };
+
+  const toggleDarkMode = (toggleState, setToggleState) => {
+    toggleState.theme == "vs-dark"
+      ? setToggleState({
+          theme: "vs-light",
+          description: "Dark Mode",
+          themeclass: "fas fa-moon btn fa-lg",
+        })
+      : setToggleState({
+          theme: "vs-dark",
+          description: "Light Mode",
+          themeclass: "fas fa-sun btn fa-lg",
+        });
   };
 
   return (
@@ -87,20 +116,27 @@ function NoteEditor(props) {
             className="fas fa-strikethrough btn"
             onClick={(e) => props.processInput("strike")}
           ></i>
-          <i
-            className="fas fa-columns btn"
-            onClick={() => {
-              props.handleSplitScreen();
-            }}
-          ></i>
+          <div style={styles.buttons}>
+            <i
+              className="fas fa-columns btn fa-lg"
+              onClick={() => {
+                props.handleSplitScreen();
+              }}
+            >
+              <span class="tooltiptext">Split Screen</span>
+            </i>
+            <i className={toggleState.themeclass} onClick={() => toggleTheme()}>
+              <span class="tooltiptext">{toggleState.description}</span>
+            </i>
+          </div>
         </div>
         <div className="md-txtarea">
-          <div className="texteditor">
+          <div className="texteditor scrollbar">
             <Editor
-              theme="vs-dark"
+              theme={toggleState.theme}
               language="markdown"
               defaultLanguage="markdown"
-              defaultValue="// some comment"
+              defaultValue="## Enter Markdown text here..."
               data-action={note.action}
               value={note.notebody}
               id="notetitle"
@@ -113,6 +149,15 @@ function NoteEditor(props) {
                   enabled: false,
                 },
                 lineNumbers: false,
+                wordWrap: "on",
+                wrappingIndent: "none",
+                verticalScrollbarSize: 17,
+                horizontalScrollbarSize: 17,
+                arrowSize: 30,
+                padding: {
+                  top: "20",
+                },
+                tabCompletion: "on",
               }}
             />
           </div>

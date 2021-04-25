@@ -1,6 +1,8 @@
 import React from "react";
 import { md2html } from "./useMarkDown";
 
+import marked from "marked";
+
 function NotePreview({ note }) {
   const styles = {
     note_preview: {
@@ -25,7 +27,7 @@ function NotePreview({ note }) {
       wordWrap: "break-word",
       overflow: "auto",
       height: "calc(100% - 150px)",
-      padding: "50px 50px 50px",
+      padding: "40px 50px 50px",
     },
     bottom: {
       position: "absolute",
@@ -40,11 +42,11 @@ function NotePreview({ note }) {
       <div style={styles.note_preview}>
         <h2
           style={styles.title}
-          dangerouslySetInnerHTML={{ __html: md2html.render(note.notetitle) }}
+          dangerouslySetInnerHTML={{ __html: marked(note.notetitle) }}
         ></h2>
         <div
           style={styles.body}
-          dangerouslySetInnerHTML={{ __html: md2html.render(note.notebody) }}
+          dangerouslySetInnerHTML={{ __html: marked(note.notebody) }}
         ></div>
         <div style={styles.bottom}></div>
       </div>

@@ -361,7 +361,7 @@ h3 {
 
 #notetitle {
   height: 50px;
-  padding: 40px 60px;
+  padding: 40px 20px;
   border: none;
   border-bottom: 1px solid #dcdcde;
 }
@@ -520,4 +520,48 @@ button[disabled]:hover {
 
 ::selection {
   background-color: yellow;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -60px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+.btn:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
 }
