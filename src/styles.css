@@ -363,7 +363,9 @@ h3 {
   height: 50px;
   padding: 40px 20px;
   border: none;
+  background-color: #1212;
   border-bottom: 1px solid #dcdcde;
+  border-radius: 5px;
 }
 
 /* Editor Textarea */
@@ -516,10 +518,6 @@ button[disabled]:hover {
 .highlight pre {
   /* Avoid pushing up the copy buttons. */
   margin: 0;
-}
-
-::selection {
-  background-color: yellow;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

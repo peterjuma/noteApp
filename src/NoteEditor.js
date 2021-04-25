@@ -1,6 +1,5 @@
 import React, { Fragment, useRef, useState } from "react";
 import NotePreview from "./NotePreview";
-import Editor from "@monaco-editor/react";
 
 function NoteEditor(props) {
   var note = props.editNoteData;
@@ -20,6 +19,32 @@ function NoteEditor(props) {
       display: "inline-flex",
       float: "right",
       borderLeft: "1px solid #dcdcde",
+    },
+    textarea: {
+      display: "flex",
+      flexDirection: "column",
+      maxWidth: "1440px",
+      margin: "0 auto",
+      width: "100%",
+      padding: "50px 60px",
+      fontSize: "16px",
+      fontWeight: "400",
+      overflow: "auto",
+      lineHeight: "1.45",
+      borderRadius: "0",
+      resize: "none",
+      boxShadow: "none",
+      border: "none",
+      height: "100%",
+      borderRadius: "5px",
+    },
+    dark: {
+      backgroundColor: "#121212",
+      color: "#f0f6fc",
+    },
+    light: {
+      backgroundColor: "#fafbfc",
+      color: "#121212",
     },
   };
 
@@ -48,9 +73,9 @@ function NoteEditor(props) {
   };
 
   const [screenSize, setScreenSize] = useState({
-    split: true,
-    buttonClass: "fa fa-window-maximize btn fa-lg",
-    description: "Full Screen",
+    split: false,
+    buttonClass: "fas fa-columns btn fa-lg",
+    description: "Split Screen",
   });
 
   const toggleScreen = () => {
@@ -67,7 +92,7 @@ function NoteEditor(props) {
         })
       : setScreenSize({
           split: true,
-          buttonClass: "fa fa-window-maximize btn fa-lg",
+          buttonClass: "far fa-window-maximize btn fa-lg",
           description: "Full Screen",
         });
   };
@@ -78,14 +103,20 @@ function NoteEditor(props) {
       <div style={styles.main_editor}>
         <div className="title-header">
           <input
-            name="title"
+            name="notetitle"
             type="text"
             id="notetitle"
             data-action={note.action}
             value={note.notetitle}
             placeholder="Title"
             autoComplete="off"
-            onChange={(e) => props.handleNoteEditor("title", e)}
+            // onChange={(e) => props.handleNoteEditor("title", note)}
+            onChange={(e) => props.handleNoteEditor(e)}
+            style={
+              toggleState.theme === "vs-light"
+                ? { ...styles.light }
+                : { ...styles.dark }
+            }
           />
         </div>
         <div className="md-editor-tools" id="mdtools">
@@ -183,33 +214,21 @@ function NoteEditor(props) {
         </div>
         <div className="md-txtarea">
           <div className="texteditor scrollbar">
-            <Editor
-              theme={toggleState.theme}
-              language="markdown"
-              defaultLanguage="markdown"
-              defaultValue="[comment]: <> (This is a comment, it will not be included. Enter your notes here using markdown text)"
+            <textarea
+              // onChange={(e) => props.handleNoteEditor("body", note)}
+              name="notebody"
+              onChange={(e) => props.handleNoteEditor(e)}
+              onPaste={(e) => props.handlePaste(e)}
+              onKeyDown={(e) => props.handleKeyEvent(e)}
               data-action={note.action}
               value={note.notebody}
               id="notetitle"
-              onChange={(e) => props.handleNoteEditor("body", e)}
-              onDidPaste={(e) => props.handlePaste(e)}
-              onKeyDown={(e) => props.handleKeyEvent(e)}
-              loading={"Loading..."}
-              options={{
-                minimap: {
-                  enabled: false,
-                },
-                lineNumbers: false,
-                wordWrap: "on",
-                wrappingIndent: "none",
-                verticalScrollbarSize: 17,
-                horizontalScrollbarSize: 17,
-                arrowSize: 30,
-                padding: {
-                  top: "20",
-                },
-                tabCompletion: "on",
-              }}
+              data-action={note.action}
+              style={
+                toggleState.theme === "vs-light"
+                  ? { ...styles.textarea, ...styles.light }
+                  : { ...styles.textarea, ...styles.dark }
+              }
             />
           </div>
 

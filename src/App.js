@@ -23,7 +23,7 @@ class App extends Component {
       activepage: "viewnote", // editnote // previewnote // viewnote
       action: "", // addnote // updatenote
       sortby: "4", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
-      split: true, //
+      split: false, //
       allnotes: [],
     };
     this.handleNoteListItemClick = this.handleNoteListItemClick.bind(this);
@@ -302,14 +302,9 @@ class App extends Component {
     }
   };
 
-  handleNoteEditor = (name, value) => {
-    if (name === "title") {
-      return this.setState({
-        notetitle: value.target.value,
-      });
-    }
+  handleNoteEditor = (e) => {
     this.setState({
-      notebody: value,
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -391,7 +386,6 @@ class App extends Component {
   handlePaste(e) {
     // Prevent the default action
     e.preventDefault();
-    alert("Paste");
     if (e.clipboardData) {
       // Get the copied text from the clipboard
       const text = e.clipboardData
