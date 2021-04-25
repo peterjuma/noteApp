@@ -23,7 +23,7 @@ class App extends Component {
       activepage: "viewnote", // editnote // previewnote // viewnote
       action: "", // addnote // updatenote
       sortby: "4", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
-      split: true, //
+      split: false, //
       allnotes: [],
     };
     this.handleNoteListItemClick = this.handleNoteListItemClick.bind(this);
@@ -519,7 +519,7 @@ class App extends Component {
 
   processInput(eventcode) {
     // obtain the object reference for the textarea>
-    var txtarea = document.getElementById("notebody");
+    var txtarea = document.querySelector("textarea");
     // obtain the index of the first selected character
     var start = txtarea.selectionStart;
     // obtain the index of the last selected character
@@ -552,7 +552,10 @@ class App extends Component {
         allText.length
       )}`;
       if (newText) {
-        txtarea.value = newText;
+        // txtarea.value = newText;
+        this.setState({
+          notebody: newText,
+        });
         if (eventcode === "tab") {
           this.setSelectionRange(
             txtarea,
@@ -584,7 +587,10 @@ class App extends Component {
         }${allText.substring(finish, allText.length)}`;
       }
       if (newText) {
-        txtarea.value = newText;
+        // txtarea.value = newText;
+        this.setState({
+          notebody: newText,
+        });
         this.setSelectionRange(
           txtarea,
           start + keyCode.offsetStart,
