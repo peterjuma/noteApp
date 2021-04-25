@@ -49,9 +49,9 @@ function NoteEditor(props) {
   };
 
   const [toggleState, setToggleState] = useState({
-    theme: "vs-dark",
-    description: "Light Mode",
-    themeclass: "fas fa-sun btn fa-lg",
+    theme: "vs-light",
+    description: "Dark Mode",
+    themeclass: "fas fa-moon btn fa-lg",
   });
 
   const toggleTheme = () => {
