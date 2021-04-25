@@ -15,7 +15,7 @@ function NavbarMain(props) {
           className="far fa-edit btn"
           id="editbtn"
           data-action="updatenote"
-          onClick={(e) => props.handleEditNote(e, note)}
+          onClick={(e) => props.handleEditNoteBtn(e, note)}
         >
           {" "}
         </i>

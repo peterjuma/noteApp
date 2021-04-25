@@ -23,7 +23,7 @@ class App extends Component {
       activepage: "viewnote", // editnote // previewnote // viewnote
       action: "", // addnote // updatenote
       sortby: "4", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
-      split: false, //
+      split: true, //
       allnotes: [],
     };
     this.handleNoteListItemClick = this.handleNoteListItemClick.bind(this);
@@ -31,7 +31,7 @@ class App extends Component {
     this.handleNoteListItemMouseOver = this.handleNoteListItemMouseOver.bind(
       this
     );
-    this.handleEditNote = this.handleEditNote.bind(this);
+    this.handleEditNoteBtn = this.handleEditNoteBtn.bind(this);
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDeleteNote = this.handleDeleteNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
@@ -49,6 +49,7 @@ class App extends Component {
     this.addCopyButtons;
     this.handleCopyCodeButtonClick;
     this.handleSplitScreen = this.handleSplitScreen.bind(this);
+    this.handleNoteEditor = this.handleNoteEditor.bind(this);
   }
 
   async componentDidMount() {
@@ -287,11 +288,11 @@ class App extends Component {
     }
     return this.handleClickHomeBtn();
   };
-  handleEditNote = (e, note) => {
+  handleEditNoteBtn = (e, note) => {
     this.setState({
       noteid: note.noteid,
-      notetitle: e.target.id === "notetitle" ? e.target.value : note.notetitle,
-      notebody: e.target.id === "notebody" ? e.target.value : note.notebody,
+      notetitle: note.notetitle,
+      notebody: note.notebody,
       activepage: "editnote",
       action: e.target.dataset.action,
     });
@@ -299,6 +300,17 @@ class App extends Component {
       var noteList = document.querySelector(".note-list-item-clicked");
       noteList && noteList.classList.remove("note-list-item-clicked");
     }
+  };
+
+  handleNoteEditor = (name, value) => {
+    if (name === "title") {
+      return this.setState({
+        notetitle: value.target.value,
+      });
+    }
+    this.setState({
+      notebody: value,
+    });
   };
 
   handleDeleteNote(e, note) {
@@ -327,9 +339,7 @@ class App extends Component {
   }
 
   handleSaveNote(e, note) {
-    var notebody = html2md.turndown(
-      marked(marked(document.getElementById("notebody").value))
-    );
+    var notebody = html2md.turndown(marked(marked(this.state.notebody)));
     this.setState((prevState) => {
       const updatedNotes = prevState.allnotes.map((noteitem) => {
         if (noteitem.noteid === note.noteid) {
@@ -662,7 +672,7 @@ class App extends Component {
             notebody: this.state.notebody,
             action: this.state.action,
           }}
-          handleEditNote={this.handleEditNote}
+          handleEditNoteBtn={this.handleEditNoteBtn}
           handleDeleteNote={this.handleDeleteNote}
           handleCopyNote={this.handleCopyNote}
           handleDownloadNote={this.handleDownloadNote}
@@ -694,7 +704,7 @@ class App extends Component {
             action: this.state.action,
           }}
           splitscreen={this.state.split}
-          handleEditNote={this.handleEditNote}
+          handleEditNoteBtn={this.handleEditNoteBtn}
           handleSaveNote={this.handleSaveNote}
           handlePaste={this.handlePaste}
           handleKeyEvent={this.handleKeyEvent}
@@ -702,6 +712,7 @@ class App extends Component {
           handleCancel={this.handleCancel}
           handleImageUpload={this.handleImageUpload}
           handleSplitScreen={this.handleSplitScreen}
+          handleNoteEditor={this.handleNoteEditor}
         />
       );
     }
@@ -711,7 +722,7 @@ class App extends Component {
         <div className="left">
           <NavbarSidebar
             handleClickHomeBtn={this.handleClickHomeBtn}
-            handleEditNote={this.handleEditNote}
+            handleEditNoteBtn={this.handleEditNoteBtn}
             handleSearchNotes={this.handleSearchNotes}
           />
           <ul className="note-list">{noteListItems}</ul>
