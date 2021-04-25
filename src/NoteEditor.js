@@ -47,6 +47,31 @@ function NoteEditor(props) {
         });
   };
 
+  const [screenSize, setScreenSize] = useState({
+    split: true,
+    buttonClass: "fa fa-window-maximize btn fa-lg",
+    description: "Full Screen",
+  });
+
+  const toggleScreen = () => {
+    screenSizer(screenSize, setScreenSize);
+    props.handleSplitScreen();
+  };
+
+  const screenSizer = (screenSize, setScreenSize) => {
+    screenSize.split
+      ? setScreenSize({
+          split: false,
+          buttonClass: "fas fa-columns btn fa-lg",
+          description: "Split Screen",
+        })
+      : setScreenSize({
+          split: true,
+          buttonClass: "fa fa-window-maximize btn fa-lg",
+          description: "Full Screen",
+        });
+  };
+
   return (
     <div className="right-row">
       <div></div>
@@ -118,12 +143,12 @@ function NoteEditor(props) {
           ></i>
           <div style={styles.buttons}>
             <i
-              className="fas fa-columns btn fa-lg"
+              className={screenSize.buttonClass}
               onClick={() => {
-                props.handleSplitScreen();
+                toggleScreen();
               }}
             >
-              <span class="tooltiptext">Split Screen</span>
+              <span class="tooltiptext">{screenSize.description}</span>
             </i>
             <i className={toggleState.themeclass} onClick={() => toggleTheme()}>
               <span class="tooltiptext">{toggleState.description}</span>
