@@ -25,7 +25,7 @@ function NavbarSidebar(props) {
           <i
             id="addNoteBtn"
             data-action="addnote"
-            onClick={(e) => props.handleEditNote(e, note)}
+            onClick={(e) => props.handleEditNoteBtn(e, note)}
             className="fa fa-plus btn"
             aria-hidden="true"
           ></i>

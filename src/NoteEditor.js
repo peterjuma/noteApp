@@ -1,5 +1,6 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useRef } from "react";
 import NotePreview from "./NotePreview";
+import Editor from "@monaco-editor/react";
 
 function NoteEditor(props) {
   var note = props.editNoteData;
@@ -30,7 +31,7 @@ function NoteEditor(props) {
             value={note.notetitle}
             placeholder="Title"
             autoComplete="off"
-            onChange={(e) => props.handleEditNote(e, note)}
+            onChange={(e) => props.handleNoteEditor("title", e)}
           />
         </div>
         <div className="md-editor-tools" id="mdtools">
@@ -94,15 +95,27 @@ function NoteEditor(props) {
           ></i>
         </div>
         <div className="md-txtarea">
-          <textarea
-            placeholder="Note"
-            id="notebody"
-            data-action={note.action}
-            value={note.notebody}
-            onChange={(e) => props.handleEditNote(e, note)}
-            onPaste={(e) => props.handlePaste(e)}
-            onKeyDown={(e) => props.handleKeyEvent(e)}
-          />
+          <div className="texteditor">
+            <Editor
+              theme="vs-dark"
+              language="markdown"
+              defaultLanguage="markdown"
+              defaultValue="// some comment"
+              data-action={note.action}
+              value={note.notebody}
+              id="notetitle"
+              onChange={(e) => props.handleNoteEditor("body", e)}
+              onPaste={(e) => props.handlePaste(e)}
+              onKeyDown={(e) => props.handleKeyEvent(e)}
+              loading={"Loading..."}
+              options={{
+                minimap: {
+                  enabled: false,
+                },
+                lineNumbers: false,
+              }}
+            />
+          </div>
 
           <div className="right-bottom-bar">
             <div className="saveCancelBar">
