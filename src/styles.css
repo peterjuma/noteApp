@@ -566,7 +566,7 @@ button[disabled]:hover {
   cursor: pointer;
   margin: 2px;
   background-color: #fff;
-  color: #777;
+  color: #5c5c5c;
   font-size: 1.5rem;
   text-align: center;
   white-space: nowrap;
@@ -577,4 +577,9 @@ button[disabled]:hover {
 .md_btn:hover .tooltiptext {
   visibility: visible;
   opacity: 1;
+}
+
+.md_btn:hover {
+  opacity: 0.6;
+  font-size: 1.55rem;
 }
