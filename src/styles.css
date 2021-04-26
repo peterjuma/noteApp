@@ -455,7 +455,7 @@ button[disabled]:hover {
 }
 
 #notetitle-view {
-  color: #337ab7;
+  color: #24292e;
 }
 
 /* Style scrollbar */
@@ -530,6 +530,19 @@ button[disabled]:hover {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+.md_btn {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  margin: 2px;
+  background-color: #fff;
+  color: #5c5c5c;
+  font-size: 1.5rem;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  padding: 6px 12px;
+}
 
 .tooltiptext {
   visibility: hidden;
@@ -558,20 +571,6 @@ button[disabled]:hover {
   border-width: 5px;
   border-style: solid;
   border-color: #555 transparent transparent transparent;
-}
-
-.md_btn {
-  border: none;
-  outline: none;
-  cursor: pointer;
-  margin: 2px;
-  background-color: #fff;
-  color: #5c5c5c;
-  font-size: 1.5rem;
-  text-align: center;
-  white-space: nowrap;
-  vertical-align: middle;
-  padding: 6px 12px;
 }
 
 .md_btn:hover .tooltiptext {
