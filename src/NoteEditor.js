@@ -179,9 +179,6 @@ function NoteEditor(props) {
             className="fas fa-list-ol md_btn"
             onClick={(e) => props.processInput("olist")}
             style={toggleState.buttonstyle}
-            onMouseEnter={(e) => {
-              console.log(e.target);
-            }}
           >
             <span className="tooltiptext">Ordered List</span>
           </i>
