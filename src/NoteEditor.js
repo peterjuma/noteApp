@@ -39,19 +39,36 @@ function NoteEditor(props) {
       borderRadius: "5px",
     },
     dark: {
-      backgroundColor: "#121212",
-      color: "#f0f6fc",
+      backgroundColor: "#2c2c2c",
+      color: "#ffffff",
     },
     light: {
-      backgroundColor: "#fafbfc",
-      color: "#121212",
+      backgroundColor: "#fafafa",
+      color: "#000000",
+    },
+    mdtools_dark: {
+      backgroundColor: "#5c5c5c",
+      color: "#000000",
+    },
+    mdtools_light: {
+      color: "#333",
+      backgroundColor: "#fff",
+    },
+    btn_light: {
+      backgroundColor: "#fff",
+      color: "#777",
+    },
+    btn_dark: {
+      backgroundColor: "#5c5c5c",
+      color: "#fff",
     },
   };
 
   const [toggleState, setToggleState] = useState({
     theme: "vs-light",
     description: "Dark Mode",
-    themeclass: "fas fa-moon btn fa-lg",
+    themeclass: "fas fa-moon fa-lg md_btn",
+    buttonstyle: { ...styles.btn_light },
   });
 
   const toggleTheme = () => {
@@ -63,18 +80,20 @@ function NoteEditor(props) {
       ? setToggleState({
           theme: "vs-light",
           description: "Dark Mode",
-          themeclass: "fas fa-moon btn fa-lg",
+          themeclass: "fas fa-moon fa-lg md_btn",
+          buttonstyle: { ...styles.btn_light },
         })
       : setToggleState({
           theme: "vs-dark",
           description: "Light Mode",
-          themeclass: "fas fa-sun btn fa-lg",
+          themeclass: "fas fa-sun fa-lg md_btn",
+          buttonstyle: { ...styles.btn_dark },
         });
   };
 
   const [screenSize, setScreenSize] = useState({
     split: false,
-    buttonClass: "fas fa-columns btn fa-lg",
+    buttonClass: "fas fa-columns fa-lg md_btn",
     description: "Split Screen",
   });
 
@@ -87,12 +106,12 @@ function NoteEditor(props) {
     screenSize.split
       ? setScreenSize({
           split: false,
-          buttonClass: "fas fa-columns btn fa-lg",
+          buttonClass: "fas fa-columns fa-lg md_btn",
           description: "Split Screen",
         })
       : setScreenSize({
           split: true,
-          buttonClass: "far fa-window-maximize btn fa-lg",
+          buttonClass: "far fa-window-maximize fa-lg md_btn",
           description: "Full Screen",
         });
   };
@@ -119,82 +138,106 @@ function NoteEditor(props) {
             }
           />
         </div>
-        <div className="md-editor-tools" id="mdtools">
+        <div
+          className="md-editor-tools"
+          id="mdtools"
+          style={
+            toggleState.theme === "vs-light"
+              ? { ...styles.mdtools_light }
+              : { ...styles.mdtools_dark }
+          }
+        >
           <i
-            className="fas fa-bold btn"
+            className="fas fa-bold md_btn"
             onClick={(e) => props.processInput("bold")}
+            style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Bold</span>
           </i>
           <i
-            className="fas fa-italic btn"
+            className="fas fa-italic md_btn"
             onClick={(e) => props.processInput("italic")}
+            style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Italic</span>
           </i>
           <i
-            className="fas fa-heading btn"
+            className="fas fa-heading md_btn"
             onClick={(e) => props.processInput("heading")}
+            style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Header</span>
           </i>
           <i
-            className="fas fa-link btn"
+            className="fas fa-link md_btn"
             onClick={(e) => props.processInput("link")}
+            style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Link</span>
           </i>
           <i
-            className="fas fa-list-ol btn"
+            className="fas fa-list-ol md_btn"
             onClick={(e) => props.processInput("olist")}
+            style={toggleState.buttonstyle}
+            onMouseEnter={(e) => {
+              console.log(e.target);
+            }}
           >
             <span className="tooltiptext">Ordered List</span>
           </i>
           <i
-            className="fas fa-list btn"
+            className="fas fa-list md_btn"
             onClick={(e) => props.processInput("ulist")}
+            style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Unordered List</span>
           </i>
           <i
-            className="fas fa-quote-left btn"
+            className="fas fa-quote-left md_btn"
             onClick={(e) => props.processInput("blockquote")}
+            style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Quote</span>
           </i>
           <i
-            className="far fa-image btn"
+            className="far fa-image md_btn"
             onClick={(e) => props.processInput("image")}
+            style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Image Link</span>
           </i>
           <i
-            className="fas fa-terminal btn"
+            className="fas fa-terminal md_btn"
             onClick={(e) => props.processInput("backticks")}
+            style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Backticks</span>
           </i>
           <i
-            className="fas fa-code btn"
+            className="fas fa-code md_btn"
             onClick={(e) => props.processInput("codeblock")}
+            style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Fenced Code</span>
           </i>
           <i
-            className="far fa-check-square btn"
+            className="far fa-check-square md_btn"
             onClick={(e) => props.processInput("tasklist")}
+            style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Tasklist</span>
           </i>
           <i
-            className="fas fa-table btn"
+            className="fas fa-table md_btn"
             onClick={(e) => props.processInput("table")}
+            style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Table</span>
           </i>
           <i
-            className="fas fa-strikethrough btn"
+            className="fas fa-strikethrough md_btn"
             onClick={(e) => props.processInput("strike")}
+            style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Strikethrough</span>
           </i>
@@ -204,10 +247,15 @@ function NoteEditor(props) {
               onClick={() => {
                 toggleScreen();
               }}
+              style={toggleState.buttonstyle}
             >
               <span className="tooltiptext">{screenSize.description}</span>
             </i>
-            <i className={toggleState.themeclass} onClick={() => toggleTheme()}>
+            <i
+              className={toggleState.themeclass}
+              onClick={(e) => toggleTheme()}
+              style={toggleState.buttonstyle}
+            >
               <span className="tooltiptext">{toggleState.description}</span>
             </i>
           </div>
