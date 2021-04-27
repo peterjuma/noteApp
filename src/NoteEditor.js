@@ -1,4 +1,4 @@
-import React, { Fragment, useRef, useState } from "react";
+import React, { Fragment, useRef, useState, useEffect } from "react";
 import NotePreview from "./NotePreview";
 
 function NoteEditor(props) {
@@ -91,11 +91,19 @@ function NoteEditor(props) {
         });
   };
 
-  const [screenSize, setScreenSize] = useState({
-    split: false,
-    buttonClass: "fas fa-columns fa-lg md_btn",
-    description: "Split Screen",
-  });
+  const curscreensize = props.splitscreen
+    ? {
+        split: true,
+        buttonClass: "far fa-window-maximize fa-lg md_btn",
+        description: "Full Screen",
+      }
+    : {
+        split: false,
+        buttonClass: "fas fa-columns fa-lg md_btn",
+        description: "Split Screen",
+      };
+
+  const [screenSize, setScreenSize] = useState(curscreensize);
 
   const toggleScreen = () => {
     screenSizer(screenSize, setScreenSize);
