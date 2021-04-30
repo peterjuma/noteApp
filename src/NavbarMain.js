@@ -29,7 +29,7 @@ function NavbarMain(props) {
           className="far fa-arrow-alt-circle-down btn"
           aria-hidden="true"
           style={{ float: "right" }}
-          onClick={(e) => props.handleDownloadNote(e, note)}
+          onClick={(e) => props.handleDownloadNote(note)}
         ></i>
       </div>
     </div>
