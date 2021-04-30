@@ -12,6 +12,7 @@ import keyCodes from "./KeyCodes";
 import { openDB } from "idb/with-async-ittr.js";
 import { html2md, md2html } from "./useMarkDown";
 import marked from "marked";
+import { saveAs } from "file-saver";
 
 class App extends Component {
   constructor(props) {
@@ -50,6 +51,7 @@ class App extends Component {
     this.handleCopyCodeButtonClick;
     this.handleSplitScreen = this.handleSplitScreen.bind(this);
     this.handleNoteEditor = this.handleNoteEditor.bind(this);
+    this.handleNotesBackup = this.handleNotesBackup.bind(this);
   }
 
   async componentDidMount() {
@@ -645,6 +647,18 @@ class App extends Component {
     e.preventDefault();
   }
 
+  handleNotesBackup() {
+    const zip = require("jszip")();
+    this.state.allnotes.map((note) => {
+      const title = `${note.title.replace(/[^A-Z0-9]+/gi, "_") || "note"}.md`;
+      zip.file(title, note.body);
+    });
+
+    zip.generateAsync({ type: "blob" }).then((content) => {
+      saveAs(content, "notes_backup.zip");
+    });
+  }
+
   handleSplitScreen() {
     this.setState((prevState) => ({
       split: !prevState.split,
@@ -727,7 +741,10 @@ class App extends Component {
             handleSearchNotes={this.handleSearchNotes}
           />
           <ul className="note-list">{noteListItems}</ul>
-          <NoteSort handleSortNotes={this.handleSortNotes} />
+          <NoteSort
+            handleSortNotes={this.handleSortNotes}
+            handleNotesBackup={this.handleNotesBackup}
+          />
         </div>
         <div className="right">
           {RightNavbar}
