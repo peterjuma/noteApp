@@ -628,23 +628,12 @@ class App extends Component {
     DisplayList.length > 0 && DisplayList[0].click();
   }
 
-  handleDownloadNote(e) {
-    const html = document.getElementById("notebody-view").innerHTML;
-    const data = html2md.turndown(marked(html));
-    const title = html2md
-      .turndown(marked(document.getElementById("notetitle-view").innerHTML))
-      .replace(/ /g, "_");
-    const fileName = `${title || "note"}.md`;
-    var a = document.createElement("a");
-    document.body.appendChild(a);
-    a.style = "display: none";
-    var blob = new Blob([data], { type: "text/plain;charset=utf-8" }),
-      url = window.URL.createObjectURL(blob);
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    e.preventDefault();
+  handleDownloadNote(note) {
+    const title = `${note.notetitle.replace(/[^A-Z0-9]+/gi, "_") || "note"}.md`;
+    var blob = new Blob([note.notebody], {
+      type: "text/plain;charset=utf-8",
+    });
+    saveAs(blob, title);
   }
 
   handleNotesBackup() {
