@@ -209,6 +209,10 @@ ol {
   bottom: 0;
 }
 
+.backupbtn {
+  float: right;
+}
+
 .right-bottom-bar {
   height: 50px;
   line-height: 44px;

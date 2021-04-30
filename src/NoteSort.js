@@ -17,6 +17,9 @@ function NoteSort(props) {
           <option value="5">Modified: Oldest</option>
         </select>
       </label>
+      <div className="backupbtn">
+        <i class="fas fa-download btn" onClick={props.handleNotesBackup}></i>
+      </div>
     </div>
   );
 }
