@@ -551,6 +551,20 @@ button[disabled]:hover {
   padding: 6px 12px;
 }
 
+.fnt_btn {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  margin: 2px;
+  background-color: #fff;
+  color: #5c5c5c;
+  font-size: 1.8rem;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  padding: 6px 12px;
+}
+
 /* WIP */
 .tooltiptext {
   visibility: hidden;
@@ -591,6 +605,16 @@ button[disabled]:hover {
   font-size: 1.55rem;
 }
 
+.fnt_btn:hover {
+  opacity: 0.6;
+}
+
 input[type="number"] {
   width: 4rem;
+}
+
+.input-div {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }

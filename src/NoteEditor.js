@@ -13,6 +13,7 @@ function NoteEditor(props) {
 
   // Set default screen size  - full
   const [splitscreen, setSplitscreen] = useState(false);
+
   const styles = {
     main_editor: {
       paddingLeft: "5px",
@@ -44,6 +45,20 @@ function NoteEditor(props) {
       border: "none",
       height: "100%",
       borderRadius: "5px",
+    },
+    inputNum: {
+      width: "4.26rem",
+      height: "2.7rem",
+      borderRadius: "4px 2px 2px 4px",
+      color: "#292a2b",
+      padding: "0.1ex 1ex",
+      border: "1px solid #ccc",
+      fontWeight: 250,
+      textShadow: "1px 1px 1px rgba(0, 0, 0, 0.1)",
+      outline: "none",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
     },
     dark: {
       backgroundColor: "hsl(0, 0%, 14%)",
@@ -455,24 +470,30 @@ function NoteEditor(props) {
           >
             <span className="tooltiptext">Strikethrough</span>
           </i>
-          <InputNumber
-            min={10}
-            max={48}
-            step={1}
-            value={fontsize}
-            onChange={setFontsize}
-            style={{
-              width: "4.2rem",
-              height: "2.7rem",
-              borderRadius: "4px 2px 2px 4px",
-              color: "#292a2b",
-              padding: "0.1ex 1ex",
-              border: "1px solid #ccc",
-              fontWeight: 100,
-              textShadow: "1px 1px 1px rgba(0, 0, 0, 0.1)",
-              outline: "none",
-            }}
-          />
+
+          <span className="input-div">
+            <i
+              className="fas fa-angle-left fa-lg fnt_btn"
+              onClick={(e) => setFontsize(fontsize - 1)}
+            ></i>
+            <InputNumber
+              min={10}
+              max={48}
+              step={1}
+              value={fontsize}
+              onChange={setFontsize}
+              style={{ ...styles.inputNum, ...styles.btn_dark }}
+              style={
+                toggleState.theme === "vs-light"
+                  ? { ...styles.inputNum, ...styles.btn_light }
+                  : { ...styles.inputNum, ...styles.btn_dark }
+              }
+            />
+            <i
+              className="fas fa-angle-right fa-lg fnt_btn"
+              onClick={(e) => setFontsize(fontsize + 1)}
+            ></i>
+          </span>
 
           <div style={styles.buttons}>
             <i
