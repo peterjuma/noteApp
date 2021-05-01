@@ -8,7 +8,6 @@ function NoteEditor(props) {
   var note = props.editNoteData;
   // Set default screen size  - full
   const [splitscreen, setSplitscreen] = useState(false);
-
   const styles = {
     main_editor: {
       paddingLeft: "5px",
@@ -42,16 +41,20 @@ function NoteEditor(props) {
       borderRadius: "5px",
     },
     dark: {
-      backgroundColor: "#2c2c2c",
-      color: "#ffffff",
+      backgroundColor: "hsl(0, 0%, 14%)",
+      color: "#afafaf",
     },
     light: {
       backgroundColor: "#fafafa",
       color: "#000000",
     },
     mdtools_dark: {
-      backgroundColor: "#5c5c5c",
-      color: "#000000",
+      backgroundColor: "hsl(0, 0%, 14%)",
+      color: "#292a2b",
+    },
+    btn_dark: {
+      backgroundColor: "hsl(0, 0%, 14%)",
+      color: "#afafaf",
     },
     mdtools_light: {
       color: "#333",
@@ -60,10 +63,6 @@ function NoteEditor(props) {
     btn_light: {
       backgroundColor: "#fff",
       color: "#777",
-    },
-    btn_dark: {
-      backgroundColor: "#5c5c5c",
-      color: "#fff",
     },
   };
   // Toggle screensize
@@ -256,6 +255,14 @@ function NoteEditor(props) {
       }
     }
   };
+
+  // Handle Text selection / cursor position
+  const inputRef = useRef();
+  useEffect(() => {
+    inputRef.current.selectionStart = cusor.start;
+    inputRef.current.selectionEnd = cusor.end;
+    inputRef.current.focus();
+  }, [bodytxt]);
 
   // Paste Event
   const handlePaste = (e) => {
@@ -472,6 +479,7 @@ function NoteEditor(props) {
               data-action={note.action}
               value={bodytxt}
               id="notebody"
+              ref={inputRef}
               data-action={note.action}
               selectionEnd={cusor.end}
               selectionStart={cusor.start}
