@@ -1,11 +1,14 @@
 import React, { Fragment, useRef, useState, useEffect } from "react";
 import NotePreview from "./NotePreview";
+import keyCodes from "./KeyCodes";
+import { html2md, md2html } from "./useMarkDown";
+import marked from "marked";
 
 function NoteEditor(props) {
   var note = props.editNoteData;
-  const ButtonStyle = {
-    border: "1px solid #dcdcde",
-  };
+  // Set default screen size  - full
+  const [splitscreen, setSplitscreen] = useState(false);
+
   const styles = {
     main_editor: {
       paddingLeft: "5px",
@@ -13,7 +16,7 @@ function NoteEditor(props) {
       height: "100%",
       display: "flex",
       flexDirection: "column",
-      width: props.splitscreen ? "50%" : "100%",
+      width: splitscreen ? "50%" : "100%",
     },
     buttons: {
       display: "inline-flex",
@@ -63,7 +66,41 @@ function NoteEditor(props) {
       color: "#fff",
     },
   };
+  // Toggle screensize
+  const handleSplitScreen = () => {
+    setSplitscreen(!splitscreen);
+  };
+  const curscreensize = splitscreen
+    ? {
+        split: true,
+        buttonClass: "far fa-window-maximize fa-lg md_btn",
+        description: "Full Screen",
+      }
+    : {
+        split: false,
+        buttonClass: "fas fa-columns fa-lg md_btn",
+        description: "Split Screen",
+      };
+  const [screenSize, setScreenSize] = useState(curscreensize);
+  const toggleScreen = () => {
+    screenSizer(screenSize, setScreenSize);
+    handleSplitScreen();
+  };
 
+  const screenSizer = (screenSize, setScreenSize) => {
+    screenSize.split
+      ? setScreenSize({
+          split: false,
+          buttonClass: "fas fa-columns fa-lg md_btn",
+          description: "Split Screen",
+        })
+      : setScreenSize({
+          split: true,
+          buttonClass: "far fa-window-maximize fa-lg md_btn",
+          description: "Full Screen",
+        });
+  };
+  //  Toggle theme
   const [toggleState, setToggleState] = useState({
     theme: "vs-light",
     description: "Dark Mode",
@@ -91,37 +128,196 @@ function NoteEditor(props) {
         });
   };
 
-  const curscreensize = props.splitscreen
-    ? {
-        split: true,
-        buttonClass: "far fa-window-maximize fa-lg md_btn",
-        description: "Full Screen",
-      }
-    : {
-        split: false,
-        buttonClass: "fas fa-columns fa-lg md_btn",
-        description: "Split Screen",
-      };
+  // Handle Input
+  const [bodytxt, setBodyTxt] = useState(note.notebody);
+  const [title, setTitle] = useState(note.notetitle);
+  const textareaRef = useRef();
+  const titleRef = useRef();
 
-  const [screenSize, setScreenSize] = useState(curscreensize);
-
-  const toggleScreen = () => {
-    screenSizer(screenSize, setScreenSize);
-    props.handleSplitScreen();
+  const [cusor, setCursor] = useState({
+    start: textareaRef.selectionStart,
+    end: textareaRef.selectionEnd,
+  });
+  const handleBlurEvent = () => {
+    textareaRef.current.setSelectionRange(cusor.start, cusor.end);
+  };
+  const handleBodyChange = (e) => {
+    props.handleNoteEditor(e);
+    setBodyTxt(e.target.value);
+    setCursor({
+      start: e.target.selectionStart,
+      end: e.target.selectionEnd,
+    });
+  };
+  const handleTitleChange = (e) => {
+    props.handleNoteEditor(e);
+    setTitle(e.target.value);
   };
 
-  const screenSizer = (screenSize, setScreenSize) => {
-    screenSize.split
-      ? setScreenSize({
-          split: false,
-          buttonClass: "fas fa-columns fa-lg md_btn",
-          description: "Split Screen",
-        })
-      : setScreenSize({
-          split: true,
-          buttonClass: "far fa-window-maximize fa-lg md_btn",
-          description: "Full Screen",
+  const handleKeyEvent = (event) => {
+    if (event.code === "Tab") {
+      processInput("tab");
+      event.preventDefault();
+    } else if (event.key === '"') {
+      processInput("doublequote");
+      event.preventDefault();
+    } else if (event.key === "(") {
+      processInput("brackets");
+      event.preventDefault();
+    } else if (event.key === "{") {
+      processInput("curlybrackets");
+      event.preventDefault();
+    } else if (event.key === "[") {
+      processInput("squarebrackets");
+      event.preventDefault();
+    } else if (event.key === "<") {
+      processInput("anglebrackets");
+      event.preventDefault();
+    } else if (event.key === "`") {
+      processInput("backticks");
+      event.preventDefault();
+    } else if (event.ctrlKey && event.code === "KeyB") {
+      processInput("bold");
+    } else if (event.ctrlKey && event.code === "KeyI") {
+      processInput("italic");
+    } else if (event.ctrlKey && event.code === "KeyL") {
+      processInput("link");
+    }
+  };
+
+  // Button Inputs
+
+  const processInput = (eventcode) => {
+    // obtain the object reference for the textarea>
+    var txtarea = document.querySelector("textarea");
+    // obtain the index of the first selected character
+    var start = txtarea.selectionStart;
+    // obtain the index of the last selected character
+    var finish = txtarea.selectionEnd;
+    //obtain all Text
+    var allText = txtarea.value;
+    // obtain the selected text
+    var sel = allText.substring(start, finish);
+    var img = `![alt text](${sel})`;
+    var link = `[link](${sel})`;
+    keyCodes["image"].pattern = img;
+    keyCodes["link"].pattern = link;
+    var keyCode = keyCodes[eventcode];
+    if (keyCode.regEx) {
+      var transsel = "";
+      var match = /\r|\n/.exec(sel);
+      if (match) {
+        var lines = sel.split("\n");
+        for (var i = 0; i < lines.length; i++) {
+          if (lines[i].length > 0 && lines[i] !== undefined) {
+            transsel += `${keyCode.pattern} ${lines[i]}\n`;
+          }
+        }
+        sel = transsel;
+      } else {
+        sel = sel.replace(/^/gm, `${keyCode.pattern} `);
+      }
+      var newText = `${allText.substring(0, start)}${sel}${allText.substring(
+        finish,
+        allText.length
+      )}`;
+      if (newText) {
+        setBodyTxt(newText);
+        if (eventcode === "tab") {
+          setCursor({
+            start: start + sel.length,
+            end: start + sel.length,
+          });
+        } else {
+          setCursor({
+            start: start + keyCode.offsetStart,
+            end: start + keyCode.offsetStart,
+          });
+        }
+      }
+    } else {
+      if (keyCode.pattern !== "") {
+        if (eventcode == "image" || eventcode == "link") {
+          var newText = `${allText.substring(0, start)}${
+            keyCode.pattern
+          }${allText.substring(finish, allText.length)}`;
+        } else {
+          var newText = `${allText.substring(0, start)}${sel}${
+            keyCode.pattern
+          }${allText.substring(finish, allText.length)}`;
+        }
+      } else {
+        var newText = `${allText.substring(0, start)}${keyCode.open}${sel}${
+          keyCode.close
+        }${allText.substring(finish, allText.length)}`;
+      }
+      if (newText) {
+        setBodyTxt(newText);
+        setCursor({
+          start: start + keyCode.offsetStart,
+          end: finish + keyCode.offsetEnd,
         });
+      }
+    }
+    txtarea.blur();
+    txtarea.focus();
+  };
+  // Paste Event
+  const handlePaste = (e) => {
+    // Prevent the default action
+    e.preventDefault();
+    if (e.clipboardData) {
+      // Get the copied text from the clipboard
+      const text = e.clipboardData
+        ? (e.originalEvent || e).clipboardData.getData("text/plain")
+        : // For IE
+        window.clipboardData
+        ? window.clipboardData.getData("Text")
+        : "";
+      // Get the copied text from the clipboard
+      const html = e.clipboardData
+        ? (e.originalEvent || e).clipboardData.getData("text/html")
+        : // For IE
+        window.clipboardData
+        ? window.clipboardData.getData("Html")
+        : "";
+      let pasteData;
+      if (html) {
+        // console.log(html);
+        html2md.keep(["pre", "code"]);
+        pasteData = html2md.turndown(html);
+      } else {
+        /<[a-z][\s\S]*>/i.test(text)
+          ? (pasteData = html2md.turndown(marked(text)))
+          : (pasteData = text);
+      }
+      if (document.queryCommandSupported("insertText")) {
+        document.execCommand("insertText", false, pasteData);
+      } else {
+        // Insert text at the current position of caret
+        const range = document.processInputection().getRangeAt(0);
+        range.deleteContents();
+        const textNode = document.createTextNode(pasteData);
+        range.insertNode(textNode);
+        range.selectNodeContents(textNode);
+        range.collapse(false);
+        const selection = window.processInputection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+  };
+
+  // Handle Cancel Button
+
+  const handleCancel = () => {
+    if (note.action === "updatenote") {
+      return document.getElementById(note.noteid).click();
+    }
+    if (document.querySelectorAll(".note-list-item").length > 0) {
+      return document.querySelectorAll(".note-list-item")[0].click();
+    }
+    return props.handleClickHomeBtn();
   };
 
   return (
@@ -137,8 +333,8 @@ function NoteEditor(props) {
             value={note.notetitle}
             placeholder="Title"
             autoComplete="off"
-            // onChange={(e) => props.handleNoteEditor("title", note)}
-            onChange={(e) => props.handleNoteEditor(e)}
+            ref={titleRef}
+            onChange={(e) => handleTitleChange(e)}
             style={
               toggleState.theme === "vs-light"
                 ? { ...styles.light }
@@ -157,91 +353,91 @@ function NoteEditor(props) {
         >
           <i
             className="fas fa-bold md_btn"
-            onClick={(e) => props.processInput("bold")}
+            onClick={(e) => processInput("bold")}
             style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Bold</span>
           </i>
           <i
             className="fas fa-italic md_btn"
-            onClick={(e) => props.processInput("italic")}
+            onClick={(e) => processInput("italic")}
             style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Italic</span>
           </i>
           <i
             className="fas fa-heading md_btn"
-            onClick={(e) => props.processInput("heading")}
+            onClick={(e) => processInput("heading")}
             style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Header</span>
           </i>
           <i
             className="fas fa-link md_btn"
-            onClick={(e) => props.processInput("link")}
+            onClick={(e) => processInput("link")}
             style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Link</span>
           </i>
           <i
             className="fas fa-list-ol md_btn"
-            onClick={(e) => props.processInput("olist")}
+            onClick={(e) => processInput("olist")}
             style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Ordered List</span>
           </i>
           <i
             className="fas fa-list md_btn"
-            onClick={(e) => props.processInput("ulist")}
+            onClick={(e) => processInput("ulist")}
             style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Unordered List</span>
           </i>
           <i
             className="fas fa-quote-left md_btn"
-            onClick={(e) => props.processInput("blockquote")}
+            onClick={(e) => processInput("blockquote")}
             style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Quote</span>
           </i>
           <i
             className="far fa-image md_btn"
-            onClick={(e) => props.processInput("image")}
+            onClick={(e) => processInput("image")}
             style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Image Link</span>
           </i>
           <i
             className="fas fa-terminal md_btn"
-            onClick={(e) => props.processInput("backticks")}
+            onClick={(e) => processInput("backticks")}
             style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Backticks</span>
           </i>
           <i
             className="fas fa-code md_btn"
-            onClick={(e) => props.processInput("codeblock")}
+            onClick={(e) => processInput("codeblock")}
             style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Fenced Code</span>
           </i>
           <i
             className="far fa-check-square md_btn"
-            onClick={(e) => props.processInput("tasklist")}
+            onClick={(e) => processInput("tasklist")}
             style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Tasklist</span>
           </i>
           <i
             className="fas fa-table md_btn"
-            onClick={(e) => props.processInput("table")}
+            onClick={(e) => processInput("table")}
             style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Table</span>
           </i>
           <i
             className="fas fa-strikethrough md_btn"
-            onClick={(e) => props.processInput("strike")}
+            onClick={(e) => processInput("strike")}
             style={toggleState.buttonstyle}
           >
             <span className="tooltiptext">Strikethrough</span>
@@ -268,15 +464,16 @@ function NoteEditor(props) {
         <div className="md-txtarea">
           <div className="texteditor scrollbar">
             <textarea
-              // onChange={(e) => props.handleNoteEditor("body", note)}
               name="notebody"
-              onChange={(e) => props.handleNoteEditor(e)}
-              onPaste={(e) => props.handlePaste(e)}
-              onKeyDown={(e) => props.handleKeyEvent(e)}
+              onChange={(e) => handleBodyChange(e)}
+              onPaste={(e) => handlePaste(e)}
+              onKeyDown={(e) => handleKeyEvent(e)}
               data-action={note.action}
-              value={note.notebody}
+              value={bodytxt}
               id="notetitle"
               data-action={note.action}
+              ref={textareaRef}
+              onBlur={(e) => handleBlurEvent(e)}
               style={
                 toggleState.theme === "vs-light"
                   ? { ...styles.textarea, ...styles.light }
@@ -294,13 +491,15 @@ function NoteEditor(props) {
               ></i>
               <i
                 className="far fa-window-close btn-save-cancel fa-2x"
-                onClick={(e) => props.handleCancel(e, note)}
+                onClick={(e) => handleCancel()}
               ></i>
             </div>
           </div>
         </div>
       </div>
-      {props.splitscreen && <NotePreview note={note} />}
+      {splitscreen && (
+        <NotePreview note={{ notebody: bodytxt, notetitle: title }} />
+      )}
     </div>
   );
 }

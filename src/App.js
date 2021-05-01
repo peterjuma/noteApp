@@ -8,7 +8,6 @@ import readmePath from "./README.md";
 import NoteEditor from "./NoteEditor";
 import FooterBar from "./FooterBar";
 import hljs from "highlight.js";
-import keyCodes from "./KeyCodes";
 import { openDB } from "idb/with-async-ittr.js";
 import { html2md, md2html } from "./useMarkDown";
 import marked from "marked";
@@ -24,7 +23,6 @@ class App extends Component {
       activepage: "viewnote", // editnote // previewnote // viewnote
       action: "", // addnote // updatenote
       sortby: "4", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
-      split: false, //
       allnotes: [],
     };
     this.handleNoteListItemClick = this.handleNoteListItemClick.bind(this);
@@ -36,20 +34,14 @@ class App extends Component {
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDeleteNote = this.handleDeleteNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
-    this.handlePaste = this.handlePaste.bind(this);
-    this.processInput = this.processInput.bind(this);
-    this.handleKeyEvent = this.handleKeyEvent.bind(this);
-    this.setSelectionRange = this.setSelectionRange.bind(this);
     this.handleSearchNotes = this.handleSearchNotes.bind(this);
     this.handleIndexedDB = this.handleIndexedDB.bind(this);
-    this.handleCancel = this.handleCancel.bind(this);
     this.handleCopyNote = this.handleCopyNote.bind(this);
     this.handleCopyEvent = this.handleCopyEvent.bind(this);
     this.handleSortNotes = this.handleSortNotes.bind(this);
     this.updateCodeSyntaxHighlighting;
     this.addCopyButtons;
     this.handleCopyCodeButtonClick;
-    this.handleSplitScreen = this.handleSplitScreen.bind(this);
     this.handleNoteEditor = this.handleNoteEditor.bind(this);
     this.handleNotesBackup = this.handleNotesBackup.bind(this);
   }
@@ -281,15 +273,6 @@ class App extends Component {
     document.getElementById(notesArray[0].noteid).click();
   };
 
-  handleCancel = (e, note) => {
-    if (note.action === "updatenote") {
-      return document.getElementById(note.noteid).click();
-    }
-    if (document.querySelectorAll(".note-list-item").length > 0) {
-      return document.querySelectorAll(".note-list-item")[0].click();
-    }
-    return this.handleClickHomeBtn();
-  };
   handleEditNoteBtn = (e, note) => {
     this.setState({
       noteid: note.noteid,
@@ -385,51 +368,6 @@ class App extends Component {
     }
   }
 
-  handlePaste(e) {
-    // Prevent the default action
-    e.preventDefault();
-    if (e.clipboardData) {
-      // Get the copied text from the clipboard
-      const text = e.clipboardData
-        ? (e.originalEvent || e).clipboardData.getData("text/plain")
-        : // For IE
-        window.clipboardData
-        ? window.clipboardData.getData("Text")
-        : "";
-      // Get the copied text from the clipboard
-      const html = e.clipboardData
-        ? (e.originalEvent || e).clipboardData.getData("text/html")
-        : // For IE
-        window.clipboardData
-        ? window.clipboardData.getData("Html")
-        : "";
-      let pasteData;
-      if (html) {
-        // console.log(html);
-        html2md.keep(["pre", "code"]);
-        pasteData = html2md.turndown(html);
-      } else {
-        /<[a-z][\s\S]*>/i.test(text)
-          ? (pasteData = html2md.turndown(marked(text)))
-          : (pasteData = text);
-      }
-      if (document.queryCommandSupported("insertText")) {
-        document.execCommand("insertText", false, pasteData);
-      } else {
-        // Insert text at the current position of caret
-        const range = document.processInputection().getRangeAt(0);
-        range.deleteContents();
-        const textNode = document.createTextNode(pasteData);
-        range.insertNode(textNode);
-        range.selectNodeContents(textNode);
-        range.collapse(false);
-        const selection = window.processInputection();
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-    }
-  }
-
   handleCopyNote(e, content) {
     var textArea = document.createElement("textarea");
     // Place in top-left corner of screen regardless of scroll position.
@@ -483,134 +421,6 @@ class App extends Component {
     this.handleCopyNote("", html2md.turndown(copiedContent));
   }
 
-  handleKeyEvent(event) {
-    if (event.code === "Tab") {
-      this.processInput("tab");
-      event.preventDefault();
-    } else if (event.key === '"') {
-      this.processInput("doublequote");
-      event.preventDefault();
-    } else if (event.key === "(") {
-      this.processInput("brackets");
-      event.preventDefault();
-    } else if (event.key === "{") {
-      this.processInput("curlybrackets");
-      event.preventDefault();
-    } else if (event.key === "[") {
-      this.processInput("squarebrackets");
-      event.preventDefault();
-    } else if (event.key === "<") {
-      this.processInput("anglebrackets");
-      event.preventDefault();
-    } else if (event.key === "`") {
-      this.processInput("backticks");
-      event.preventDefault();
-    } else if (event.ctrlKey && event.code === "KeyB") {
-      this.processInput("bold");
-    } else if (event.ctrlKey && event.code === "KeyI") {
-      this.processInput("italic");
-    } else if (event.ctrlKey && event.code === "KeyL") {
-      this.processInput("link");
-    }
-  }
-
-  processInput(eventcode) {
-    // obtain the object reference for the textarea>
-    var txtarea = document.querySelector("textarea");
-    // obtain the index of the first selected character
-    var start = txtarea.selectionStart;
-    // obtain the index of the last selected character
-    var finish = txtarea.selectionEnd;
-    //obtain all Text
-    var allText = txtarea.value;
-    // obtain the selected text
-    var sel = allText.substring(start, finish);
-    var img = `![alt text](${sel})`;
-    var link = `[link](${sel})`;
-    keyCodes["image"].pattern = img;
-    keyCodes["link"].pattern = link;
-    var keyCode = keyCodes[eventcode];
-    if (keyCode.regEx) {
-      var transsel = "";
-      var match = /\r|\n/.exec(sel);
-      if (match) {
-        var lines = sel.split("\n");
-        for (var i = 0; i < lines.length; i++) {
-          if (lines[i].length > 0 && lines[i] !== undefined) {
-            transsel += `${keyCode.pattern} ${lines[i]}\n`;
-          }
-        }
-        sel = transsel;
-      } else {
-        sel = sel.replace(/^/gm, `${keyCode.pattern} `);
-      }
-      var newText = `${allText.substring(0, start)}${sel}${allText.substring(
-        finish,
-        allText.length
-      )}`;
-      if (newText) {
-        // txtarea.value = newText;
-        this.setState({
-          notebody: newText,
-        });
-        if (eventcode === "tab") {
-          this.setSelectionRange(
-            txtarea,
-            start + sel.length,
-            start + sel.length
-          );
-        } else {
-          this.setSelectionRange(
-            txtarea,
-            start + keyCode.offsetStart,
-            start + keyCode.offsetStart
-          );
-        }
-      }
-    } else {
-      if (keyCode.pattern !== "") {
-        if (eventcode == "image" || eventcode == "link") {
-          var newText = `${allText.substring(0, start)}${
-            keyCode.pattern
-          }${allText.substring(finish, allText.length)}`;
-        } else {
-          var newText = `${allText.substring(0, start)}${sel}${
-            keyCode.pattern
-          }${allText.substring(finish, allText.length)}`;
-        }
-      } else {
-        var newText = `${allText.substring(0, start)}${keyCode.open}${sel}${
-          keyCode.close
-        }${allText.substring(finish, allText.length)}`;
-      }
-      if (newText) {
-        // txtarea.value = newText;
-        this.setState({
-          notebody: newText,
-        });
-        this.setSelectionRange(
-          txtarea,
-          start + keyCode.offsetStart,
-          finish + keyCode.offsetEnd
-        );
-      }
-    }
-  }
-
-  setSelectionRange(input, selectionStart, selectionEnd) {
-    if (input.setSelectionRange) {
-      input.setSelectionRange(selectionStart, selectionEnd);
-    } else if (input.createTextRange) {
-      var range = input.createTextRange();
-      range.collapse(true);
-      range.moveEnd("character", selectionEnd);
-      range.moveStart("character", selectionStart);
-      range.select();
-    }
-    input.blur();
-    input.focus();
-  }
-
   handleSearchNotes(e) {
     var noteList = document.querySelectorAll(".note-list-item");
     var searchString = e.target.value.toUpperCase();
@@ -646,12 +456,6 @@ class App extends Component {
     zip.generateAsync({ type: "blob" }).then((content) => {
       saveAs(content, "notes_backup.zip");
     });
-  }
-
-  handleSplitScreen() {
-    this.setState((prevState) => ({
-      split: !prevState.split,
-    }));
   }
 
   render() {
@@ -710,12 +514,7 @@ class App extends Component {
           splitscreen={this.state.split}
           handleEditNoteBtn={this.handleEditNoteBtn}
           handleSaveNote={this.handleSaveNote}
-          handlePaste={this.handlePaste}
-          handleKeyEvent={this.handleKeyEvent}
-          processInput={this.processInput}
-          handleCancel={this.handleCancel}
-          handleImageUpload={this.handleImageUpload}
-          handleSplitScreen={this.handleSplitScreen}
+          handleClickHomeBtn={this.handleClickHomeBtn}
           handleNoteEditor={this.handleNoteEditor}
         />
       );

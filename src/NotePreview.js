@@ -42,11 +42,11 @@ function NotePreview({ note }) {
       <div style={styles.note_preview}>
         <h2
           style={styles.title}
-          dangerouslySetInnerHTML={{ __html: marked(note.notetitle) }}
+          dangerouslySetInnerHTML={{ __html: marked(note.notetitle || "") }}
         ></h2>
         <div
           style={styles.body}
-          dangerouslySetInnerHTML={{ __html: marked(note.notebody) }}
+          dangerouslySetInnerHTML={{ __html: marked(note.notebody || "") }}
         ></div>
         <div style={styles.bottom}></div>
       </div>
