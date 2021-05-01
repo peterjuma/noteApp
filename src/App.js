@@ -36,7 +36,6 @@ class App extends Component {
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
     this.handleSearchNotes = this.handleSearchNotes.bind(this);
     this.handleIndexedDB = this.handleIndexedDB.bind(this);
-    this.handleCopyNote = this.handleCopyNote.bind(this);
     this.handleCopyEvent = this.handleCopyEvent.bind(this);
     this.handleSortNotes = this.handleSortNotes.bind(this);
     this.updateCodeSyntaxHighlighting;
@@ -369,42 +368,7 @@ class App extends Component {
     }
   }
 
-  handleCopyNote(e, content) {
-    var textArea = document.createElement("textarea");
-    // Place in top-left corner of screen regardless of scroll position.
-    textArea.style.position = "fixed";
-    textArea.style.top = 0;
-    textArea.style.left = 0;
-    // Ensure it has a small width and height. Setting to 1px / 1em
-    // doesn't work as this gives a negative w/h on some browsers.
-    textArea.style.width = "2em";
-    textArea.style.height = "2em";
-    // We don't need padding, reducing the size if it does flash render.
-    textArea.style.padding = 0;
-    // Clean up any borders.
-    textArea.style.border = "none";
-    textArea.style.outline = "none";
-    textArea.style.boxShadow = "none";
-    // Avoid flash of white box if rendered for any reason.
-    textArea.style.background = "transparent";
-    textArea.value =
-      typeof content === "object"
-        ? `## ${content.notetitle}\n${content.notebody}`
-        : content;
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-      var successful = document.execCommand("copy");
-    } catch (err) {
-      console.log("Oops, unable to copy");
-    }
-    document.body.removeChild(textArea);
-  }
-
-  handleCopyEvent(e) {
-    e.preventDefault();
-    var copiedContent = "";
+  handleCopyEvent(e, copiedContent = "") {
     if (typeof window.getSelection != "undefined") {
       var sel = window.getSelection();
       if (sel.rangeCount) {
@@ -419,7 +383,10 @@ class App extends Component {
         copiedContent = document.selection.createRange().htmlText;
       }
     }
-    this.handleCopyNote("", html2md.turndown(copiedContent));
+
+    e.clipboardData.setData("text/html", copied);
+    e.clipboardData.setData("text/plain", html2md.turndown(copied));
+    e.preventDefault();
   }
 
   handleSearchNotes(e) {
@@ -483,7 +450,7 @@ class App extends Component {
           }}
           handleEditNoteBtn={this.handleEditNoteBtn}
           handleDeleteNote={this.handleDeleteNote}
-          handleCopyNote={this.handleCopyNote}
+          handleCopyEvent={this.handleCopyEvent}
           handleDownloadNote={this.handleDownloadNote}
         />
       );

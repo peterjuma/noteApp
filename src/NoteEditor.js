@@ -3,9 +3,14 @@ import NotePreview from "./NotePreview";
 import keyCodes from "./KeyCodes";
 import { html2md, md2html } from "./useMarkDown";
 import marked from "marked";
+import InputNumber from "react-input-number";
 
 function NoteEditor(props) {
   var note = props.editNoteData;
+
+  // Handle FontSize
+  const [fontsize, setFontsize] = useState(16);
+
   // Set default screen size  - full
   const [splitscreen, setSplitscreen] = useState(false);
   const styles = {
@@ -29,7 +34,7 @@ function NoteEditor(props) {
       margin: "0 auto",
       width: "100%",
       padding: "50px 60px",
-      fontSize: "16px",
+      fontSize: `${fontsize}px`,
       fontWeight: "400",
       overflow: "auto",
       lineHeight: "1.45",
@@ -450,6 +455,25 @@ function NoteEditor(props) {
           >
             <span className="tooltiptext">Strikethrough</span>
           </i>
+          <InputNumber
+            min={10}
+            max={48}
+            step={1}
+            value={fontsize}
+            onChange={setFontsize}
+            style={{
+              width: "4.2rem",
+              height: "2.7rem",
+              borderRadius: "4px 2px 2px 4px",
+              color: "#292a2b",
+              padding: "0.1ex 1ex",
+              border: "1px solid #ccc",
+              fontWeight: 100,
+              textShadow: "1px 1px 1px rgba(0, 0, 0, 0.1)",
+              outline: "none",
+            }}
+          />
+
           <div style={styles.buttons}>
             <i
               className={screenSize.buttonClass}
@@ -481,8 +505,8 @@ function NoteEditor(props) {
               id="notebody"
               ref={inputRef}
               data-action={note.action}
-              selectionEnd={cusor.end}
-              selectionStart={cusor.start}
+              selectionend={cusor.end}
+              selectionstart={cusor.start}
               style={
                 toggleState.theme === "vs-light"
                   ? { ...styles.textarea, ...styles.light }

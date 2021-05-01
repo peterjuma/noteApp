@@ -380,7 +380,6 @@ h3 {
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;
-  font-size: 16px;
   font-weight: 400;
   overflow: auto;
   line-height: 1.45;
@@ -590,4 +589,8 @@ button[disabled]:hover {
 .md_btn:hover {
   opacity: 0.6;
   font-size: 1.55rem;
+}
+
+input[type="number"] {
+  width: 4rem;
 }
