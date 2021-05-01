@@ -131,16 +131,13 @@ function NoteEditor(props) {
   // Handle Input
   const [bodytxt, setBodyTxt] = useState(note.notebody);
   const [title, setTitle] = useState(note.notetitle);
-  const textareaRef = useRef();
   const titleRef = useRef();
 
   const [cusor, setCursor] = useState({
-    start: textareaRef.selectionStart,
-    end: textareaRef.selectionEnd,
+    start: 0,
+    end: 0,
   });
-  const handleBlurEvent = () => {
-    textareaRef.current.setSelectionRange(cusor.start, cusor.end);
-  };
+
   const handleBodyChange = (e) => {
     // props.handleNoteEditor(e);
     setBodyTxt(e.target.value);
@@ -186,7 +183,6 @@ function NoteEditor(props) {
   };
 
   // Button Inputs
-
   const processInput = (eventcode) => {
     // obtain the object reference for the textarea>
     var txtarea = document.querySelector("textarea");
@@ -195,7 +191,7 @@ function NoteEditor(props) {
     // obtain the index of the last selected character
     var finish = txtarea.selectionEnd;
     //obtain all Text
-    var allText = txtarea.value;
+    var allText = bodytxt;
     // obtain the selected text
     var sel = allText.substring(start, finish);
     var img = `![alt text](${sel})`;
@@ -259,9 +255,8 @@ function NoteEditor(props) {
         });
       }
     }
-    txtarea.blur();
-    txtarea.focus();
   };
+
   // Paste Event
   const handlePaste = (e) => {
     // Prevent the default action
@@ -309,7 +304,6 @@ function NoteEditor(props) {
   };
 
   // Handle Cancel Button
-
   const handleCancel = () => {
     if (note.action === "updatenote") {
       return document.getElementById(note.noteid).click();
@@ -321,7 +315,6 @@ function NoteEditor(props) {
   };
 
   //  Handle Save Noye Button Click
-
   const handleSave = (e) => {
     note.notetitle = title;
     note.notebody = bodytxt;
@@ -480,8 +473,8 @@ function NoteEditor(props) {
               value={bodytxt}
               id="notebody"
               data-action={note.action}
-              ref={textareaRef}
-              onBlur={(e) => handleBlurEvent(e)}
+              selectionEnd={cusor.end}
+              selectionStart={cusor.start}
               style={
                 toggleState.theme === "vs-light"
                   ? { ...styles.textarea, ...styles.light }
