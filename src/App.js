@@ -319,11 +319,12 @@ class App extends Component {
   }
 
   handleSaveNote(e, note) {
-    var notebody = html2md.turndown(marked(marked(this.state.notebody)));
+    const notebody = html2md.turndown(marked(marked(note.notebody)));
+    const notetitle = document.getElementById("notetitle").value;
     this.setState((prevState) => {
       const updatedNotes = prevState.allnotes.map((noteitem) => {
         if (noteitem.noteid === note.noteid) {
-          noteitem.title = document.getElementById("notetitle").value;
+          noteitem.title = notetitle;
           noteitem.body = notebody;
           noteitem.activepage = "viewnote";
         }
@@ -331,7 +332,7 @@ class App extends Component {
       });
       return {
         noteid: note.noteid,
-        notetitle: document.getElementById("notetitle").value,
+        notetitle: notetitle,
         notebody: notebody,
         activepage: "viewnote",
         action: note.action,
@@ -342,7 +343,7 @@ class App extends Component {
     if (note.action == "addnote") {
       this.state.allnotes.push({
         noteid: note.noteid,
-        notetitle: document.getElementById("notetitle").value,
+        notetitle: notetitle,
         notebody: notebody,
         activepage: "viewnote",
         created_at: Date.now(),
@@ -352,7 +353,7 @@ class App extends Component {
       // Update IndexedDB
       this.handleIndexedDB("addnote", {
         noteid: note.noteid,
-        title: document.getElementById("notetitle").value,
+        title: notetitle,
         body: notebody,
         created_at: Date.now(),
         updated_at: Date.now(),
@@ -361,7 +362,7 @@ class App extends Component {
       // if note.action == "editnote"
       this.handleIndexedDB("update", {
         noteid: note.noteid,
-        title: document.getElementById("notetitle").value,
+        title: notetitle,
         body: notebody,
         updated_at: Date.now(),
       });
