@@ -142,7 +142,7 @@ function NoteEditor(props) {
     textareaRef.current.setSelectionRange(cusor.start, cusor.end);
   };
   const handleBodyChange = (e) => {
-    props.handleNoteEditor(e);
+    // props.handleNoteEditor(e);
     setBodyTxt(e.target.value);
     setCursor({
       start: e.target.selectionStart,
@@ -150,7 +150,7 @@ function NoteEditor(props) {
     });
   };
   const handleTitleChange = (e) => {
-    props.handleNoteEditor(e);
+    // props.handleNoteEditor(e);
     setTitle(e.target.value);
   };
 
@@ -320,6 +320,14 @@ function NoteEditor(props) {
     return props.handleClickHomeBtn();
   };
 
+  //  Handle Save Noye Button Click
+
+  const handleSave = (e) => {
+    note.notetitle = title;
+    note.notebody = bodytxt;
+    props.handleSaveNote(e, note);
+  };
+
   return (
     <div className="right-row">
       <div></div>
@@ -330,7 +338,7 @@ function NoteEditor(props) {
             type="text"
             id="notetitle"
             data-action={note.action}
-            value={note.notetitle}
+            value={title}
             placeholder="Title"
             autoComplete="off"
             ref={titleRef}
@@ -470,7 +478,7 @@ function NoteEditor(props) {
               onKeyDown={(e) => handleKeyEvent(e)}
               data-action={note.action}
               value={bodytxt}
-              id="notetitle"
+              id="notebody"
               data-action={note.action}
               ref={textareaRef}
               onBlur={(e) => handleBlurEvent(e)}
@@ -486,7 +494,7 @@ function NoteEditor(props) {
             <div className="saveCancelBar">
               <i
                 className="far fa-save btn-save-cancel fa-2x"
-                onClick={(e) => props.handleSaveNote(e, note)}
+                onClick={(e) => handleSave(e)}
                 data-action={note.action}
               ></i>
               <i
