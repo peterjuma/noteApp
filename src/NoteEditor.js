@@ -379,97 +379,100 @@ function NoteEditor(props) {
               : { ...styles.mdtools_dark }
           }
         >
-          <i
-            className="fas fa-bold md_btn"
-            onClick={(e) => processInput("bold")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Bold</span>
-          </i>
-          <i
-            className="fas fa-italic md_btn"
-            onClick={(e) => processInput("italic")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Italic</span>
-          </i>
-          <i
-            className="fas fa-heading md_btn"
-            onClick={(e) => processInput("heading")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Header</span>
-          </i>
-          <i
-            className="fas fa-link md_btn"
-            onClick={(e) => processInput("link")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Link</span>
-          </i>
-          <i
-            className="fas fa-list-ol md_btn"
-            onClick={(e) => processInput("olist")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Ordered List</span>
-          </i>
-          <i
-            className="fas fa-list md_btn"
-            onClick={(e) => processInput("ulist")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Unordered List</span>
-          </i>
-          <i
-            className="fas fa-quote-left md_btn"
-            onClick={(e) => processInput("blockquote")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Quote</span>
-          </i>
-          <i
-            className="far fa-image md_btn"
-            onClick={(e) => processInput("image")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Image Link</span>
-          </i>
-          <i
-            className="fas fa-terminal md_btn"
-            onClick={(e) => processInput("backticks")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Backticks</span>
-          </i>
-          <i
-            className="fas fa-code md_btn"
-            onClick={(e) => processInput("codeblock")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Fenced Code</span>
-          </i>
-          <i
-            className="far fa-check-square md_btn"
-            onClick={(e) => processInput("tasklist")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Tasklist</span>
-          </i>
-          <i
-            className="fas fa-table md_btn"
-            onClick={(e) => processInput("table")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Table</span>
-          </i>
-          <i
-            className="fas fa-strikethrough md_btn"
-            onClick={(e) => processInput("strike")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Strikethrough</span>
-          </i>
+          <span tooltip="Bold">
+            <i
+              className="fas fa-bold md_btn"
+              onClick={(e) => processInput("bold")}
+              style={toggleState.buttonstyle}
+            ></i>
+          </span>
+          <span tooltip="Italic">
+            <i
+              className="fas fa-italic md_btn"
+              onClick={(e) => processInput("italic")}
+              style={toggleState.buttonstyle}
+            ></i>
+          </span>
+          <span tooltip="Heading">
+            <i
+              className="fas fa-heading md_btn"
+              onClick={(e) => processInput("heading")}
+              style={toggleState.buttonstyle}
+            ></i>
+          </span>
+          <span tooltip="Link">
+            <i
+              className="fas fa-link md_btn"
+              onClick={(e) => processInput("link")}
+              style={toggleState.buttonstyle}
+            ></i>
+          </span>
+          <span tooltip="OList">
+            <i
+              className="fas fa-list-ol md_btn"
+              onClick={(e) => processInput("olist")}
+              style={toggleState.buttonstyle}
+            ></i>
+          </span>
+          <span tooltip="UList">
+            <i
+              className="fas fa-list md_btn"
+              onClick={(e) => processInput("ulist")}
+              style={toggleState.buttonstyle}
+            ></i>
+          </span>
+          <span tooltip="Blockquote">
+            <i
+              className="fas fa-quote-left md_btn"
+              onClick={(e) => processInput("blockquote")}
+              style={toggleState.buttonstyle}
+            ></i>
+          </span>
+          <span tooltip="Image">
+            <i
+              className="far fa-image md_btn"
+              onClick={(e) => processInput("image")}
+              style={toggleState.buttonstyle}
+            ></i>
+          </span>
+          <span tooltip="Backticks">
+            <i
+              className="fas fa-terminal md_btn"
+              onClick={(e) => processInput("backticks")}
+              style={toggleState.buttonstyle}
+            ></i>
+          </span>
+
+          <span tooltip="Fenced Code">
+            <i
+              className="fas fa-code md_btn"
+              onClick={(e) => processInput("codeblock")}
+              style={toggleState.buttonstyle}
+            ></i>
+          </span>
+
+          <span tooltip="Tasklist">
+            <i
+              className="far fa-check-square md_btn"
+              onClick={(e) => processInput("tasklist")}
+              style={toggleState.buttonstyle}
+            ></i>
+          </span>
+
+          <span tooltip="Table">
+            <i
+              className="fas fa-table md_btn"
+              onClick={(e) => processInput("table")}
+              style={toggleState.buttonstyle}
+            ></i>
+          </span>
+          <span tooltip="Strikethrough">
+            <i
+              className="fas fa-strikethrough md_btn"
+              onClick={(e) => processInput("strike")}
+              style={toggleState.buttonstyle}
+            ></i>
+          </span>
 
           <span className="input-div">
             <i
@@ -496,22 +499,22 @@ function NoteEditor(props) {
           </span>
 
           <div style={styles.buttons}>
-            <i
-              className={screenSize.buttonClass}
-              onClick={() => {
-                toggleScreen();
-              }}
-              style={toggleState.buttonstyle}
-            >
-              <span className="tooltiptext">{screenSize.description}</span>
-            </i>
-            <i
-              className={toggleState.themeclass}
-              onClick={(e) => toggleTheme()}
-              style={toggleState.buttonstyle}
-            >
-              <span className="tooltiptext">{toggleState.description}</span>
-            </i>
+            <span tooltip={screenSize.description}>
+              <i
+                className={screenSize.buttonClass}
+                onClick={() => {
+                  toggleScreen();
+                }}
+                style={toggleState.buttonstyle}
+              ></i>
+            </span>
+            <span tooltip={toggleState.description}>
+              <i
+                className={toggleState.themeclass}
+                onClick={(e) => toggleTheme()}
+                style={toggleState.buttonstyle}
+              ></i>
+            </span>
           </div>
         </div>
         <div className="md-txtarea">
@@ -538,15 +541,19 @@ function NoteEditor(props) {
 
           <div className="right-bottom-bar">
             <div className="saveCancelBar">
-              <i
-                className="far fa-save btn-save-cancel fa-2x"
-                onClick={(e) => handleSave(e)}
-                data-action={note.action}
-              ></i>
-              <i
-                className="far fa-window-close btn-save-cancel fa-2x"
-                onClick={(e) => handleCancel()}
-              ></i>
+              <span tooltip="Save" flow="right">
+                <i
+                  className="far fa-save btn-save-cancel fa-2x"
+                  onClick={(e) => handleSave(e)}
+                  data-action={note.action}
+                ></i>
+              </span>
+              <span tooltip="Cancel" flow="left">
+                <i
+                  className="far fa-window-close btn-save-cancel fa-2x"
+                  onClick={(e) => handleCancel()}
+                ></i>
+              </span>
             </div>
           </div>
         </div>

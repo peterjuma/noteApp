@@ -369,6 +369,16 @@ class App extends Component {
   }
 
   handleCopyEvent(e, copiedContent = "") {
+    if (copiedContent) {
+      return navigator.clipboard
+        .writeText(copiedContent)
+        .then(() => {
+          // Success!
+        })
+        .catch((err) => {
+          console.log("Something went wrong", err);
+        });
+    }
     if (typeof window.getSelection != "undefined") {
       var sel = window.getSelection();
       if (sel.rangeCount) {
@@ -383,10 +393,14 @@ class App extends Component {
         copiedContent = document.selection.createRange().htmlText;
       }
     }
-
-    e.clipboardData.setData("text/html", copied);
-    e.clipboardData.setData("text/plain", html2md.turndown(copied));
-    e.preventDefault();
+    navigator.clipboard
+      .writeText(html2md.turndown(copiedContent))
+      .then(() => {
+        // Success!
+      })
+      .catch((err) => {
+        console.log("Something went wrong", err);
+      });
   }
 
   handleSearchNotes(e) {
