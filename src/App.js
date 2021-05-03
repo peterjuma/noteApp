@@ -449,7 +449,7 @@ class App extends Component {
       <NoteList
         key={note.noteid}
         note={note}
-        handleClick={this.handleNoteListItemClick}
+        handleNoteListItemClick={this.handleNoteListItemClick}
         handleMouseOver={this.handleNoteListItemMouseOver}
         handleMouseOut={this.handleNoteListItemMouseOut}
       />

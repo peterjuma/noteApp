@@ -9,7 +9,7 @@ function NoteList(props) {
     <li
       className={ListItemClasses}
       id={note.noteid}
-      onClick={(e) => props.handleClick(e, note)}
+      onClick={(e) => props.handleNoteListItemClick(e, note)}
       onMouseOver={(e) => props.handleMouseOver(e, note)}
       onMouseOut={(e) => props.handleMouseOut(e)}
     >
