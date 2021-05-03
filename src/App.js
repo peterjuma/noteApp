@@ -417,7 +417,11 @@ class App extends Component {
         noteList[i].style.display = "none";
       }
     }
-    DisplayList.length > 0 && DisplayList[0].click();
+    if (this.state.activepage === "editnote") {
+      return;
+    } else {
+      DisplayList.length > 0 && DisplayList[0].click();
+    }
   }
 
   handleDownloadNote(note) {
