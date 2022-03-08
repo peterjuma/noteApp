@@ -18,10 +18,12 @@ function NoteSort(props) {
         </select>
       </label>
       <div className="backupbtn">
-        <i
-          className="fas fa-download btn"
-          onClick={props.handleNotesBackup}
-        ></i>
+        <span tooltip="Download Backup" flow="left">
+          <i
+            className="fas fa-download btn"
+            onClick={props.handleNotesBackup}
+          ></i>
+        </span>
       </div>
     </div>
   );
