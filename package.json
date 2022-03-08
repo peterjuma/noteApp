@@ -27,11 +27,11 @@
     "react-input-number": "^5.0.19",
     "react-markdown": "^6.0.1",
     "react-scripts": "4.0.0",
+    "turndown-plugin-gfm": "^1.0.2",
     "react-syntax-highlighter": "^15.4.3",
     "remark-gfm": "^1.0.0",
     "rsuite": "^4.9.4",
-    "turndown": "^7.0.0",
-    "turndown-plugin-gfm": "^1.0.2"
+    "turndown": "^7.0.0"
   },
   "scripts": {
     "deploy": "gh-pages -b gh-pages -d build",
