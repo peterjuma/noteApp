@@ -26,7 +26,7 @@
     "react-dom": "17.0.1",
     "react-input-number": "^5.0.19",
     "react-markdown": "^6.0.1",
-    "react-scripts": "4.0.0",
+    "react-scripts": "5.0.1",
     "turndown-plugin-gfm": "^1.0.2",
     "react-syntax-highlighter": "^15.4.3",
     "remark-gfm": "^1.0.0",
