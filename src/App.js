@@ -10,7 +10,7 @@ import FooterBar from "./FooterBar";
 import hljs from "highlight.js";
 import { openDB } from "idb/with-async-ittr.js";
 import { html2md, md2html } from "./useMarkDown";
-import marked from "marked";
+import { marked } from 'marked';
 import { saveAs } from "file-saver";
 
 class App extends Component {

@@ -2,7 +2,7 @@ import React, { Fragment, useRef, useState, useEffect } from "react";
 import NotePreview from "./NotePreview";
 import keyCodes from "./KeyCodes";
 import { html2md, md2html } from "./useMarkDown";
-import marked from "marked";
+import { marked } from 'marked';
 import InputNumber from "react-input-number";
 
 function NoteEditor(props) {

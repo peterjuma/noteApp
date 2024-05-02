@@ -1,7 +1,6 @@
 import React from "react";
 import { md2html } from "./useMarkDown";
-
-import marked from "marked";
+import { marked } from 'marked';
 
 function NotePreview({ note }) {
   const styles = {
