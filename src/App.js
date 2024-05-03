@@ -49,18 +49,24 @@ class App extends Component {
   async componentDidMount() {
     const getnotes = await this.handleIndexedDB("getall");
     const pinnedNotes = await this.handleIndexedDB("getallpins");
-    if (getnotes.length === 0) {
-      this.handleClickHomeBtn();
-    } else {
-      this.setState({
-        allnotes: getnotes,
-        pinnedNotes: pinnedNotes || [],
-      });
+  
+    this.setState({
+      allnotes: getnotes,
+      pinnedNotes: pinnedNotes || [],
+    }, () => {
+      // Call the sort function with the default sort value
+      this.handleSortNotes(this.state.sortby);
+    });
+  
+    // Ensure the first note is selected
+    if (getnotes.length > 0) {
       document.getElementById(getnotes[0].noteid).click();
     }
+  
     this.updateCodeSyntaxHighlighting();
     this.handleCopyCodeButtonClick();
   }
+  
   
 
   componentDidUpdate() {
