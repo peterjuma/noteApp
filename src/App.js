@@ -88,6 +88,7 @@ handlePinNote = async (noteid) => {
     return { pinnedNotes };
   }, () => {
     this.handleSortNotes(this.state.sortby);
+    document.getElementById(noteid).click();
   });
 };
 
@@ -99,6 +100,7 @@ handleUnpinNote = async (noteid) => {
     return { pinnedNotes };
   }, () => {
     this.handleSortNotes(this.state.sortby);
+    document.getElementById(noteid)
   });
 };
 
