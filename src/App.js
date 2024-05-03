@@ -45,7 +45,7 @@ class App extends Component {
     this.handleNoteEditor = this.handleNoteEditor.bind(this);
     this.handleNotesBackup = this.handleNotesBackup.bind(this);
   }
-
+  
   async componentDidMount() {
     const getnotes = await this.handleIndexedDB("getall");
     const pinnedNotes = await this.handleIndexedDB("getallpins");
@@ -63,15 +63,22 @@ class App extends Component {
           ? this.state.pinnedNotes[0] // Top pinned note
           : sortedNotes.length > 0 ? sortedNotes[0].noteid : null; // Top unpinned note or none
   
-      // Automatically select the determined note
+      // Automatically select the determined note after ensuring it exists
       if (selectedNoteId) {
-        document.getElementById(selectedNoteId).click();
+        setTimeout(() => {
+          const noteElement = document.getElementById(selectedNoteId);
+          if (noteElement) {
+            noteElement.click();
+          }
+        }, 0); // Delay to ensure rendering is complete
       }
     });
   
     this.updateCodeSyntaxHighlighting();
     this.handleCopyCodeButtonClick();
   }
+  
+  
   
   componentDidUpdate() {
     this.updateCodeSyntaxHighlighting();
