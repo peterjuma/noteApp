@@ -22,10 +22,18 @@ function NoteList(props) {
       onMouseOver={(e) => props.handleMouseOver(e, note)}
       onMouseOut={(e) => props.handleMouseOut(e)}
       // style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} // Align elements
+      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
     >
       <span>{note.title}</span>
-      <span className="pin-icon-container" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
-        <button onClick={handleClick} className="pin-btn" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+      <span className="pin-icon-container" 
+      style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}
+      >
+        <button 
+        onClick={handleClick} 
+        className="pin-btn" 
+        style={{ background: 'none', border: 'none', cursor: 'pointer' }} 
+        title={isPinned ? "Unpin this note" : "Pin this note"} 
+        >
           {isPinned ? (
             <i className="fas fa-ban fnt_btn pinned"></i>
           ) : (

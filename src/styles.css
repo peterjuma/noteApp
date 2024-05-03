@@ -612,6 +612,26 @@ input[type="number"] {
   position: relative;
 }
 
+/* Add this to your CSS file for custom tooltip styling */
+.pin-btn[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  color: #fff;
+  padding: 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  z-index: 1000;
+  top: -30px; /* Adjust based on desired position */
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pin-btn[title] {
+  position: relative;
+}
+
+
 /* Tooltip */
 [tooltip] {
   position: relative; /* opinion 1 */
