@@ -54,21 +54,25 @@ class App extends Component {
       allnotes: getnotes,
       pinnedNotes: pinnedNotes || [],
     }, () => {
-      // Call the sort function with the default sort value
+      // Sort the notes using the current or default sorting value
       this.handleSortNotes(this.state.sortby);
-    });
   
-    // Ensure the first note is selected
-    if (getnotes.length > 0) {
-      document.getElementById(getnotes[0].noteid).click();
-    }
+      // Determine which note to select
+      const sortedNotes = this.state.allnotes;
+      const selectedNoteId = this.state.pinnedNotes.length > 0 
+          ? this.state.pinnedNotes[0] // Top pinned note
+          : sortedNotes.length > 0 ? sortedNotes[0].noteid : null; // Top unpinned note or none
+  
+      // Automatically select the determined note
+      if (selectedNoteId) {
+        document.getElementById(selectedNoteId).click();
+      }
+    });
   
     this.updateCodeSyntaxHighlighting();
     this.handleCopyCodeButtonClick();
   }
   
-  
-
   componentDidUpdate() {
     this.updateCodeSyntaxHighlighting();
     this.handleCopyCodeButtonClick();
@@ -192,7 +196,6 @@ handleUnpinNote = async (noteid) => {
       },
     });
     
-  
     // Notes operations (existing code)
     if (cmd === "addnote") await db.add("notes", note);
     if (cmd === "getall") return await db.getAll("notes");
