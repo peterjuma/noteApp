@@ -22,7 +22,7 @@ class App extends Component {
       notebody: "",
       activepage: "viewnote", // editnote // previewnote // viewnote
       action: "", // addnote // updatenote
-      sortby: "4", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
+      sortby: "2", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
       allnotes: [],
       pinnedNotes: [], // Store pinned notes by noteid
     };
@@ -48,17 +48,20 @@ class App extends Component {
 
   async componentDidMount() {
     const getnotes = await this.handleIndexedDB("getall");
-    if (getnotes.length == 0) {
+    const pinnedNotes = await this.handleIndexedDB("getallpins");
+    if (getnotes.length === 0) {
       this.handleClickHomeBtn();
     } else {
       this.setState({
         allnotes: getnotes,
+        pinnedNotes: pinnedNotes || [],
       });
       document.getElementById(getnotes[0].noteid).click();
     }
     this.updateCodeSyntaxHighlighting();
     this.handleCopyCodeButtonClick();
   }
+  
 
   componentDidUpdate() {
     this.updateCodeSyntaxHighlighting();
@@ -71,8 +74,9 @@ class App extends Component {
     });
   };
 
- // Pin a note and sort
-handlePinNote = (noteid) => {
+// Pin a note and persist
+handlePinNote = async (noteid) => {
+  await this.handleIndexedDB("addpin", { noteid });
   this.setState((prevState) => {
     const pinnedNotes = [...prevState.pinnedNotes, noteid];
     return { pinnedNotes };
@@ -81,8 +85,9 @@ handlePinNote = (noteid) => {
   });
 };
 
-// Unpin a note and sort
-handleUnpinNote = (noteid) => {
+// Unpin a note and persist
+handleUnpinNote = async (noteid) => {
+  await this.handleIndexedDB("removepin", { noteid });
   this.setState((prevState) => {
     const pinnedNotes = prevState.pinnedNotes.filter(id => id !== noteid);
     return { pinnedNotes };
@@ -90,6 +95,7 @@ handleUnpinNote = (noteid) => {
     this.handleSortNotes(this.state.sortby);
   });
 };
+
 
 
 
@@ -154,51 +160,49 @@ handleUnpinNote = (noteid) => {
     });
   };
 
+  
+
   // Indexed DB class
   async handleIndexedDB(cmd = "", note = "") {
-    const db = await openDB("notesdb", 1, {
+    const dbVersion = 2; // Increment the version from your existing version
+    const db = await openDB("notesdb", dbVersion, {
       upgrade(db) {
-        // Create a store of objects
-        const store = db.createObjectStore("notes", {
-          // The 'noteid' property of the object will be the key.
-          keyPath: "noteid",
-          // If it isn't explicitly set, create a value by auto incrementing.
-          autoIncrement: true,
-        });
-        // Create an index on all fields of the objects.
-        store.createIndex("created_at", "created_at");
-        store.createIndex("noteid", "noteid");
+        // Create the 'notes' store if it doesn't exist
+        if (!db.objectStoreNames.contains('notes')) {
+          const store = db.createObjectStore("notes", {
+            keyPath: "noteid",
+            autoIncrement: true,
+          });
+          store.createIndex("created_at", "created_at");
+          store.createIndex("noteid", "noteid");
+        }
+        
+        // Create the 'pinnedNotes' store if it doesn't exist
+        if (!db.objectStoreNames.contains('pinnedNotes')) {
+          db.createObjectStore("pinnedNotes", { keyPath: "noteid" });
+        }
       },
     });
-    // 1. Create single note
-    if (cmd === "addnote") {
-      await db.add("notes", note);
+    
+  
+    // Notes operations (existing code)
+    if (cmd === "addnote") await db.add("notes", note);
+    if (cmd === "getall") return await db.getAll("notes");
+    if (cmd === "getone") return await db.get("notes", note.noteid);
+    if (cmd === "update") await db.put("notes", note);
+    if (cmd === "delete") await db.delete("notes", note.noteid);
+  
+    // Pinned notes operations
+    if (cmd === "addpin") await db.put("pinnedNotes", { noteid: note.noteid });
+    if (cmd === "removepin") await db.delete("pinnedNotes", note.noteid);
+    if (cmd === "getallpins") {
+      const pins = await db.getAll("pinnedNotes");
+      return pins.map(pin => pin.noteid);
     }
-    // 2.1 Read all notes
-    if (cmd === "getall") {
-      let notes = await db.getAll("notes");
-      return notes;
-    }
-    // 2.2 Read single note
-    if (cmd === "getone") {
-      const db = await openDB("notesdb", 1);
-      const tx = db.transaction("notes");
-      const idx = tx.store.index("noteid");
-      let onenote = await idx.get(note);
-      return onenote;
-    }
-    // 3. Update single note
-    if (cmd === "update") {
-      const db = await openDB("notesdb", 1);
-      db.put("notes", note);
-    }
-    // 4. Delete single note
-    if (cmd === "delete") {
-      const db = await openDB("notesdb", 1);
-      db.delete("notes", note.noteid);
-    }
+  
     db.close();
   }
+  
 
   // Handle Click List Item
   handleNoteListItemClick = (e, note) => {
