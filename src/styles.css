@@ -584,8 +584,35 @@ input[type="number"] {
   justify-content: center;
 }
 
-/* Tooltip */
+/* Add this to your CSS file */
+.fnt_btn {
+  font-size: 1rem; /* Adjust size as needed */
+  margin-right: 4px; /* Space between icon and text */
+  transition: color 0.3s ease; /* Smooth color transition */
+}
 
+.pin-btn:hover .fnt_btn {
+  color: blue; /* Change to any hover color */
+}
+
+.fnt_btn.pinned {
+  color: red; /* Color when pinned */
+}
+
+.fnt_btn.unpinned {
+  color: gray; /* Color when unpinned */
+}
+
+.note-list-item {
+  padding: 0.5rem; /* Adjust padding as needed */
+  border-bottom: 1px solid #ddd; /* Optional: visually separate items */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+/* Tooltip */
 [tooltip] {
   position: relative; /* opinion 1 */
 }
@@ -736,3 +763,5 @@ input[type="number"] {
 [tooltip][flow^="right"]:hover::after {
   animation: tooltips-horz 300ms ease-out forwards;
 }
+
+

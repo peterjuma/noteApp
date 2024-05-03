@@ -24,6 +24,7 @@ class App extends Component {
       action: "", // addnote // updatenote
       sortby: "4", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
       allnotes: [],
+      pinnedNotes: [], // Store pinned notes by noteid
     };
     this.handleNoteListItemClick = this.handleNoteListItemClick.bind(this);
     this.handleClickHomeBtn = this.handleClickHomeBtn.bind(this);
@@ -69,6 +70,52 @@ class App extends Component {
       hljs.highlightElement(block);
     });
   };
+
+// Pin a note
+handlePinNote = (noteid) => {
+  this.setState((prevState) => {
+    const pinnedNotes = [...prevState.pinnedNotes, noteid];
+    // Keep pinned notes sorted at the top
+    const sortedNotes = prevState.allnotes.map(note => ({
+      ...note,
+      pinned: pinnedNotes.includes(note.noteid)
+    })).sort((a, b) => {
+      // Pinned notes first
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      // Sort by title as a secondary condition
+      return a.title.localeCompare(b.title);
+    });
+
+    return {
+      pinnedNotes,
+      allnotes: sortedNotes
+    };
+  });
+};
+
+// Unpin a note
+handleUnpinNote = (noteid) => {
+  this.setState((prevState) => {
+    const pinnedNotes = prevState.pinnedNotes.filter(id => id !== noteid);
+    // Keep pinned notes sorted at the top
+    const sortedNotes = prevState.allnotes.map(note => ({
+      ...note,
+      pinned: pinnedNotes.includes(note.noteid)
+    })).sort((a, b) => {
+      // Pinned notes first
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      // Sort by title as a secondary condition
+      return a.title.localeCompare(b.title);
+    });
+
+    return {
+      pinnedNotes,
+      allnotes: sortedNotes
+    };
+  });
+};
 
   handleCopyCodeButtonClick = () => {
     if (navigator && navigator.clipboard) {
@@ -269,6 +316,18 @@ class App extends Component {
       sortby: sortvalue,
       allnotes: notesArray,
     });
+
+    // Ensure pinned notes are always at the top
+    notesArray = notesArray.sort((a, b) => {
+      const aPinned = this.state.pinnedNotes.includes(a.noteid);
+      const bPinned = this.state.pinnedNotes.includes(b.noteid);
+  
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      // Sort normally if both or neither are pinned
+      return 0;
+    });
+
     document.getElementById(notesArray[0].noteid).click();
   };
 
@@ -449,6 +508,9 @@ class App extends Component {
       <NoteList
         key={note.noteid}
         note={note}
+        isPinned={this.state.pinnedNotes.includes(note.noteid)}
+        handlePinNote={this.handlePinNote}
+        handleUnpinNote={this.handleUnpinNote}
         handleNoteListItemClick={this.handleNoteListItemClick}
         handleMouseOver={this.handleNoteListItemMouseOver}
         handleMouseOut={this.handleNoteListItemMouseOut}
