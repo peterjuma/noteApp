@@ -71,51 +71,26 @@ class App extends Component {
     });
   };
 
-// Pin a note
-handlePinNote = (noteid) => {
-  this.setState((prevState) => {
-    const pinnedNotes = [...prevState.pinnedNotes, noteid];
-    // Keep pinned notes sorted at the top
-    const sortedNotes = prevState.allnotes.map(note => ({
-      ...note,
-      pinned: pinnedNotes.includes(note.noteid)
-    })).sort((a, b) => {
-      // Pinned notes first
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
-      // Sort by title as a secondary condition
-      return a.title.localeCompare(b.title);
+  // Pin a note and sort
+  handlePinNote = (noteid) => {
+    this.setState((prevState) => {
+      const pinnedNotes = [...prevState.pinnedNotes, noteid];
+      return { pinnedNotes };
+    }, () => {
+      this.handleSortNotes(this.state.sortby);
     });
+  };
 
-    return {
-      pinnedNotes,
-      allnotes: sortedNotes
-    };
-  });
-};
-
-// Unpin a note
-handleUnpinNote = (noteid) => {
-  this.setState((prevState) => {
-    const pinnedNotes = prevState.pinnedNotes.filter(id => id !== noteid);
-    // Keep pinned notes sorted at the top
-    const sortedNotes = prevState.allnotes.map(note => ({
-      ...note,
-      pinned: pinnedNotes.includes(note.noteid)
-    })).sort((a, b) => {
-      // Pinned notes first
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
-      // Sort by title as a secondary condition
-      return a.title.localeCompare(b.title);
+  // Unpin a note and sort
+  handleUnpinNote = (noteid) => {
+    this.setState((prevState) => {
+      const pinnedNotes = prevState.pinnedNotes.filter(id => id !== noteid);
+      return { pinnedNotes };
+    }, () => {
+      this.handleSortNotes(this.state.sortby);
     });
+  };
 
-    return {
-      pinnedNotes,
-      allnotes: sortedNotes
-    };
-  });
-};
 
   handleCopyCodeButtonClick = () => {
     if (navigator && navigator.clipboard) {
@@ -335,8 +310,7 @@ handleUnpinNote = (noteid) => {
     if (sortedNotes.length > 0) {
       document.getElementById(sortedNotes[0].noteid).click();
     }
-  };
-  
+  };  
 
   handleEditNoteBtn = (e, note) => {
     this.setState({
