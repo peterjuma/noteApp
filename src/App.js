@@ -280,56 +280,63 @@ handleUnpinNote = (noteid) => {
   };
 
   handleSortNotes = (sortby) => {
-    // "0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
-    var notesArray = [...this.state.allnotes];
-    var sortvalue = event ? event.target.value : sortby;
-    switch (sortvalue) {
-      case "0":
-        notesArray.sort(function (a, b) {
-          let x = a.title.toUpperCase(),
-            y = b.title.toUpperCase();
-          return x == y ? 0 : x > y ? 1 : -1;
-        });
+    const notesArray = [...this.state.allnotes];
+    const sortValue = sortby || (event ? event.target.value : '');
+  
+    // Separate pinned and unpinned notes
+    const pinnedNotes = notesArray.filter(note => this.state.pinnedNotes.includes(note.noteid));
+    const unpinnedNotes = notesArray.filter(note => !this.state.pinnedNotes.includes(note.noteid));
+  
+    const sortByTitle = (a, b, order = 'asc') => {
+      const x = a.title.toUpperCase();
+      const y = b.title.toUpperCase();
+      return order === 'asc' ? (x > y ? 1 : x < y ? -1 : 0) : (x > y ? -1 : x < y ? 1 : 0);
+    };
+  
+    switch (sortValue) {
+      case "0": // Title: A-Z
+        pinnedNotes.sort((a, b) => sortByTitle(a, b, 'asc'));
+        unpinnedNotes.sort((a, b) => sortByTitle(a, b, 'asc'));
         break;
-      case "1":
-        notesArray.sort(function (a, b) {
-          let x = a.title.toUpperCase(),
-            y = b.title.toUpperCase();
-          return x == y ? 0 : x > y ? -1 : 1;
-        });
+      case "1": // Title: Z-A
+        pinnedNotes.sort((a, b) => sortByTitle(a, b, 'desc'));
+        unpinnedNotes.sort((a, b) => sortByTitle(a, b, 'desc'));
         break;
-      case "2":
-        notesArray.sort((a, b) => b.created_at - a.created_at);
+      case "2": // Created: Newest
+        pinnedNotes.sort((a, b) => b.created_at - a.created_at);
+        unpinnedNotes.sort((a, b) => b.created_at - a.created_at);
         break;
-      case "3":
-        notesArray.sort((a, b) => a.created_at - b.created_at);
+      case "3": // Created: Oldest
+        pinnedNotes.sort((a, b) => a.created_at - b.created_at);
+        unpinnedNotes.sort((a, b) => a.created_at - b.created_at);
         break;
-      case "4":
-        notesArray.sort((a, b) => b.updated_at - a.updated_at);
+      case "4": // Modified: Newest
+        pinnedNotes.sort((a, b) => b.updated_at - a.updated_at);
+        unpinnedNotes.sort((a, b) => b.updated_at - a.updated_at);
         break;
-      case "5":
-        notesArray.sort((a, b) => a.updated_at - b.updated_at);
+      case "5": // Modified: Oldest
+        pinnedNotes.sort((a, b) => a.updated_at - b.updated_at);
+        unpinnedNotes.sort((a, b) => a.updated_at - b.updated_at);
         break;
       default:
+        // If no valid sort option is provided, do nothing
+        return;
     }
-    this.setState({
-      sortby: sortvalue,
-      allnotes: notesArray,
-    });
-
-    // Ensure pinned notes are always at the top
-    notesArray = notesArray.sort((a, b) => {
-      const aPinned = this.state.pinnedNotes.includes(a.noteid);
-      const bPinned = this.state.pinnedNotes.includes(b.noteid);
   
-      if (aPinned && !bPinned) return -1;
-      if (!aPinned && bPinned) return 1;
-      // Sort normally if both or neither are pinned
-      return 0;
+    // Merge the sorted lists with pinned notes on top
+    const sortedNotes = [...pinnedNotes, ...unpinnedNotes];
+  
+    this.setState({
+      sortby: sortValue,
+      allnotes: sortedNotes,
     });
-
-    document.getElementById(notesArray[0].noteid).click();
+  
+    // If there are any notes, select the first one
+    if (sortedNotes.length > 0) {
+      document.getElementById(sortedNotes[0].noteid).click();
+    }
   };
+  
 
   handleEditNoteBtn = (e, note) => {
     this.setState({
