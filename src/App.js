@@ -71,53 +71,26 @@ class App extends Component {
     });
   };
 
-  // Pin a note and sort
+ // Pin a note and sort
 handlePinNote = (noteid) => {
   this.setState((prevState) => {
     const pinnedNotes = [...prevState.pinnedNotes, noteid];
-    // Keep pinned notes sorted at the top
-    const sortedNotes = prevState.allnotes.map(note => ({
-      ...note,
-      pinned: pinnedNotes.includes(note.noteid)
-    })).sort((a, b) => {
-      // Pinned notes first
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
-      // Sort by title as a secondary condition
-      return a.title.localeCompare(b.title);
-    });
-
-    return {
-      pinnedNotes,
-      allnotes: sortedNotes
-    };
+    return { pinnedNotes };
+  }, () => {
+    this.handleSortNotes(this.state.sortby);
   });
 };
 
-
-  // Unpin a note and sort
-// Unpin a note
+// Unpin a note and sort
 handleUnpinNote = (noteid) => {
   this.setState((prevState) => {
     const pinnedNotes = prevState.pinnedNotes.filter(id => id !== noteid);
-    // Keep pinned notes sorted at the top
-    const sortedNotes = prevState.allnotes.map(note => ({
-      ...note,
-      pinned: pinnedNotes.includes(note.noteid)
-    })).sort((a, b) => {
-      // Pinned notes first
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
-      // Sort by title as a secondary condition
-      return a.title.localeCompare(b.title);
-    });
-
-    return {
-      pinnedNotes,
-      allnotes: sortedNotes
-    };
+    return { pinnedNotes };
+  }, () => {
+    this.handleSortNotes(this.state.sortby);
   });
 };
+
 
 
   handleCopyCodeButtonClick = () => {
@@ -284,16 +257,24 @@ handleUnpinNote = (noteid) => {
 
   handleSortNotes = (sortby) => {
     const notesArray = [...this.state.allnotes];
-    const sortValue = sortby || '2'; // Default to "Created: Newest"
+    const sortValue = sortby; // Directly use the passed value
   
     // Separate pinned and unpinned notes
     const pinnedNotes = notesArray.filter(note => this.state.pinnedNotes.includes(note.noteid));
     const unpinnedNotes = notesArray.filter(note => !this.state.pinnedNotes.includes(note.noteid));
   
     const sortByTitle = (a, b, order = 'asc') => {
-      const x = a.title.toUpperCase();
-      const y = b.title.toUpperCase();
-      return order === 'asc' ? (x > y ? 1 : x < y ? -1 : 0) : (x > y ? -1 : x < y ? 1 : 0);
+      // Check for empty titles and sort them last
+      const aTitle = a.title ? a.title.toUpperCase() : '';
+      const bTitle = b.title ? b.title.toUpperCase() : '';
+      
+      // If a title is empty, it goes last
+      if (!aTitle && bTitle) return 1; // `a` is empty, `b` isn't
+      if (aTitle && !bTitle) return -1; // `b` is empty, `a` isn't
+      if (!aTitle && !bTitle) return 0; // Both are empty
+      
+      // Normal alphabetical sorting
+      return order === 'asc' ? (aTitle > bTitle ? 1 : aTitle < bTitle ? -1 : 0) : (aTitle > bTitle ? -1 : aTitle < bTitle ? 1 : 0);
     };
   
     switch (sortValue) {
@@ -322,7 +303,6 @@ handleUnpinNote = (noteid) => {
         unpinnedNotes.sort((a, b) => a.updated_at - b.updated_at);
         break;
       default:
-        // If no valid sort option is provided, do nothing
         return;
     }
   
@@ -338,7 +318,7 @@ handleUnpinNote = (noteid) => {
     if (sortedNotes.length > 0) {
       document.getElementById(sortedNotes[0].noteid).click();
     }
-  };  
+  };
 
   handleEditNoteBtn = (e, note) => {
     this.setState({
