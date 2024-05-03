@@ -5,10 +5,10 @@ function NoteSort(props) {
         Sort by:
         <select
           id="sort-selection"
-          defaultValue="<option> Choose here</option>"
-          onChange={(e) => props.handleSortNotes()}
+          defaultValue="2" // Default to "Created: Newest"
+          onChange={(e) => props.handleSortNotes(e.target.value)} // Pass the selected value
         >
-          <option> Choose here</option>
+          <option value="choose">Choose here</option>
           <option value="3">Created: Oldest</option>
           <option value="2">Created: Newest</option>
           <option value="0">Title: A-Z</option>
@@ -28,5 +28,6 @@ function NoteSort(props) {
     </div>
   );
 }
+
 
 export default NoteSort;

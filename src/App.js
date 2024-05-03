@@ -284,7 +284,7 @@ handleUnpinNote = (noteid) => {
 
   handleSortNotes = (sortby) => {
     const notesArray = [...this.state.allnotes];
-    const sortValue = sortby || (event ? event.target.value : '');
+    const sortValue = sortby || '2'; // Default to "Created: Newest"
   
     // Separate pinned and unpinned notes
     const pinnedNotes = notesArray.filter(note => this.state.pinnedNotes.includes(note.noteid));
