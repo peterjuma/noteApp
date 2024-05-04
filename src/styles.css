@@ -27,15 +27,17 @@ body {
 
 /* Left Sidebar */
 .left {
-  height: 100%;
   width: 25%; /* Adjust the width to a more suitable percentage */
   background-color: #fff;
   border-right: 1px solid #dcdcde;
+  border-left: 1px solid #dcdcde;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   transition: transform 200ms ease-in-out;
   padding: 10px; /* Add some padding for spacing */
+  position: relative; /* Ensure child elements can be positioned relative to it */
+  height: 100%; /* Ensure enough height for content */
 }
 
 /* Main area */
@@ -46,6 +48,7 @@ body {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  border-right: 1px solid #dcdcde;
 }
 
 .right-row {
@@ -69,7 +72,7 @@ body {
   padding: 8px;
   margin: 0 auto;
   max-width: 1440px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #dcdcde;
   height: 50px;
   background-color: #fff;
   width: 100%;
@@ -137,18 +140,19 @@ ol {
   margin-bottom: 0;
 }
 
-/* Styles for NoteSort element */
 .note-sort-bar {
-  position: relative;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  padding: 10px 15px;
-  background-color: #fff;
-  border-top: 1px solid #dcdcde;
-  display: flex;
-  justify-content: space-between;
+  position: absolute; /* Stay fixed within the parent container */
+  bottom: 0; /* Stick to the bottom of the parent */
+  left: 0; /* Align to the left edge */
+  width: 100%; /* Take the full width of the parent */
+  padding: 10px 15px; /* Adjust padding for spacing */
+  background-color: #fff; /* White background */
+  border-top: 1px solid #dcdcde; /* Border at the top */
+  display: flex; /* Flexbox layout */
+  justify-content: space-between; /* Space between child elements */
 }
+
+
 
 .backupbtn {
   float: right;
@@ -223,7 +227,7 @@ input[type="search"]::-webkit-search-cancel-button {
   height: 290px; /* Set the desired maximum height */
   overflow-y: auto; /* Enable vertical scrolling */
   margin: 10px 0; /* Add margin for spacing */
-  padding-left: 15px;
+  padding-left: 0;
   list-style: none; /* Remove default list styles */
   margin-bottom: 20px; /* Add space between lists */
 }
@@ -232,7 +236,7 @@ input[type="search"]::-webkit-search-cancel-button {
 .note-list-other {
   overflow-y: auto; /* Enable vertical scrolling */
   margin: 10px 0; /* Add margin for spacing */
-  padding-left: 15px;
+  padding-left: 0;
   list-style: none; /* Remove default list styles */
 }
 
@@ -423,7 +427,7 @@ h3 {
 .page-header {
   padding-bottom: 9px;
   margin: 5px 0 20px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #dcdcde;
 }
 
 #notetitle {
@@ -455,7 +459,7 @@ h3 {
   /* border-left: 1px solid #dcdcde; */
   font-family: -apple-system, "Segoe UI", "Roboto", "Oxygen-Sans", "Ubuntu",
     "Cantarell", "Helvetica Neue", sans-serif, sans-serif;
-  height: calc(100% - 50px);
+  height: 100%;
 }
 
 textarea:focus {
