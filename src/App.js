@@ -6,7 +6,6 @@ import NoteList from "./NoteList";
 import NoteMain from "./NoteMain";
 import readmePath from "./README.md";
 import NoteEditor from "./NoteEditor";
-import FooterBar from "./FooterBar";
 import hljs from "highlight.js";
 import { openDB } from "idb/with-async-ittr.js";
 import { html2md, md2html } from "./useMarkDown";
@@ -544,7 +543,6 @@ handleUnpinNote = async (noteid) => {
             }}
             handleCopyEvent={this.handleCopyEvent}
           />
-          <FooterBar />
         </>
       );
     }
