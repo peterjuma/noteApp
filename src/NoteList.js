@@ -25,7 +25,9 @@ function NoteList(props) {
       <span className="note-title">{note.title}</span>
 
       {/* Pin/Unpin button */}
-      <span className="pin-icon-container">
+      <span className="pin-icon-container"
+      style={{ position: 'absolute', right: '2.5px', top: '50%', transform: 'translateY(-50%)' }}
+      >
         <button
           onClick={handleClick}
           className={`pin-btn ${isPinned ? 'unpin' : ''}`}
