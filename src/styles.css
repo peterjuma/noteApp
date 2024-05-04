@@ -31,24 +31,26 @@ body {
   background-color: #fff;
   border-right: 1px solid #dcdcde;
   border-left: 1px solid #dcdcde;
+  border-bottom: 1px solid #dcdcde;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   transition: transform 200ms ease-in-out;
   padding: 10px; /* Add some padding for spacing */
   position: relative; /* Ensure child elements can be positioned relative to it */
-  height: 100%; /* Ensure enough height for content */
+  height: calc(100% - 10px); /* Ensure enough height for content */
 }
 
 /* Main area */
 .right {
   width: 75%; /* Adjust width to fill remaining space */
   font-size: 18px;
-  height: 100vh;
+  height: calc(100% - 10px);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   border-right: 1px solid #dcdcde;
+  border-bottom: 1px solid #dcdcde;
 }
 
 .right-row {
@@ -389,20 +391,21 @@ h3 {
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;
-  padding: 50px 150px;
-  overflow-y: scroll;
+  padding: 25px 100px;
+  overflow-y:auto;
   /* border: 1px solid #eee; */
   border-bottom: none;
   border-top: none;
-  height: calc(100% - 50px);
+  height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .main-editor {
   padding-left: 5px;
   padding-right: 1px;
-  height: 100%;
+  height: calc(100% - 50px);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -459,7 +462,7 @@ h3 {
   /* border-left: 1px solid #dcdcde; */
   font-family: -apple-system, "Segoe UI", "Roboto", "Oxygen-Sans", "Ubuntu",
     "Cantarell", "Helvetica Neue", sans-serif, sans-serif;
-  height: 100%;
+  height: calc(100% - 50px);
 }
 
 textarea:focus {
