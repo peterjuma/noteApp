@@ -242,13 +242,22 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 /* Note List Container*/
-.note-list {
+.note-list-pin {
+  max-height: 250px; /* Set the desired maximum height */
+  overflow-y: auto; /* Enable vertical scrolling */
+  margin: 10px 0; /* Add margin for spacing */
   padding-left: 15px;
-  overflow-x: hidden;
-  overflow-y: scroll;
-  padding-bottom: 0;
-  height: calc(100% - 162.5px);
+  list-style: none; /* Remove default list styles */
 }
+
+/* Note List Container*/
+.note-list-other {
+  overflow-y: auto; /* Enable vertical scrolling */
+  margin: 10px 0; /* Add margin for spacing */
+  padding-left: 15px;
+  list-style: none; /* Remove default list styles */
+}
+
 
 /* Note List item */
 .note-list-item {
@@ -289,6 +298,17 @@ input[type="search"]::-webkit-search-cancel-button {
   margin-right: 30px; /* Space for the pin button */
 }
 
+.fixed-header {
+  position: sticky;
+  top: 0;
+  z-index: 1; /* Ensure it stays above other content */
+  background-color: #fff; /* Match the background color */
+  padding: 10px;
+  margin: 0;
+  border-bottom: 1px solid #ddd;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
 
 /* General styles for the pin button */
 .pin-btn {
