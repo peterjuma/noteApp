@@ -153,48 +153,11 @@ body {
   font-size: medium;
 }
 
-/* Note List Container*/
-.note-list {
-  padding-left: 15px;
-  overflow-x: hidden;
-  overflow-y: scroll;
-  padding-bottom: 0;
-  height: calc(100% - 162.5px);
-}
-
-/* Note List item */
-.note-list-item {
-  height: 60px;
-  padding: 10px 20px 0 25px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  margin: 0 4px;
-  cursor: pointer;
-  font-size: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
 ul,
 ol {
   padding-left: 0;
   margin-top: 0;
   margin-bottom: 0;
-}
-
-.note-list-item-hover {
-  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.11), 0 5px 5px rgba(0, 0, 0, 0.12);
-}
-
-.note-list-item-prev {
-  background: #f6f5f5;
-}
-
-/* Highlight Clicked note item */
-.note-list-item-clicked {
-  background: #ced9f2;
-  transition: 0.3s;
 }
 
 .sort-order-selector {
@@ -278,13 +241,62 @@ input[type="search"]::-webkit-search-cancel-button {
   background-image: linear-gradient(-180deg, #fafbfc 0%, #eff3f6 90%);
 }
 
+/* Note List Container*/
+.note-list {
+  padding-left: 15px;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  padding-bottom: 0;
+  height: calc(100% - 162.5px);
+}
+
+/* Note List item */
+.note-list-item {
+  height: 50px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  margin: 0 4px;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.note-list-item-hover {
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.11), 0 5px 5px rgba(0, 0, 0, 0.12);
+}
+
+.note-list-item-prev {
+  background: #f6f5f5;
+}
+
+/* Highlight Clicked note item */
+.note-list-item-clicked {
+  background: #ced9f2;
+  transition: 0.3s;
+}
+
+.note-title {
+  flex: 1; /* Allows the title to use available space */
+  overflow: hidden; /* Prevents overflowing text */
+  text-overflow: ellipsis; /* Displays "..." for overflowing text */
+  white-space: nowrap; /* Prevents text from wrapping */
+  margin-right: 30px; /* Space for the pin button */
+}
+
+
 /* General styles for the pin button */
 .pin-btn {
   position: relative; /* Required for absolute positioning */
   font-size: 1.1rem; /* Adjust size as needed */
   margin-right: 4px; /* Space between icon and text */
   transition: color 0.3s ease; /* Smooth color transition */
-  color: #24292e; /* Default color for unpinned */
+  color: #ced9f2; /* Default color for unpinned */
 }
 
 /* Strikethrough effect for unpin */
@@ -310,7 +322,19 @@ input[type="search"]::-webkit-search-cancel-button {
   transition: opacity 0s ease; /* Remove any delay */
 }
 
+.pin-icon-container {
+  position: absolute;
+  right: 10px; /* Adjust as needed */
+  top: 50%;
+  transform: translateY(-50%);
+}
+.pin-btn.unpin {
+  color: #777; /* Darker color for unpinned state */
+}
 
+.pin-btn:hover {
+  color: blue; /* Change to any hover color */
+}
 
 button {
   outline: none;

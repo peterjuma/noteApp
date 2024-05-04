@@ -515,38 +515,72 @@ handleUnpinNote = async (noteid) => {
   }
 
   render() {
-    const noteListItems = this.state.allnotes.map((note) => (
-      <NoteList
-        key={note.noteid}
-        note={note}
-        isPinned={this.state.pinnedNotes.includes(note.noteid)}
-        handlePinNote={this.handlePinNote}
-        handleUnpinNote={this.handleUnpinNote}
-        handleNoteListItemClick={this.handleNoteListItemClick}
-        handleMouseOver={this.handleNoteListItemMouseOver}
-        handleMouseOut={this.handleNoteListItemMouseOut}
-      />
-    ));
+    // Separate pinned and unpinned notes
+    const pinnedNotes = this.state.allnotes.filter(note => this.state.pinnedNotes.includes(note.noteid));
+    const unpinnedNotes = this.state.allnotes.filter(note => !this.state.pinnedNotes.includes(note.noteid));
 
-    let ActivePage, RightNavbar;
-    if (this.state.activepage === "viewnote") {
-      RightNavbar = (
-        <NavbarMain
-          display={this.state.action !== "homepage" && true}
-          notesData={{
-            noteid: this.state.noteid,
-            notetitle: this.state.notetitle,
-            notebody: this.state.notebody,
-            action: this.state.action,
-          }}
-          handleEditNoteBtn={this.handleEditNoteBtn}
-          handleDeleteNote={this.handleDeleteNote}
-          handleCopyEvent={this.handleCopyEvent}
-          handleDownloadNote={this.handleDownloadNote}
-        />
-      );
-      ActivePage = (
-        <>
+    return (
+      <div className="container">
+        <div className="left">
+          <NavbarSidebar
+            handleClickHomeBtn={this.handleClickHomeBtn}
+            handleEditNoteBtn={this.handleEditNoteBtn}
+            handleSearchNotes={this.handleSearchNotes}
+          />
+
+          {/* Render pinned notes separately */}
+          <ul className="note-list">
+            <h4>Pinned Notes</h4>
+            {pinnedNotes.map((note) => (
+              <NoteList
+                key={note.noteid}
+                note={note}
+                isPinned={true}
+                handlePinNote={this.handlePinNote}
+                handleUnpinNote={this.handleUnpinNote}
+                handleNoteListItemClick={this.handleNoteListItemClick}
+                handleMouseOver={this.handleNoteListItemMouseOver}
+                handleMouseOut={this.handleNoteListItemMouseOut}
+              />
+            ))}
+          </ul>
+
+          {/* Render unpinned notes separately */}
+          <ul className="note-list">
+            <h4>Other Notes</h4>
+            {unpinnedNotes.map((note) => (
+              <NoteList
+                key={note.noteid}
+                note={note}
+                isPinned={false}
+                handlePinNote={this.handlePinNote}
+                handleUnpinNote={this.handleUnpinNote}
+                handleNoteListItemClick={this.handleNoteListItemClick}
+                handleMouseOver={this.handleNoteListItemMouseOver}
+                handleMouseOut={this.handleNoteListItemMouseOut}
+              />
+            ))}
+          </ul>
+
+          <NoteSort
+            handleSortNotes={this.handleSortNotes}
+            handleNotesBackup={this.handleNotesBackup}
+          />
+        </div>
+        <div className="right">
+          <NavbarMain
+            display={this.state.action !== "homepage" && true}
+            notesData={{
+              noteid: this.state.noteid,
+              notetitle: this.state.notetitle,
+              notebody: this.state.notebody,
+              action: this.state.action,
+            }}
+            handleEditNoteBtn={this.handleEditNoteBtn}
+            handleDeleteNote={this.handleDeleteNote}
+            handleCopyEvent={this.handleCopyEvent}
+            handleDownloadNote={this.handleDownloadNote}
+          />
           <NoteMain
             notesData={{
               noteid: this.state.noteid,
@@ -557,45 +591,6 @@ handleUnpinNote = async (noteid) => {
             handleCopyEvent={this.handleCopyEvent}
           />
           <FooterBar />
-        </>
-      );
-    }
-    if (this.state.activepage === "editnote") {
-      RightNavbar = <NavbarMain display={false} />;
-      ActivePage = (
-        <NoteEditor
-          editNoteData={{
-            noteid: this.state.noteid,
-            notetitle: this.state.notetitle,
-            notebody: this.state.notebody,
-            action: this.state.action,
-          }}
-          splitscreen={this.state.split}
-          handleEditNoteBtn={this.handleEditNoteBtn}
-          handleSaveNote={this.handleSaveNote}
-          handleClickHomeBtn={this.handleClickHomeBtn}
-          handleNoteEditor={this.handleNoteEditor}
-        />
-      );
-    }
-
-    return (
-      <div className="container">
-        <div className="left">
-          <NavbarSidebar
-            handleClickHomeBtn={this.handleClickHomeBtn}
-            handleEditNoteBtn={this.handleEditNoteBtn}
-            handleSearchNotes={this.handleSearchNotes}
-          />
-          <ul className="note-list">{noteListItems}</ul>
-          <NoteSort
-            handleSortNotes={this.handleSortNotes}
-            handleNotesBackup={this.handleNotesBackup}
-          />
-        </div>
-        <div className="right">
-          {RightNavbar}
-          {ActivePage}
         </div>
       </div>
     );

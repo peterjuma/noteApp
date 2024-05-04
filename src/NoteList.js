@@ -6,7 +6,8 @@ function NoteList(props) {
     ? "note-list-item note-list-item-clicked"
     : "note-list-item";
 
-  const handleClick = () => {
+  const handlePinClick = (e) => {
+    e.stopPropagation(); // Prevents the note selection on pin/unpin click
     if (isPinned) {
       handleUnpinNote(note.noteid);
     } else {
@@ -16,7 +17,7 @@ function NoteList(props) {
 
   return (
     <li
-      className="note-list-item"
+      className={listItemClasses}
       id={note.noteid}
       onClick={(e) => props.handleNoteListItemClick(e, note)}
       onMouseOver={(e) => props.handleMouseOver(e, note)}
@@ -25,11 +26,9 @@ function NoteList(props) {
       <span className="note-title">{note.title}</span>
 
       {/* Pin/Unpin button */}
-      <span className="pin-icon-container"
-      style={{ position: 'absolute', right: '2.5px', top: '50%', transform: 'translateY(-50%)' }}
-      >
+      <span className="pin-icon-container">
         <button
-          onClick={handleClick}
+          onClick={handlePinClick}
           className={`pin-btn ${isPinned ? 'unpin' : ''}`}
           title={isPinned ? "Unpin this note" : "Pin this note"}
         >
