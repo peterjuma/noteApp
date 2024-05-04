@@ -608,17 +608,15 @@ handleUnpinNote = async (noteid) => {
             handleSearchNotes={this.handleSearchNotes}
           />
 
-          {/* Render pinned notes separately */}
           <h4 className="fixed-header">Pinned Notes</h4>
-          <ul className="note-list-pin">
+          <div className="note-list-pin">
           {pinnedNoteListItems}
-          </ul>
+          </div>
 
-          {/* Render unpinned notes separately */}
           <h4 className="fixed-header">Other Notes</h4>
-          <ul className="note-list-other">
+          <div className="note-list-other">
           {otherNoteListItems}
-          </ul>
+          </div>
 
           <NoteSort
             handleSortNotes={this.handleSortNotes}

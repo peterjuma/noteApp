@@ -226,8 +226,8 @@ input[type="search"]::-webkit-search-cancel-button {
 
 /* Note List Container*/
 .note-list-pin {
-  max-height: 300px; /* Set the desired maximum height */
-  overflow-y: scroll; /* Enable vertical scrolling */
+  height: 270px; /* Set the desired maximum height */
+  overflow-y: auto; /* Enable vertical scrolling */
   margin: 10px 0; /* Add margin for spacing */
   padding-left: 0;
   list-style: none; /* Remove default list styles */
@@ -236,7 +236,7 @@ input[type="search"]::-webkit-search-cancel-button {
 
 /* Note List Container*/
 .note-list-other {
-  overflow-y: scroll; /* Enable vertical scrolling */
+  overflow-y: auto; /* Enable vertical scrolling */
   margin: 10px 0; /* Add margin for spacing */
   padding-left: 0;
   list-style: none; /* Remove default list styles */
