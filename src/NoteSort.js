@@ -1,6 +1,6 @@
 function NoteSort(props) {
   return (
-    <div className="sort-order-selector">
+    <div className="note-sort-bar">
       <label>
         Sort by:
         <select
