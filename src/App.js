@@ -568,7 +568,7 @@ handleUnpinNote = async (noteid) => {
     }
 
     let pinnedNoteListItems = (
-    <span>
+    <>
     {pinnedNotes.map((note) => (
       <NoteList
         key={note.noteid}
@@ -581,11 +581,11 @@ handleUnpinNote = async (noteid) => {
         handleMouseOut={this.handleNoteListItemMouseOut}
       />
     ))}
-   </span>
+   </>
     );
 
     let otherNoteListItems = (
-      <span>
+      <>
             {unpinnedNotes.map((note) => (
               <NoteList
                 key={note.noteid}
@@ -598,7 +598,7 @@ handleUnpinNote = async (noteid) => {
                 handleMouseOut={this.handleNoteListItemMouseOut}
               />
             ))}
-      </span>
+      </>
     );
 
     return (
@@ -615,7 +615,7 @@ handleUnpinNote = async (noteid) => {
           <ul className="note-list-pin">
           {pinnedNoteListItems}
           </ul>
-          
+
           {/* Render unpinned notes separately */}
           <h4 className="fixed-header">Other Notes</h4>
           <ul className="note-list-other">

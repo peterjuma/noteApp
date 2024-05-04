@@ -19,10 +19,11 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;                 /* Take full viewport width */
+  height: 100vh;   
   padding-right: 0;
   padding-left: 0;
+  background-color: #f5f5f5; 
 }
 
 /* Left Sidebar */
@@ -243,11 +244,13 @@ input[type="search"]::-webkit-search-cancel-button {
 
 /* Note List Container*/
 .note-list-pin {
-  max-height: 250px; /* Set the desired maximum height */
+  max-height: 290px; /* Set the desired maximum height */
+  height: 290px; /* Set the desired maximum height */
   overflow-y: auto; /* Enable vertical scrolling */
   margin: 10px 0; /* Add margin for spacing */
   padding-left: 15px;
   list-style: none; /* Remove default list styles */
+  margin-bottom: 20px; /* Add space between lists */
 }
 
 /* Note List Container*/
@@ -259,13 +262,15 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 
-/* Note List item */
+/* Add this to your existing CSS */
 .note-list-item {
-  height: 50px;
+  height: auto;
+  min-height: 50px;
   display: flex;
   justify-content: space-between;
+  border-bottom: 1px solid #ddd; /* Optional: visually separate items */
   align-items: center;
-  padding: 10px;
+  padding: 8px 10px; 
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -273,11 +278,14 @@ input[type="search"]::-webkit-search-cancel-button {
   cursor: pointer;
   font-size: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smooth transition */
 }
 
-.note-list-item-hover {
-  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.11), 0 5px 5px rgba(0, 0, 0, 0.12);
+/* Hover state styling */
+.note-list-item:hover {
+  background-color: #f0f0f0; /* Change background color on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Slightly elevate shadow */
+  transform: translateY(-2px); /* Slightly raise the element */
 }
 
 .note-list-item-prev {
@@ -301,14 +309,16 @@ input[type="search"]::-webkit-search-cancel-button {
 .fixed-header {
   position: sticky;
   top: 0;
-  z-index: 1; /* Ensure it stays above other content */
-  background-color: #fff; /* Match the background color */
-  padding: 10px;
+  z-index: 2; /* Increase z-index to ensure it stays on top */
+  background-color: #fff;
+  padding: 8px 13px; /* Reduced padding for compactness */
   margin: 0;
-  border-bottom: 1px solid #ddd;
-  font-size: 1.5rem;
+  border-bottom: 2px solid #ddd;
+  font-size: 1.4rem; /* Adjusted font size */
   font-weight: bold;
+  background-color: #f5f5f5; 
 }
+
 
 /* General styles for the pin button */
 .pin-btn {
@@ -344,7 +354,7 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .pin-icon-container {
   position: absolute;
-  right: 10px; /* Adjust as needed */
+  right: 4px; /* Adjust as needed */
   top: 50%;
   transform: translateY(-50%);
 }
