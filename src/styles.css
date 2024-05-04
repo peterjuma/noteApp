@@ -278,25 +278,39 @@ input[type="search"]::-webkit-search-cancel-button {
   background-image: linear-gradient(-180deg, #fafbfc 0%, #eff3f6 90%);
 }
 
-.pin-btn.unpin::after {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 1px;
-  color: gray;
-  background-color: white; /* Adjust color */
-  transform: rotate(-45deg); /* Adjust angle */
-  top: 50%; /* Adjust position */
-  left: 0;
-}
-
+/* General styles for the pin button */
 .pin-btn {
   position: relative; /* Required for absolute positioning */
   font-size: 1.1rem; /* Adjust size as needed */
   margin-right: 4px; /* Space between icon and text */
   transition: color 0.3s ease; /* Smooth color transition */
-  color: gray; /* Adjust color */
+  color: #24292e; /* Default color for unpinned */
 }
+
+/* Strikethrough effect for unpin */
+.pin-btn.unpin::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background-color: white; /* Adjust color */
+  transform: rotate(-45deg); /* Adjust angle */
+  top: 50%; /* Adjust position */
+  left: 0;
+}
+/* Darker shade for pinned state */
+.pin-btn.pinned {
+  color: #24292e; /* Darker shade of gray for pinned state */
+}
+
+/* Ensuring the tooltip shows immediately */
+.pin-btn[title] {
+  position: relative;
+  opacity: 1; /* Make it fully visible immediately */
+  transition: opacity 0s ease; /* Remove any delay */
+}
+
+
 
 button {
   outline: none;
