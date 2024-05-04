@@ -90,6 +90,12 @@ class App extends Component {
 
 // Pin a note and persist
 handlePinNote = async (noteid) => {
+  // If the number of pinned notes is 5 or greater, return early
+  if (this.state.pinnedNotes.length >= 5) {
+    alert("You can only pin up to 5 notes.");
+    return;
+  }
+
   await this.handleIndexedDB("addpin", { noteid });
   this.setState((prevState) => {
     const pinnedNotes = [...prevState.pinnedNotes, noteid];
@@ -99,6 +105,7 @@ handlePinNote = async (noteid) => {
     document.getElementById(noteid).click();
   });
 };
+
 
 // Unpin a note and persist
 handleUnpinNote = async (noteid) => {
@@ -111,9 +118,6 @@ handleUnpinNote = async (noteid) => {
     document.getElementById(noteid)
   });
 };
-
-
-
 
   handleCopyCodeButtonClick = () => {
     if (navigator && navigator.clipboard) {
