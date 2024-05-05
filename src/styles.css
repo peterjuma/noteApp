@@ -35,7 +35,7 @@ body {
   flex-direction: column;
   flex-shrink: 0;
   transition: transform 200ms ease-in-out;
-  padding: 10px; /* Add some padding for spacing */
+  padding: 0; /* Add some padding for spacing */
   position: relative; /* Ensure child elements can be positioned relative to it */
   height: calc(100% - 10px); /* Ensure enough height for content */
 }
@@ -70,13 +70,14 @@ body {
 
 /* Navbar */
 .nav-bar {
-  padding: 8px;
+  padding: 6px;
   margin: 0 auto;
   max-width: 1440px;
-  border-bottom: 1px solid #dcdcde;
-  height: 50px;
+  border-bottom: 1px solid #ddd;
+  /* height: 50px; */
   background-color: #fff;
   width: 100%;
+  height: 50px;
 }
 
 /* .footer-bar {
@@ -102,45 +103,43 @@ body {
   justify-content: space-between;
   position: relative;
   bottom: 0px;
+  height: 49px;
 }
 
 /* Search Bar */
 .search-bar {
-  background-color: #f0f0f0; /* Light gray background */
   display: flex;
   overflow: hidden; /* Prevent overflow */
-  border: 1px solid #ddd;
+  border-top: 1px solid #dcdcde;
 }
 
 .searchButton {
   padding: 18px; /* Adjusted padding */
-  border: 1px solid #d0d0d0; /* Match border color with the search bar */
-  border-right: none; /* Remove the right border to connect with input */
-  color: #4d4d4d; /* Darker gray text */
-  background-color: #e0e0e0; /* Lighter gray background */
+  border-right: 1px solid #dcdcde; /* Match border color with the search field */
+  background-color: whitesmoke; /* Lighter gray background */
   cursor: pointer;
-  font-size: 1.2rem; /* Adjust font size */
+  font-size: 1.3rem; /* Adjust font size */
   outline: none;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background-color 0.3s; /* Smooth color transition */
+  color: #777;
 }
 
 .searchButton:hover {
-  background-color: #c0c0c0; /* Slightly darker gray on hover */
+  background-color: #e0e0e0; /* Slightly darker gray on hover */
 }
 
 
 /* Search Input field */
 .search-field {
   width: 100%;
-  border: 1px solid #f0f0f0; /* Match border color with the search bar */
+  border: none; /* Match border color with the search bar */
   outline: none;
   padding: 18px; /* Adjusted padding */
   border-radius: 0; /* No rounded corners */
-  border-left: none; /* Remove left border to connect with button */
-  background-color: #f9f9f9; /* Light gray background for input */
+  font-size: 1.5rem; /* Adjust font size */
 }
 
 
@@ -152,13 +151,13 @@ ol {
 }
 
 .note-sort-bar {
-  position: relative; /* Stay fixed within the parent container */
+  position:absolute;
   bottom: 0; /* Stick to the bottom of the parent */
   left: 0; /* Align to the left edge */
   width: 100%; /* Take the full width of the parent */
-  padding: 15px; /* Adjust padding for spacing */
-  padding-right: 0;
-  background-color: #fff; /* White background */
+  padding: 10px; /* Adjust padding for spacing */
+  padding-left: 10px;
+  background-color: whitesmoke; /* White background */
   border-top: 1px solid #dcdcde; /* Border at the top */
   display: flex; /* Flexbox layout */
   justify-content: space-between; /* Space between child elements */
@@ -168,6 +167,7 @@ ol {
 .backupbtn {
   float: right;
 }
+
 
 .right-bottom-bar {
   height: 50px;
@@ -204,11 +204,16 @@ input[type="search"]::-webkit-search-cancel-button {
   border: none;
   outline: none;
   cursor: pointer;
-  margin: 2px;
-  background-color: #fff;
+  margin: 5px;
   color: #777;
   font-size: 1.5rem;
+  background-color: #fff; 
 }
+
+.btn-ext {
+  background-color: whitesmoke; 
+}
+
 
 .btn-save-cancel {
   /* border: none; */
@@ -255,7 +260,7 @@ input[type="search"]::-webkit-search-cancel-button {
   min-height: 50px;
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid #ddd; /* Optional: visually separate items */
+  border-bottom: 1px solid #dcdcde; /* Optional: visually separate items */
   align-items: center;
   padding: 8px 10px; 
   white-space: nowrap;
@@ -296,13 +301,14 @@ input[type="search"]::-webkit-search-cancel-button {
   position: sticky;
   top: 0;
   z-index: 2; /* Increase z-index to ensure it stays on top */
-  background-color: #fff;
   padding: 8px 13px; /* Reduced padding for compactness */
   margin: 0;
-  border: 1px solid #ddd;
+  border: 1px solid #dcdcde;
+  border-left: none;
+  border-right: none;
   font-size: 1.4rem; /* Adjusted font size */
   font-weight: bold;
-  background-color: #f5f5f5; 
+  background-color: whitesmoke; 
 }
 
 
@@ -661,7 +667,7 @@ input[type="number"] {
 
 .note-list-item {
   padding: 0.5rem; /* Adjust padding as needed */
-  border-bottom: 1px solid #ddd; /* Optional: visually separate items */
+  border-bottom: 1px solid #dcdcde; /* Optional: visually separate items */
   display: flex;
   justify-content: space-between;
   align-items: center;
