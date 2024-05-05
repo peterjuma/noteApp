@@ -156,11 +156,13 @@ ol {
   bottom: 0; /* Stick to the bottom of the parent */
   left: 0; /* Align to the left edge */
   width: 100%; /* Take the full width of the parent */
-  padding: 10px 15px; /* Adjust padding for spacing */
+  padding: 15px; /* Adjust padding for spacing */
+  padding-right: 0;
   background-color: #fff; /* White background */
   border-top: 1px solid #dcdcde; /* Border at the top */
   display: flex; /* Flexbox layout */
   justify-content: space-between; /* Space between child elements */
+  align-items: center;
 }
 
 

@@ -43,6 +43,7 @@ class App extends Component {
     this.handleCopyCodeButtonClick;
     this.handleNoteEditor = this.handleNoteEditor.bind(this);
     this.handleNotesBackup = this.handleNotesBackup.bind(this);
+    this.handleNotesUpload = this.handleNotesUpload.bind(this);
   }
   
   async componentDidMount() {
@@ -514,12 +515,45 @@ handleUnpinNote = async (noteid) => {
     });
   }
 
+  handleNotesUpload = async (event) => {
+    const file = event.target.files[0]; // Assuming single file selection
+    if (!file || !file.name.endsWith(".md")) {
+      alert("Please upload a valid Markdown file.");
+      return;
+    }
+  
+    // Read the file content
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const content = e.target.result;
+      const title = file.name.replace(".md", ""); // Use filename without extension as the title
+  
+      const newNote = {
+        noteid: new Date().getTime().toString(), // Generate a unique note ID
+        title,
+        body: content,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      };
+  
+      // Add note to IndexedDB
+      await this.handleIndexedDB("addnote", newNote);
+  
+      // Add note to the state
+      this.setState((prevState) => ({
+        allnotes: [...prevState.allnotes, newNote],
+      }));
+      this.handleNoteListItemClick(null, newNote);
+    };
+    reader.readAsText(file);
+  };
+  
+
   render() {
     // Separate pinned and unpinned notes
     const pinnedNotes = this.state.allnotes.filter(note => this.state.pinnedNotes.includes(note.noteid));
     const unpinnedNotes = this.state.allnotes.filter(note => !this.state.pinnedNotes.includes(note.noteid));
     
-
     // Count the total number of notes
     const totalPinned = pinnedNotes.length;
     const totalUnpinned = unpinnedNotes.length;
@@ -630,6 +664,7 @@ handleUnpinNote = async (noteid) => {
           <NoteSort
             handleSortNotes={this.handleSortNotes}
             handleNotesBackup={this.handleNotesBackup}
+            handleNotesUpload={this.handleNotesUpload}
           />
         </div>
         <div className="right">

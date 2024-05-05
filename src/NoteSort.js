@@ -1,4 +1,14 @@
+import React, { Component, Fragment } from "react";
+
 function NoteSort(props) {
+  // A ref to programmatically trigger the file input
+  const fileInputRef = React.useRef(null);
+
+  // Trigger file input click programmatically
+  const triggerFileInputClick = () => {
+    fileInputRef.current.click();
+  };
+
   return (
     <div className="note-sort-bar">
       <label>
@@ -18,6 +28,20 @@ function NoteSort(props) {
         </select>
       </label>
       <div className="backupbtn">
+        {/* Add a hidden file input to upload a note from a markdown file */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".md"
+          style={{ display: 'none' }}
+          onChange={props.handleNotesUpload}
+        />
+        <span tooltip="Upload Note" flow="left">
+          <i
+            className="fas fa-upload btn"
+            onClick={triggerFileInputClick}
+          ></i>
+        </span>
         <span tooltip="Download Backup" flow="left">
           <i
             className="fas fa-download btn"
@@ -28,6 +52,5 @@ function NoteSort(props) {
     </div>
   );
 }
-
 
 export default NoteSort;
