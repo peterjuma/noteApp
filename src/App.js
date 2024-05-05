@@ -21,7 +21,7 @@ class App extends Component {
       notebody: "",
       activepage: "viewnote", // editnote // previewnote // viewnote
       action: "", // addnote // updatenote
-      sortby: "2", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
+      sortby: "4", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
       allnotes: [],
       pinnedNotes: [], // Store pinned notes by noteid
     };
