@@ -15,7 +15,7 @@ function NoteSort(props) {
         Sort by:
         <select
           id="sort-selection"
-          defaultValue="2" // Default to "Created: Newest"
+          defaultValue="4" // Default to "Modified: Newest"
           onChange={(e) => props.handleSortNotes(e.target.value)} // Pass the selected value
         >
           <option value="choose">Choose here</option>
