@@ -338,9 +338,11 @@ handleUnpinNote = async (noteid) => {
     });
   
     // If there are any notes, select the first one
-    if (sortedNotes.length > 0) {
-      document.getElementById(sortedNotes[0].noteid).click();
+    // If action is addnote or updatenote, do not select any note
+    if (sortedNotes.length > 0 && this.state.action !== "addnote" && this.state.action !== "updatenote") {
+      this.handleNoteListItemClick(null, sortedNotes[0]);
     }
+
   };
 
   handleEditNoteBtn = (e, note) => {
@@ -543,6 +545,7 @@ handleUnpinNote = async (noteid) => {
       this.setState((prevState) => ({
         allnotes: [...prevState.allnotes, newNote],
       }));
+      this.handleSortNotes("4");
       this.handleNoteListItemClick(null, newNote);
     };
     reader.readAsText(file);
@@ -604,6 +607,8 @@ handleUnpinNote = async (noteid) => {
           handleSaveNote={this.handleSaveNote}
           handleClickHomeBtn={this.handleClickHomeBtn}
           handleNoteEditor={this.handleNoteEditor}
+          handleSortNotes={this.handleSortNotes}
+          handleNoteListItemClick={this.handleNoteListItemClick}
         />
       );
     }

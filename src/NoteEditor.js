@@ -331,7 +331,7 @@ function NoteEditor(props) {
   };
 
   // Handle Cancel Button
-  const handleCancel = () => {
+  const handleCancelBtn = () => {
     if (note.action === "updatenote") {
       return document.getElementById(note.noteid).click();
     }
@@ -342,10 +342,11 @@ function NoteEditor(props) {
   };
 
   //  Handle Save Noye Button Click
-  const handleSave = (e) => {
+  const handleSaveBtn = (e) => {
     note.notetitle = title;
     note.notebody = bodytxt;
     props.handleSaveNote(e, note);
+    props.handleSortNotes("4");
   };
 
   return (
@@ -544,14 +545,14 @@ function NoteEditor(props) {
               <span tooltip="Save" flow="right">
                 <i
                   className="far fa-save btn-save-cancel fa-2x"
-                  onClick={(e) => handleSave(e)}
+                  onClick={(e) => handleSaveBtn(e)}
                   data-action={note.action}
                 ></i>
               </span>
               <span tooltip="Cancel" flow="left">
                 <i
                   className="far fa-window-close btn-save-cancel fa-2x"
-                  onClick={(e) => handleCancel()}
+                  onClick={(e) => handleCancelBtn()}
                 ></i>
               </span>
             </div>

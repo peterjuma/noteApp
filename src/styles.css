@@ -152,7 +152,7 @@ ol {
 }
 
 .note-sort-bar {
-  position: absolute; /* Stay fixed within the parent container */
+  position: relative; /* Stay fixed within the parent container */
   bottom: 0; /* Stick to the bottom of the parent */
   left: 0; /* Align to the left edge */
   width: 100%; /* Take the full width of the parent */
@@ -164,8 +164,6 @@ ol {
   justify-content: space-between; /* Space between child elements */
   align-items: center;
 }
-
-
 
 .backupbtn {
   float: right;
