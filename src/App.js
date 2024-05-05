@@ -518,6 +518,11 @@ handleUnpinNote = async (noteid) => {
     // Separate pinned and unpinned notes
     const pinnedNotes = this.state.allnotes.filter(note => this.state.pinnedNotes.includes(note.noteid));
     const unpinnedNotes = this.state.allnotes.filter(note => !this.state.pinnedNotes.includes(note.noteid));
+    
+
+    // Count the total number of notes
+    const totalPinned = pinnedNotes.length;
+    const totalUnpinned = unpinnedNotes.length;
 
     let ActivePage, RightNavbar;
     if (this.state.activepage === "viewnote") {
@@ -612,12 +617,12 @@ handleUnpinNote = async (noteid) => {
             handleSearchNotes={this.handleSearchNotes}
           />
 
-          <h4 className="fixed-header">Pinned Notes</h4>
+          <h4 className="fixed-header">Pinned Notes ({totalPinned})</h4>
           <div className="note-list-pin">
           {pinnedNoteListItems}
           </div>
 
-          <h4 className="fixed-header">Other Notes</h4>
+          <h4 className="fixed-header">Other Notes ({totalUnpinned})</h4>
           <div className="note-list-other">
           {otherNoteListItems}
           </div>
