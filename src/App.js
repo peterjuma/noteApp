@@ -49,11 +49,19 @@ class App extends Component {
   async componentDidMount() {
     const getnotes = await this.handleIndexedDB("getall");
     const pinnedNotes = await this.handleIndexedDB("getallpins");
+    
   
     this.setState({
       allnotes: getnotes,
       pinnedNotes: pinnedNotes || [],
     }, () => {
+
+      // Display the home page if there are no notes
+      if (this.state.allnotes.length === 0) {
+        this.handleClickHomeBtn();
+        return;
+      }
+      
       // Sort the notes using the current or default sorting value
       this.handleSortNotes(this.state.sortby);
   
