@@ -111,31 +111,12 @@ body {
   border-top: 1px solid #dcdcde;
 }
 
-.searchButton {
-  padding: 18px; /* Adjusted padding */
-  border-right: 1px solid #dcdcde; /* Match border color with the search field */
-  background-color: whitesmoke; /* Lighter gray background */
-  cursor: pointer;
-  font-size: 1.3rem; /* Adjust font size */
-  outline: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.3s; /* Smooth color transition */
-  color: #777;
-}
-
-.searchButton:hover {
-  background-color: #e0e0e0; /* Slightly darker gray on hover */
-}
-
-
 /* Search Input field */
 .search-field {
   width: 100%;
   border: none; /* Match border color with the search bar */
   outline: none;
-  padding: 18px; /* Adjusted padding */
+  padding: 15px; /* Adjusted padding */
   border-radius: 0; /* No rounded corners */
   font-size: 1.5rem; /* Adjust font size */
 }
@@ -428,7 +409,7 @@ h3 {
   max-width: 1440px;
   width: 100%;
   flex-direction: column;
-  font-size: x-large;
+  font-size:large;
   border-left: 1px solid #dcdcde;
 }
 
@@ -440,11 +421,10 @@ h3 {
 
 #notetitle {
   height: 50px;
-  padding: 40px 30px;
+  padding-left: 20px;
   border: none;
   background-color: #fafafa;
   border-bottom: 1px solid #dcdcde;
-  border-radius: 5px;
 }
 
 /* Editor Textarea */

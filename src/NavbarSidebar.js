@@ -36,13 +36,6 @@ function NavbarSidebar(props) {
         </div>
       </div>
       <div className="search-bar">
-        <i
-          className="fa fa-search searchButton"
-          aria-hidden="true"
-          onClick={() => {
-            searchRef.current.focus();
-          }}
-        ></i>
         <input
           type="search"
           placeholder="Search Notes"
