@@ -38,13 +38,13 @@ function NoteSort(props) {
         />
         <span tooltip="Upload Note" flow="left">
           <i
-            className="fas fa-upload btn btn-ext"
+            className="fas fa-upload btn"
             onClick={triggerFileInputClick}
           ></i>
         </span>
         <span tooltip="Download Backup" flow="left">
           <i
-            className="fas fa-download btn btn-ext"
+            className="fas fa-download btn"
             onClick={props.handleNotesBackup}
           ></i>
         </span>

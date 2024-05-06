@@ -75,20 +75,18 @@ body {
   max-width: 1440px;
   border-bottom: 1px solid #ddd;
   /* height: 50px; */
-  background-color: #fff;
+  background-color: whitesmoke;
   width: 100%;
   height: 50px;
 }
 
-/* .footer-bar {
-  padding: 8px;
-  margin: 0 auto;
-  max-width: 1440px;
-  border-top: 1px solid #eee;
-  height: 53px;
-  background-color: #fff;
+.nav-bar-left {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
-} */
+  background-color: whitesmoke;
+}
 
 .hidden {
   display: none;
@@ -207,13 +205,8 @@ input[type="search"]::-webkit-search-cancel-button {
   margin: 5px;
   color: #777;
   font-size: 1.5rem;
-  background-color: #fff; 
-}
-
-.btn-ext {
   background-color: whitesmoke; 
 }
-
 
 .btn-save-cancel {
   /* border: none; */
@@ -301,7 +294,7 @@ input[type="search"]::-webkit-search-cancel-button {
   position: sticky;
   top: 0;
   z-index: 2; /* Increase z-index to ensure it stays on top */
-  padding: 8px 13px; /* Reduced padding for compactness */
+  padding: 10px 5px; /* Reduced padding for compactness */
   margin: 0;
   border: 1px solid #dcdcde;
   border-left: none;
@@ -436,6 +429,7 @@ h3 {
   width: 100%;
   flex-direction: column;
   font-size: x-large;
+  border-left: 1px solid #dcdcde;
 }
 
 .page-header {
@@ -446,9 +440,9 @@ h3 {
 
 #notetitle {
   height: 50px;
-  padding: 40px 20px;
+  padding: 40px 30px;
   border: none;
-  background-color: #1212;
+  background-color: #fafafa;
   border-bottom: 1px solid #dcdcde;
   border-radius: 5px;
 }
@@ -470,10 +464,10 @@ h3 {
   border: none;
   /* border-top: 1px solid #dcdcde; */
   /* border-right: 1px solid #dcdcde; */
-  /* border-left: 1px solid #dcdcde; */
+  border-left: 1px solid #dcdcde;
   font-family: -apple-system, "Segoe UI", "Roboto", "Oxygen-Sans", "Ubuntu",
     "Cantarell", "Helvetica Neue", sans-serif, sans-serif;
-  height: calc(100% - 50px);
+  height: calc(100% - 57px);
 }
 
 textarea:focus {
@@ -490,21 +484,22 @@ textarea:focus {
   width: 100%;
   margin: 0 auto;
   border: none;
-  /* border-right: 1px solid #dcdcde;
-  border-left: 1px solid #dcdcde; */
   border-bottom: 1px solid #dcdcde;
+  border-left: 1px solid #dcdcde;
   /* display: flex; */
   padding: 10px;
+  padding-right: 0;
+  padding-left: 0;
 }
 
 .saveCancelBar {
   margin: 0 auto;
   display: flex;
-  max-width: 1440px;
   width: 100%;
   justify-content: space-between;
-  padding-right: 30px;
-  padding-left: 30px;
+  padding-top: 3px;
+  padding-right: 5px;
+  border-left: 1px solid #dcdcde;
 }
 
 .md-buttons {
@@ -666,7 +661,6 @@ input[type="number"] {
 }
 
 .note-list-item {
-  padding: 0.5rem; /* Adjust padding as needed */
   border-bottom: 1px solid #dcdcde; /* Optional: visually separate items */
   display: flex;
   justify-content: space-between;

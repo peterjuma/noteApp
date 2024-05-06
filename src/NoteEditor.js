@@ -34,7 +34,7 @@ function NoteEditor(props) {
       maxWidth: "1440px",
       margin: "0 auto",
       width: "100%",
-      padding: "50px 60px",
+      padding: "30px",
       fontSize: `${fontsize}px`,
       fontWeight: "400",
       overflow: "auto",
