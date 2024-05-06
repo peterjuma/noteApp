@@ -49,8 +49,6 @@ class App extends Component {
   async componentDidMount() {
     const getnotes = await this.handleIndexedDB("getall");
     const pinnedNotes = await this.handleIndexedDB("getallpins");
-    
-  
     this.setState({
       allnotes: getnotes,
       pinnedNotes: pinnedNotes || [],
@@ -60,26 +58,9 @@ class App extends Component {
       if (this.state.allnotes.length === 0) {
         this.handleClickHomeBtn();
         return;
-      }
-      
-      // Sort the notes using the current or default sorting value
-      this.handleSortNotes(this.state.sortby);
-  
-      // Determine which note to select
-      const sortedNotes = this.state.allnotes;
-      const selectedNoteId = this.state.pinnedNotes.length > 0 
-          ? this.state.pinnedNotes[0] // Top pinned note
-          : sortedNotes.length > 0 ? sortedNotes[0].noteid : null; // Top unpinned note or none
-  
-      // Automatically select the determined note after ensuring it exists
-      if (selectedNoteId) {
-        setTimeout(() => {
-          const noteElement = document.getElementById(selectedNoteId);
-          if (noteElement) {
-            noteElement.click();
-          }
-        }, 0); // Delay to ensure rendering is complete
-      }
+      } 
+      // Sort notes by the default sort order
+      this.handleSortNotes(this.state.sortby); 
     });
   
     this.updateCodeSyntaxHighlighting();
@@ -124,7 +105,7 @@ handleUnpinNote = async (noteid) => {
     return { pinnedNotes };
   }, () => {
     this.handleSortNotes(this.state.sortby);
-    document.getElementById(noteid)
+    document.getElementById(noteid).click();
   });
 };
 
