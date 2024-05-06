@@ -36,6 +36,10 @@ function NavbarSidebar(props) {
         </div>
       </div>
       <div className="search-bar">
+        {/* search button */}
+        <span className="search-icon">
+          <i className="fa fa-search"></i>
+        </span>
         <input
           type="search"
           placeholder="Search Notes"
