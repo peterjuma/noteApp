@@ -233,11 +233,11 @@ function NoteEditor(props) {
           setBodyTxt(history[newIndex]); // Directly set the text without fallback
           setCurrentHistoryIndex(newIndex);
       }
-  };
+    };
 
   const handleTitleChange = (e) => {
-    setTitle(e.target.value);
-  };
+      setTitle(e.target.value);
+    };
 
   const handleKeyEvent = (event) => {
     const keyBindings = {
@@ -256,26 +256,54 @@ function NoteEditor(props) {
     const command = event.ctrlKey ? keyBindings[event.code] : keyBindings[event.key];
   
     if (command) {
-      processInput(command);
-      event.preventDefault();  // Prevent the default action of the key press
-    }
-  };
+        processInput(command);
+        event.preventDefault();  // Prevent the default action of the key press
+      }
+    };
 
-  // Listen for keydown events for undo/redo
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-          if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
-              event.preventDefault();
-              handleUndo();
-          } else if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
-              event.preventDefault();
-              handleRedo();
-          }
+    // Listen for keydown events for undo/redo
+    useEffect(() => {
+      const handleKeyDown = (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+            event.preventDefault();
+            handleUndo();
+        } else if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+            event.preventDefault();
+            handleRedo();
+        } else if (event.key === "Enter") {
+            const textarea = event.target;
+            const cursorPosition = textarea.selectionStart;
+            const textUpToCursor = textarea.value.substring(0, cursorPosition);
+            const lines = textUpToCursor.split("\n");
+            const currentLine = lines[lines.length - 1];
+    
+            // Unordered list autocomplete
+            if (currentLine.trim().match(/^[-*]\s+/)) {
+                event.preventDefault();
+                const newLineContent = "\n" + currentLine.match(/^[-*]\s+/)[0];
+                insertTextAtCursor(textarea, newLineContent);
+            }
+            // Ordered list autocomplete
+            else if (currentLine.trim().match(/^\d+\.\s+/)) {
+                event.preventDefault();
+                const number = parseInt(currentLine.match(/^(\d+)\./)[1], 10);
+                const newLineContent = "\n" + `${number + 1}. `;
+                insertTextAtCursor(textarea, newLineContent);
+            }
+        }
       };
-
+    
+      // Helper function to insert text at the cursor position
+      function insertTextAtCursor(textarea, text) {
+          const [start, end] = [textarea.selectionStart, textarea.selectionEnd];
+          textarea.value = textarea.value.substring(0, start) + text + textarea.value.substring(end);
+          textarea.selectionStart = textarea.selectionEnd = start + text.length;
+      }
+    
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [history, currentHistoryIndex]); // Re-bind effect if history or index changes
+    }, [history, currentHistoryIndex]); // Re-bind effect if history or index changes
+    
 
   const processInput = (eventcode) => {
     const txtarea = document.querySelector("textarea");
@@ -324,16 +352,16 @@ function NoteEditor(props) {
         end: finish + cursorOffset + (lines.length - 1) * tabReplacement.length
       });
     }
-  };
+   };
   
-  // Handle Text selection / cursor position
+    // Handle Text selection / cursor position
   useEffect(() => {
-    textAreaRef.current.selectionStart = cusor.start;
-    textAreaRef.current.selectionEnd = cusor.end;
-    textAreaRef.current.focus();
-  }, [bodytxt]);
+      textAreaRef.current.selectionStart = cusor.start;
+      textAreaRef.current.selectionEnd = cusor.end;
+      textAreaRef.current.focus();
+    }, [bodytxt]);
 
-  // Paste Event
+    // Paste Event
   const handlePaste = (e) => {
     e.preventDefault(); // Prevent the default paste behavior
   
@@ -372,24 +400,24 @@ function NoteEditor(props) {
     }
   };
   
-  // Handle Cancel Button
+    // Handle Cancel Button
   const handleCancelBtn = () => {
-    if (note.action === "updatenote") {
-      return document.getElementById(note.noteid).click();
-    }
-    if (document.querySelectorAll(".note-list-item").length > 0) {
-      return document.querySelectorAll(".note-list-item")[0].click();
-    }
-    return props.handleClickHomeBtn();
-  };
+      if (note.action === "updatenote") {
+        return document.getElementById(note.noteid).click();
+      }
+      if (document.querySelectorAll(".note-list-item").length > 0) {
+        return document.querySelectorAll(".note-list-item")[0].click();
+      }
+      return props.handleClickHomeBtn();
+    };
 
-  //  Handle Save Noye Button Click
+    //  Handle Save Noye Button Click
   const handleSaveBtn = (e) => {
-    note.notetitle = title;
-    note.notebody = bodytxt;
-    props.handleSaveNote(e, note);
-    props.handleSortNotes("4");
-  };
+      note.notetitle = title;
+      note.notebody = bodytxt;
+      props.handleSaveNote(e, note);
+      props.handleSortNotes("4");
+    };
 
   return (
     <div className="right-row">
