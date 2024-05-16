@@ -335,50 +335,43 @@ function NoteEditor(props) {
 
   // Paste Event
   const handlePaste = (e) => {
-    // Prevent the default action
-    e.preventDefault();
-    if (e.clipboardData) {
-      // Get the copied text from the clipboard
-      const text = e.clipboardData
-        ? (e.originalEvent || e).clipboardData.getData("text/plain")
-        : // For IE
-        window.clipboardData
-        ? window.clipboardData.getData("Text")
-        : "";
-      // Get the copied text from the clipboard
-      const html = e.clipboardData
-        ? (e.originalEvent || e).clipboardData.getData("text/html")
-        : // For IE
-        window.clipboardData
-        ? window.clipboardData.getData("Html")
-        : "";
-      let pasteData;
-      if (html) {
-        // console.log(html);
-        html2md.keep(["pre", "code"]);
-        pasteData = html2md.turndown(html);
-      } else {
-        /<[a-z][\s\S]*>/i.test(text)
-          ? (pasteData = html2md.turndown(marked(text)))
-          : (pasteData = text);
-      }
-      if (document.queryCommandSupported("insertText")) {
-        document.execCommand("insertText", false, pasteData);
-      } else {
-        // Insert text at the current position of caret
-        const range = document.processInputection().getRangeAt(0);
-        range.deleteContents();
-        const textNode = document.createTextNode(pasteData);
-        range.insertNode(textNode);
-        range.selectNodeContents(textNode);
-        range.collapse(false);
-        const selection = window.processInputection();
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
+    e.preventDefault(); // Prevent the default paste behavior
+  
+    const clipboard = e.clipboardData || window.clipboardData; // Fallback for IE
+    if (!clipboard) {
+      return;
+    }
+  
+    // Retrieve text and HTML content from the clipboard
+    const text = clipboard.getData("text/plain");
+    const html = clipboard.getData("text/html");
+  
+    // Determine the type of content to paste
+    let pasteData;
+    if (html) {
+      html2md.keep(["pre", "code"]);
+      pasteData = html2md.turndown(html);
+    } else if (/<[a-z][\s\S]*>/i.test(text)) { // Check if the text includes HTML tags
+      pasteData = html2md.turndown(marked(text));
+    } else {
+      pasteData = text;
+    }
+  
+    // Insert the processed text into the document
+    if (document.queryCommandSupported("insertText")) {
+      document.execCommand("insertText", false, pasteData);
+    } else {
+      const selection = document.getSelection();
+      if (!selection.rangeCount) return; // No active selection
+      const range = selection.getRangeAt(0);
+      range.deleteContents(); // Clear the selected content
+      const textNode = document.createTextNode(pasteData);
+      range.insertNode(textNode);
+      range.selectNodeContents(textNode); // Select the newly inserted text
+      range.collapse(false); // Collapse the range to the end point to continue typing
     }
   };
-
+  
   // Handle Cancel Button
   const handleCancelBtn = () => {
     if (note.action === "updatenote") {
