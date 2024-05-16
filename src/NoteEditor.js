@@ -4,7 +4,6 @@ import { html2md, md2html } from "./useMarkDown";
 import { marked } from 'marked';
 import InputNumber from "react-input-number";
 
-
 function NoteEditor(props) {
 
   var note = props.editNoteData;
@@ -289,7 +288,6 @@ function NoteEditor(props) {
     let lines = []; 
     let tabReplacement = '';
   
-  
     if (eventcode === 'tab') {
       // Handling tab insertion for multiple lines
       tabReplacement = '\t';  // You can adjust this to '    ' (four spaces) if preferred
@@ -327,8 +325,6 @@ function NoteEditor(props) {
       });
     }
   };
-  
-  
   
   // Handle Text selection / cursor position
   useEffect(() => {

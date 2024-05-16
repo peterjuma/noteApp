@@ -35,6 +35,7 @@ class App extends Component {
     this.handleDeleteNote = this.handleDeleteNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
     this.handleSearchNotes = this.handleSearchNotes.bind(this);
+    this.debouncedSearch = this.debounce(this.handleSearchNotes, 250);
     this.handleIndexedDB = this.handleIndexedDB.bind(this);
     this.handleCopyEvent = this.handleCopyEvent.bind(this);
     this.handleSortNotes = this.handleSortNotes.bind(this);
@@ -170,8 +171,6 @@ handleUnpinNote = async (noteid) => {
     });
   };
 
-  
-
   // Indexed DB class
   async handleIndexedDB(cmd = "", note = "") {
     const dbVersion = 2; // Increment the version from your existing version
@@ -229,8 +228,8 @@ handleUnpinNote = async (noteid) => {
     document
       .getElementById(note.noteid)
       .classList.add("note-list-item-clicked");
-  };
-
+    };
+    
   // Handle Mouse Hover on List item
   handleNoteListItemMouseOver = (e, note) => {
     var noteList = document.querySelectorAll(".note-list-item-hover");
@@ -466,26 +465,48 @@ handleUnpinNote = async (noteid) => {
       });
   }
 
-  handleSearchNotes(e) {
-    var noteList = document.querySelectorAll(".note-list-item");
-    var searchString = e.target.value.toUpperCase();
-    var DisplayList = [];
-    for (var i = 0; i < noteList.length; i++) {
-      var title = noteList[i].innerText;
-      var index = title.toUpperCase().indexOf(searchString);
-      if (index > -1) {
-        noteList[i].style.display = "";
-        DisplayList.push(noteList[i]);
-      } else {
-        noteList[i].style.display = "none";
-      }
-    }
-    if (this.state.activepage === "editnote") {
-      return;
-    } else {
-      DisplayList.length > 0 && DisplayList[0].click();
-    }
+  debounce(func, wait, immediate) {
+    let timeout;
+    return function() {
+        const context = this, args = arguments;
+        const later = function() {
+            timeout = null;
+            if (!immediate) func.apply(context, args);
+        };
+        const callNow = immediate && !timeout;
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow) func.apply(context, args);
+    };
   }
+
+  handleSearchNotes(e) {
+        const searchString = e.target.value.trim().toUpperCase();
+
+        if (!searchString) {
+            document.querySelectorAll(".note-list-item").forEach(note => {
+                note.style.display = "";
+            });
+            return;
+        }
+
+        const noteList = document.querySelectorAll(".note-list-item");
+        let displayList = [];
+
+        noteList.forEach(note => {
+            const titleText = note.querySelector(".note-title").innerText.toUpperCase();
+            if (titleText.includes(searchString)) {
+                note.style.display = "";
+                displayList.push(note);
+            } else {
+                note.style.display = "none";
+            }
+        });
+
+        if (this.state.activepage !== "editnote" && displayList.length > 0) {
+            displayList[0].click();
+        }
+      }
 
   handleDownloadNote(note) {
     const title = `${note.notetitle.replace(/[^A-Z0-9]+/gi, "_") || "note"}.md`;
