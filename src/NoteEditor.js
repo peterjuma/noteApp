@@ -218,28 +218,25 @@ function NoteEditor(props) {
     setTitle(e.target.value);
   };
 
-
   const handleKeyEvent = (event) => {
-    const specialKeys = {
+    const keyBindings = {
       '"': "doublequote",
       '(': "brackets",
       '{': "curlybrackets",
       '[': "squarebrackets",
       '<': "anglebrackets",
       '`': "backticks",
-      "Tab": "tab"
+      'Tab': "tab",
+      'KeyB': "bold",
+      'KeyI': "italic",
+      'KeyL': "link"
     };
+    // Check if the key pressed is bound to a command
+    const command = event.ctrlKey ? keyBindings[event.code] : keyBindings[event.key];
   
-    const controlCommands = {
-      "KeyB": "bold",
-      "KeyI": "italic",
-      "KeyL": "link"
-    };
-  
-    const commandType = event.ctrlKey ? controlCommands[event.code] : specialKeys[event.code];
-    if (commandType) {
-      processInput(commandType);
-      event.preventDefault();
+    if (command) {
+      processInput(command);
+      event.preventDefault();  // Prevent the default action of the key press
     }
   };
   
@@ -251,19 +248,35 @@ function NoteEditor(props) {
     const selectedText = allText.substring(start, finish);
     const keyCode = keyCodes[eventcode];
     let newText;
+    let lines = []; 
+    let tabReplacement = '';
   
-    // Special handling for links and images
-    if (['image', 'link'].includes(eventcode)) {
+  
+    if (eventcode === 'tab') {
+      // Handling tab insertion for multiple lines
+      tabReplacement = '\t';  // You can adjust this to '    ' (four spaces) if preferred
+      lines = allText.substring(start, finish).split('\n');
+      const indentedText = lines.map(line => `${tabReplacement}${line}`).join('\n');
+      newText = `${allText.substring(0, start)}${indentedText}${allText.substring(finish)}`;
+      setCursor({
+        start: start + tabReplacement.length,
+        end: start + indentedText.length - (lines.length > 1 ? 0 : tabReplacement.length)
+      });
+    } else if (['image', 'link'].includes(eventcode)) {
+      // Special handling for links and images
       const pattern = eventcode === 'image' ? `![alt text](${selectedText})` : `[link](${selectedText})`;
       newText = `${allText.substring(0, start)}${pattern}${allText.substring(finish)}`;
     } else if (keyCode.regEx) {
+      // Apply regex pattern transformation
       const transformedText = selectedText.split('\n').map(line => 
         line ? `${keyCode.pattern} ${line}` : line
       ).join('\n');
       newText = `${allText.substring(0, start)}${transformedText}${allText.substring(finish)}`;
     } else if (keyCode.pattern) {
+      // Encapsulate selected text with pattern
       newText = `${allText.substring(0, start)}${keyCode.pattern}${selectedText}${keyCode.pattern}${allText.substring(finish)}`;
     } else {
+      // Wrap selected text with open/close tags
       newText = `${allText.substring(0, start)}${keyCode.open}${selectedText}${keyCode.close}${allText.substring(finish)}`;
     }
   
@@ -272,10 +285,12 @@ function NoteEditor(props) {
       const cursorOffset = keyCode.offsetEnd || keyCode.pattern.length || (keyCode.close ? keyCode.close.length : 0);
       setCursor({
         start: start + cursorOffset,
-        end: finish + cursorOffset
+        end: finish + cursorOffset + (lines.length - 1) * tabReplacement.length
       });
     }
   };
+  
+  
   
   // Handle Text selection / cursor position
   useEffect(() => {
