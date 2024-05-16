@@ -380,13 +380,14 @@ handleUnpinNote = async (noteid) => {
   }
 
   handleSaveNote(e, note) {
-    const notebody = html2md.turndown(marked(marked(note.notebody)));
+    const noteHTML = marked(note.notebody);
+    const noteMarkdown = html2md.turndown(noteHTML);
     const notetitle = document.getElementById("notetitle").value;
     this.setState((prevState) => {
       const updatedNotes = prevState.allnotes.map((noteitem) => {
         if (noteitem.noteid === note.noteid) {
           noteitem.title = notetitle;
-          noteitem.body = notebody;
+          noteitem.body = noteMarkdown;
           noteitem.activepage = "viewnote";
         }
         return noteitem;
@@ -394,7 +395,7 @@ handleUnpinNote = async (noteid) => {
       return {
         noteid: note.noteid,
         notetitle: notetitle,
-        notebody: notebody,
+        notebody: noteMarkdown,
         activepage: "viewnote",
         action: note.action,
         allnotes: updatedNotes,
@@ -405,7 +406,7 @@ handleUnpinNote = async (noteid) => {
       this.state.allnotes.push({
         noteid: note.noteid,
         notetitle: notetitle,
-        notebody: notebody,
+        notebody: noteMarkdown,
         activepage: "viewnote",
         created_at: Date.now(),
         updated_at: Date.now(),
@@ -415,7 +416,7 @@ handleUnpinNote = async (noteid) => {
       this.handleIndexedDB("addnote", {
         noteid: note.noteid,
         title: notetitle,
-        body: notebody,
+        body: noteMarkdown,
         created_at: Date.now(),
         updated_at: Date.now(),
       });
@@ -424,7 +425,7 @@ handleUnpinNote = async (noteid) => {
       this.handleIndexedDB("update", {
         noteid: note.noteid,
         title: notetitle,
-        body: notebody,
+        body: noteMarkdown,
         updated_at: Date.now(),
       });
     }

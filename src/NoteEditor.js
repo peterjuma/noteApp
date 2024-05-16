@@ -206,15 +206,37 @@ function NoteEditor(props) {
   };
 
   const handleBodyChange = (e) => {
-    // props.handleNoteEditor(e);
-    setBodyTxt(e.target.value);
+    const newText = e.target.value;
+    setBodyTxt(newText);
+    if (newText !== history[currentHistoryIndex]) {
+        const newHistory = history.slice(0, currentHistoryIndex + 1); // Cut the history if new text is added after undoing
+        newHistory.push(newText);
+        setHistory(newHistory);
+        setCurrentHistoryIndex(newHistory.length - 1); // Set current index to the latest item
+    }
     setCursor({
       start: e.target.selectionStart,
       end: e.target.selectionEnd,
     });
   };
+
+  const handleUndo = () => {
+    const newIndex = currentHistoryIndex - 1;
+    if (newIndex >= 0) {
+        setBodyTxt(history[newIndex]); // Directly set the text without fallback
+        setCurrentHistoryIndex(newIndex);
+    }
+  };
+
+  const handleRedo = () => {
+      const newIndex = currentHistoryIndex + 1;
+      if (newIndex < history.length) {
+          setBodyTxt(history[newIndex]); // Directly set the text without fallback
+          setCurrentHistoryIndex(newIndex);
+      }
+  };
+
   const handleTitleChange = (e) => {
-    // props.handleNoteEditor(e);
     setTitle(e.target.value);
   };
 
@@ -239,7 +261,23 @@ function NoteEditor(props) {
       event.preventDefault();  // Prevent the default action of the key press
     }
   };
-  
+
+  // Listen for keydown events for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+          if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+              event.preventDefault();
+              handleUndo();
+          } else if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+              event.preventDefault();
+              handleRedo();
+          }
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [history, currentHistoryIndex]); // Re-bind effect if history or index changes
+
   const processInput = (eventcode) => {
     const txtarea = document.querySelector("textarea");
     const start = txtarea.selectionStart;
