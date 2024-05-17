@@ -1,19 +1,30 @@
 import React, { Fragment, useRef, useState, useEffect } from "react";
-import NotePreview from "./NotePreview";
 import keyCodes from "./KeyCodes";
 import { html2md, md2html } from "./useMarkDown";
-import marked from "marked";
+import { marked } from 'marked';
+import InputNumber from "react-input-number";
 
 function NoteEditor(props) {
+
   var note = props.editNoteData;
-  // Set default screen size  - full
+  const [fontsize, setFontsize] = useState(16);
   const [splitscreen, setSplitscreen] = useState(false);
+  const initialBody = note.notebody || '';
+  const initialTitle = note.notetitle || '';
+  const [bodytxt, setBodyTxt] = useState(initialBody);
+  const [title, setTitle] = useState(initialTitle);
+  const titleRef = useRef();
+  const [history, setHistory] = useState([initialBody]); // Initialize history with the initial or an empty text
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
+  const textAreaRef = useRef();
+  const previewRef = useRef();
+  const [cusor, setCursor] = useState({ start: 0, end: 0 });
 
   const styles = {
     main_editor: {
       paddingLeft: "5px",
       paddingRight: "1px",
-      height: "100%",
+      height: "100vh",
       display: "flex",
       flexDirection: "column",
       width: splitscreen ? "50%" : "100%",
@@ -29,8 +40,8 @@ function NoteEditor(props) {
       maxWidth: "1440px",
       margin: "0 auto",
       width: "100%",
-      padding: "50px 60px",
-      fontSize: "16px",
+      padding: "30px",
+      fontSize: `${fontsize}px`,
       fontWeight: "400",
       overflow: "auto",
       lineHeight: "1.45",
@@ -41,17 +52,35 @@ function NoteEditor(props) {
       height: "100%",
       borderRadius: "5px",
     },
+    inputNum: {
+      width: "4.26rem",
+      height: "2.7rem",
+      borderRadius: "4px 2px 2px 4px",
+      color: "#292a2b",
+      padding: "0.1ex 1ex",
+      border: "1px solid #ccc",
+      fontWeight: 250,
+      textShadow: "1px 1px 1px rgba(0, 0, 0, 0.1)",
+      outline: "none",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+    },
     dark: {
-      backgroundColor: "#2c2c2c",
-      color: "#ffffff",
+      backgroundColor: "hsl(0, 0%, 14%)",
+      color: "#afafaf",
     },
     light: {
       backgroundColor: "#fafafa",
       color: "#000000",
     },
     mdtools_dark: {
-      backgroundColor: "#5c5c5c",
-      color: "#000000",
+      backgroundColor: "hsl(0, 0%, 14%)",
+      color: "#292a2b",
+    },
+    btn_dark: {
+      backgroundColor: "hsl(0, 0%, 14%)",
+      color: "#afafaf",
     },
     mdtools_light: {
       color: "#333",
@@ -61,15 +90,42 @@ function NoteEditor(props) {
       backgroundColor: "#fff",
       color: "#777",
     },
-    btn_dark: {
-      backgroundColor: "#5c5c5c",
-      color: "#fff",
+    note_preview: {
+      width: "50%",
+      height: "100%",
+      borderLeft: "1px solid #dcdcde",
+    },
+    title: {
+      paddingTop: "40px",
+      paddingBottom: "10px",
+      margin: "0 50px", // Adjusted margins to provide padding on smaller screens
+      borderBottom: "1px solid #eee",
+      whiteSpace: "nowrap", // Prevents the text from wrapping to the next line
+      overflow: "auto", // Keeps the text within the bounds of its container
+    },
+    body: {
+      color: "#24292e",
+      fontFamily:
+        "-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji",
+      fontSize: "16px",
+      lineHeight: "1.5",
+      wordWrap: "break-word",
+      overflow: "auto",
+      height: "calc(100% - 150px)",
+      padding: "40px 50px 50px",
+    },
+    bottom: {
+      position: "flex",
+      bottom: "0",
+      // borderTop: "1px solid #dcdcde",
+      // height: "50px",
+      margin: "0 50px",
+      width: "100%",
     },
   };
+
   // Toggle screensize
-  const handleSplitScreen = () => {
-    setSplitscreen(!splitscreen);
-  };
+  
   const curscreensize = splitscreen
     ? {
         split: true,
@@ -86,6 +142,26 @@ function NoteEditor(props) {
     screenSizer(screenSize, setScreenSize);
     handleSplitScreen();
   };
+
+  const handleSplitScreen = () => setSplitscreen(!splitscreen);
+
+  const toolbarItems = [
+    { icon: 'fa-bold', command: 'bold', tooltip: 'Bold' },
+    { icon: 'fa-italic', command: 'italic', tooltip: 'Italic' },
+    { icon: 'fa-heading', command: 'heading', tooltip: 'Heading' },
+    { icon: 'fa-link', command: 'link', tooltip: 'Link' },
+    { icon: 'fa-list-ol', command: 'olist', tooltip: 'Ordered List' },
+    { icon: 'fa-list', command: 'ulist', tooltip: 'Unordered List' },
+    { icon: 'fa-quote-left', command: 'blockquote', tooltip: 'Blockquote' },
+    { icon: 'fa-image', command: 'image', tooltip: 'Image' },
+    { icon: 'fa-terminal', command: 'backticks', tooltip: 'Backticks' },
+    { icon: 'fa-code', command: 'codeblock', tooltip: 'Fenced Code' },
+    { icon: 'fa-check-square', command: 'tasklist', tooltip: 'Tasklist' },
+    { icon: 'fa-table', command: 'table', tooltip: 'Table' },
+    { icon: 'fa-strikethrough', command: 'strike', tooltip: 'Strikethrough' },
+    // { icon: 'fa-undo', command: 'undo', tooltip: 'Undo' },
+    // { icon: 'fa-redo', command: 'redo', tooltip: 'Redo' },
+  ];
 
   const screenSizer = (screenSize, setScreenSize) => {
     screenSize.split
@@ -128,198 +204,220 @@ function NoteEditor(props) {
         });
   };
 
-  // Handle Input
-  const [bodytxt, setBodyTxt] = useState(note.notebody);
-  const [title, setTitle] = useState(note.notetitle);
-  const titleRef = useRef();
-
-  const [cusor, setCursor] = useState({
-    start: 0,
-    end: 0,
-  });
-
   const handleBodyChange = (e) => {
-    // props.handleNoteEditor(e);
-    setBodyTxt(e.target.value);
+    const newText = e.target.value;
+    setBodyTxt(newText);
+    if (newText !== history[currentHistoryIndex]) {
+        const newHistory = history.slice(0, currentHistoryIndex + 1); // Cut the history if new text is added after undoing
+        newHistory.push(newText);
+        setHistory(newHistory);
+        setCurrentHistoryIndex(newHistory.length - 1); // Set current index to the latest item
+    }
     setCursor({
       start: e.target.selectionStart,
       end: e.target.selectionEnd,
     });
   };
-  const handleTitleChange = (e) => {
-    // props.handleNoteEditor(e);
-    setTitle(e.target.value);
+
+  const handleUndo = () => {
+    const newIndex = currentHistoryIndex - 1;
+    if (newIndex >= 0) {
+        setBodyTxt(history[newIndex]); // Directly set the text without fallback
+        setCurrentHistoryIndex(newIndex);
+    }
   };
+
+  const handleRedo = () => {
+      const newIndex = currentHistoryIndex + 1;
+      if (newIndex < history.length) {
+          setBodyTxt(history[newIndex]); // Directly set the text without fallback
+          setCurrentHistoryIndex(newIndex);
+      }
+    };
+
+  const handleTitleChange = (e) => {
+      setTitle(e.target.value);
+    };
 
   const handleKeyEvent = (event) => {
-    if (event.code === "Tab") {
-      processInput("tab");
-      event.preventDefault();
-    } else if (event.key === '"') {
-      processInput("doublequote");
-      event.preventDefault();
-    } else if (event.key === "(") {
-      processInput("brackets");
-      event.preventDefault();
-    } else if (event.key === "{") {
-      processInput("curlybrackets");
-      event.preventDefault();
-    } else if (event.key === "[") {
-      processInput("squarebrackets");
-      event.preventDefault();
-    } else if (event.key === "<") {
-      processInput("anglebrackets");
-      event.preventDefault();
-    } else if (event.key === "`") {
-      processInput("backticks");
-      event.preventDefault();
-    } else if (event.ctrlKey && event.code === "KeyB") {
-      processInput("bold");
-    } else if (event.ctrlKey && event.code === "KeyI") {
-      processInput("italic");
-    } else if (event.ctrlKey && event.code === "KeyL") {
-      processInput("link");
-    }
-  };
+    const keyBindings = {
+      '"': "doublequote",
+      '(': "brackets",
+      '{': "curlybrackets",
+      '[': "squarebrackets",
+      '<': "anglebrackets",
+      '`': "backticks",
+      'Tab': "tab",
+      'KeyB': "bold",
+      'KeyI': "italic",
+      'KeyL': "link"
+    };
+    // Check if the key pressed is bound to a command
+    const command = event.ctrlKey ? keyBindings[event.code] : keyBindings[event.key];
+  
+    if (command) {
+        processInput(command);
+        event.preventDefault();  // Prevent the default action of the key press
+      }
+    };
 
-  // Button Inputs
+    // Listen for keydown events for undo/redo
+    useEffect(() => {
+      const handleKeyDown = (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+            event.preventDefault();
+            handleUndo();
+        } else if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+            event.preventDefault();
+            handleRedo();
+        } else if (event.key === "Enter") {
+            const textarea = event.target;
+            const cursorPosition = textarea.selectionStart;
+            const textUpToCursor = textarea.value.substring(0, cursorPosition);
+            const lines = textUpToCursor.split("\n");
+            const currentLine = lines[lines.length - 1];
+    
+            // Unordered list autocomplete
+            if (currentLine.trim().match(/^[-*]\s+/)) {
+                event.preventDefault();
+                const newLineContent = "\n" + currentLine.match(/^[-*]\s+/)[0];
+                insertTextAtCursor(textarea, newLineContent);
+            }
+            // Ordered list autocomplete
+            else if (currentLine.trim().match(/^\d+\.\s+/)) {
+                event.preventDefault();
+                const number = parseInt(currentLine.match(/^(\d+)\./)[1], 10);
+                const newLineContent = "\n" + `${number + 1}. `;
+                insertTextAtCursor(textarea, newLineContent);
+            }
+        }
+      };
+    
+      // Helper function to insert text at the cursor position
+      function insertTextAtCursor(textarea, text) {
+          const [start, end] = [textarea.selectionStart, textarea.selectionEnd];
+          textarea.value = textarea.value.substring(0, start) + text + textarea.value.substring(end);
+          textarea.selectionStart = textarea.selectionEnd = start + text.length;
+      }
+    
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [history, currentHistoryIndex]); // Re-bind effect if history or index changes
+    
+
   const processInput = (eventcode) => {
-    // obtain the object reference for the textarea>
-    var txtarea = document.querySelector("textarea");
-    // obtain the index of the first selected character
-    var start = txtarea.selectionStart;
-    // obtain the index of the last selected character
-    var finish = txtarea.selectionEnd;
-    //obtain all Text
-    var allText = bodytxt;
-    // obtain the selected text
-    var sel = allText.substring(start, finish);
-    var img = `![alt text](${sel})`;
-    var link = `[link](${sel})`;
-    keyCodes["image"].pattern = img;
-    keyCodes["link"].pattern = link;
-    var keyCode = keyCodes[eventcode];
-    if (keyCode.regEx) {
-      var transsel = "";
-      var match = /\r|\n/.exec(sel);
-      if (match) {
-        var lines = sel.split("\n");
-        for (var i = 0; i < lines.length; i++) {
-          if (lines[i].length > 0 && lines[i] !== undefined) {
-            transsel += `${keyCode.pattern} ${lines[i]}\n`;
-          }
-        }
-        sel = transsel;
-      } else {
-        sel = sel.replace(/^/gm, `${keyCode.pattern} `);
-      }
-      var newText = `${allText.substring(0, start)}${sel}${allText.substring(
-        finish,
-        allText.length
-      )}`;
-      if (newText) {
-        setBodyTxt(newText);
-        if (eventcode === "tab") {
-          setCursor({
-            start: start + sel.length,
-            end: start + sel.length,
-          });
-        } else {
-          setCursor({
-            start: start + keyCode.offsetStart,
-            end: start + keyCode.offsetStart,
-          });
-        }
-      }
+    const txtarea = document.querySelector("textarea");
+    const start = txtarea.selectionStart;
+    const finish = txtarea.selectionEnd;
+    const allText = bodytxt;
+    const selectedText = allText.substring(start, finish);
+    const keyCode = keyCodes[eventcode];
+    let newText;
+    let lines = []; 
+    let tabReplacement = '';
+  
+    if (eventcode === 'tab') {
+      // Handling tab insertion for multiple lines
+      tabReplacement = '\t';  // You can adjust this to '    ' (four spaces) if preferred
+      lines = allText.substring(start, finish).split('\n');
+      const indentedText = lines.map(line => `${tabReplacement}${line}`).join('\n');
+      newText = `${allText.substring(0, start)}${indentedText}${allText.substring(finish)}`;
+      setCursor({
+        start: start + tabReplacement.length,
+        end: start + indentedText.length - (lines.length > 1 ? 0 : tabReplacement.length)
+      });
+    } else if (['image', 'link'].includes(eventcode)) {
+      // Special handling for links and images
+      const pattern = eventcode === 'image' ? `![alt text](${selectedText})` : `[link](${selectedText})`;
+      newText = `${allText.substring(0, start)}${pattern}${allText.substring(finish)}`;
+    } else if (keyCode.regEx) {
+      // Apply regex pattern transformation
+      const transformedText = selectedText.split('\n').map(line => 
+        line ? `${keyCode.pattern} ${line}` : line
+      ).join('\n');
+      newText = `${allText.substring(0, start)}${transformedText}${allText.substring(finish)}`;
+    } else if (keyCode.pattern) {
+      // Encapsulate selected text with pattern
+      newText = `${allText.substring(0, start)}${keyCode.pattern}${selectedText}${keyCode.pattern}${allText.substring(finish)}`;
     } else {
-      if (keyCode.pattern !== "") {
-        if (eventcode == "image" || eventcode == "link") {
-          var newText = `${allText.substring(0, start)}${
-            keyCode.pattern
-          }${allText.substring(finish, allText.length)}`;
-        } else {
-          var newText = `${allText.substring(0, start)}${sel}${
-            keyCode.pattern
-          }${allText.substring(finish, allText.length)}`;
-        }
-      } else {
-        var newText = `${allText.substring(0, start)}${keyCode.open}${sel}${
-          keyCode.close
-        }${allText.substring(finish, allText.length)}`;
-      }
-      if (newText) {
-        setBodyTxt(newText);
-        setCursor({
-          start: start + keyCode.offsetStart,
-          end: finish + keyCode.offsetEnd,
-        });
-      }
+      // Wrap selected text with open/close tags
+      newText = `${allText.substring(0, start)}${keyCode.open}${selectedText}${keyCode.close}${allText.substring(finish)}`;
     }
-  };
+  
+    if (newText && newText !== bodytxt) {
+      setBodyTxt(newText);
+      const cursorOffset = keyCode.offsetEnd || keyCode.pattern.length || (keyCode.close ? keyCode.close.length : 0);
+      setCursor({
+        start: start + cursorOffset,
+        end: finish + cursorOffset + (lines.length - 1) * tabReplacement.length
+      });
+    }
+   };
+  
+    // Handle Text selection / cursor position
+  useEffect(() => {
+      textAreaRef.current.selectionStart = cusor.start;
+      textAreaRef.current.selectionEnd = cusor.end;
+      textAreaRef.current.focus();
+    }, [bodytxt]);
 
-  // Paste Event
+    // Paste Event
   const handlePaste = (e) => {
-    // Prevent the default action
-    e.preventDefault();
-    if (e.clipboardData) {
-      // Get the copied text from the clipboard
-      const text = e.clipboardData
-        ? (e.originalEvent || e).clipboardData.getData("text/plain")
-        : // For IE
-        window.clipboardData
-        ? window.clipboardData.getData("Text")
-        : "";
-      // Get the copied text from the clipboard
-      const html = e.clipboardData
-        ? (e.originalEvent || e).clipboardData.getData("text/html")
-        : // For IE
-        window.clipboardData
-        ? window.clipboardData.getData("Html")
-        : "";
-      let pasteData;
-      if (html) {
-        // console.log(html);
-        html2md.keep(["pre", "code"]);
-        pasteData = html2md.turndown(html);
-      } else {
-        /<[a-z][\s\S]*>/i.test(text)
-          ? (pasteData = html2md.turndown(marked(text)))
-          : (pasteData = text);
+    e.preventDefault(); // Prevent the default paste behavior
+  
+    const clipboard = e.clipboardData || window.clipboardData; // Fallback for IE
+    if (!clipboard) {
+      return;
+    }
+  
+    // Retrieve text and HTML content from the clipboard
+    const text = clipboard.getData("text/plain");
+    const html = clipboard.getData("text/html");
+  
+    // Determine the type of content to paste
+    let pasteData;
+    if (html) {
+      html2md.keep(["pre", "code"]);
+      pasteData = html2md.turndown(html);
+    } else if (/<[a-z][\s\S]*>/i.test(text)) { // Check if the text includes HTML tags
+      pasteData = html2md.turndown(marked(text));
+    } else {
+      pasteData = text;
+    }
+  
+    // Insert the processed text into the document
+    if (document.queryCommandSupported("insertText")) {
+      document.execCommand("insertText", false, pasteData);
+    } else {
+      const selection = document.getSelection();
+      if (!selection.rangeCount) return; // No active selection
+      const range = selection.getRangeAt(0);
+      range.deleteContents(); // Clear the selected content
+      const textNode = document.createTextNode(pasteData);
+      range.insertNode(textNode);
+      range.selectNodeContents(textNode); // Select the newly inserted text
+      range.collapse(false); // Collapse the range to the end point to continue typing
+    }
+  };
+  
+    // Handle Cancel Button
+  const handleCancelBtn = () => {
+      if (note.action === "updatenote") {
+        return document.getElementById(note.noteid).click();
       }
-      if (document.queryCommandSupported("insertText")) {
-        document.execCommand("insertText", false, pasteData);
-      } else {
-        // Insert text at the current position of caret
-        const range = document.processInputection().getRangeAt(0);
-        range.deleteContents();
-        const textNode = document.createTextNode(pasteData);
-        range.insertNode(textNode);
-        range.selectNodeContents(textNode);
-        range.collapse(false);
-        const selection = window.processInputection();
-        selection.removeAllRanges();
-        selection.addRange(range);
+      if (document.querySelectorAll(".note-list-item").length > 0) {
+        return document.querySelectorAll(".note-list-item")[0].click();
       }
-    }
-  };
+      return props.handleClickHomeBtn();
+    };
 
-  // Handle Cancel Button
-  const handleCancel = () => {
-    if (note.action === "updatenote") {
-      return document.getElementById(note.noteid).click();
-    }
-    if (document.querySelectorAll(".note-list-item").length > 0) {
-      return document.querySelectorAll(".note-list-item")[0].click();
-    }
-    return props.handleClickHomeBtn();
-  };
-
-  //  Handle Save Noye Button Click
-  const handleSave = (e) => {
-    note.notetitle = title;
-    note.notebody = bodytxt;
-    props.handleSaveNote(e, note);
-  };
+    //  Handle Save Noye Button Click
+  const handleSaveBtn = (e) => {
+      note.notetitle = title;
+      note.notebody = bodytxt;
+      props.handleSaveNote(e, note);
+      props.handleSortNotes("4");
+    };
 
   return (
     <div className="right-row">
@@ -343,125 +441,36 @@ function NoteEditor(props) {
             }
           />
         </div>
-        <div
-          className="md-editor-tools"
-          id="mdtools"
-          style={
-            toggleState.theme === "vs-light"
-              ? { ...styles.mdtools_light }
-              : { ...styles.mdtools_dark }
-          }
-        >
-          <i
-            className="fas fa-bold md_btn"
-            onClick={(e) => processInput("bold")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Bold</span>
-          </i>
-          <i
-            className="fas fa-italic md_btn"
-            onClick={(e) => processInput("italic")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Italic</span>
-          </i>
-          <i
-            className="fas fa-heading md_btn"
-            onClick={(e) => processInput("heading")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Header</span>
-          </i>
-          <i
-            className="fas fa-link md_btn"
-            onClick={(e) => processInput("link")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Link</span>
-          </i>
-          <i
-            className="fas fa-list-ol md_btn"
-            onClick={(e) => processInput("olist")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Ordered List</span>
-          </i>
-          <i
-            className="fas fa-list md_btn"
-            onClick={(e) => processInput("ulist")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Unordered List</span>
-          </i>
-          <i
-            className="fas fa-quote-left md_btn"
-            onClick={(e) => processInput("blockquote")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Quote</span>
-          </i>
-          <i
-            className="far fa-image md_btn"
-            onClick={(e) => processInput("image")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Image Link</span>
-          </i>
-          <i
-            className="fas fa-terminal md_btn"
-            onClick={(e) => processInput("backticks")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Backticks</span>
-          </i>
-          <i
-            className="fas fa-code md_btn"
-            onClick={(e) => processInput("codeblock")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Fenced Code</span>
-          </i>
-          <i
-            className="far fa-check-square md_btn"
-            onClick={(e) => processInput("tasklist")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Tasklist</span>
-          </i>
-          <i
-            className="fas fa-table md_btn"
-            onClick={(e) => processInput("table")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Table</span>
-          </i>
-          <i
-            className="fas fa-strikethrough md_btn"
-            onClick={(e) => processInput("strike")}
-            style={toggleState.buttonstyle}
-          >
-            <span className="tooltiptext">Strikethrough</span>
-          </i>
-          <div style={styles.buttons}>
-            <i
-              className={screenSize.buttonClass}
-              onClick={() => {
-                toggleScreen();
-              }}
-              style={toggleState.buttonstyle}
-            >
-              <span className="tooltiptext">{screenSize.description}</span>
-            </i>
-            <i
-              className={toggleState.themeclass}
-              onClick={(e) => toggleTheme()}
-              style={toggleState.buttonstyle}
-            >
-              <span className="tooltiptext">{toggleState.description}</span>
-            </i>
-          </div>
-        </div>
+          <div className="md-editor-tools" id="mdtools" style={toggleState.theme === "vs-light" ? styles.mdtools_light : styles.mdtools_dark}>
+              {toolbarItems.map((item) => (
+                <span key={item.command} tooltip={item.tooltip}>
+                  <i className={`fas ${item.icon} md_btn`} onClick={() => processInput(item.command)} style={toggleState.buttonstyle}></i>
+                </span>
+              ))}
+              {/* Font size adjuster and other controls */}
+              <span className="input-div">
+                <i className="fas fa-angle-left fa-lg fnt_btn" onClick={() => setFontsize(fontsize - 1)}></i>
+                <InputNumber
+                  min={10}
+                  max={48}
+                  step={1}
+                  value={fontsize}
+                  onChange={setFontsize}
+                  style={toggleState.theme === "vs-light" ? styles.inputNum : styles.inputNum}
+                />
+                <i className="fas fa-angle-right fa-lg fnt_btn" onClick={() => setFontsize(fontsize + 1)}></i>
+              </span>
+
+              {/* Screen toggle and theme toggle controls */}
+              <div style={styles.buttons}>
+                <span tooltip={screenSize.description}>
+                  <i className={screenSize.buttonClass} onClick={toggleScreen} style={toggleState.buttonstyle}></i>
+                </span>
+                <span tooltip={toggleState.description}>
+                  <i className={toggleState.themeclass} onClick={toggleTheme} style={toggleState.buttonstyle}></i>
+                </span>
+              </div>
+            </div>
         <div className="md-txtarea">
           <div className="texteditor scrollbar">
             <textarea
@@ -472,9 +481,9 @@ function NoteEditor(props) {
               data-action={note.action}
               value={bodytxt}
               id="notebody"
-              data-action={note.action}
-              selectionEnd={cusor.end}
-              selectionStart={cusor.start}
+              ref={textAreaRef}
+              selectionend={cusor.end}
+              selectionstart={cusor.start}
               style={
                 toggleState.theme === "vs-light"
                   ? { ...styles.textarea, ...styles.light }
@@ -485,21 +494,28 @@ function NoteEditor(props) {
 
           <div className="right-bottom-bar">
             <div className="saveCancelBar">
-              <i
-                className="far fa-save btn-save-cancel fa-2x"
-                onClick={(e) => handleSave(e)}
-                data-action={note.action}
-              ></i>
-              <i
-                className="far fa-window-close btn-save-cancel fa-2x"
-                onClick={(e) => handleCancel()}
-              ></i>
+              <span tooltip="Save" flow="right">
+                <i
+                  className="far fa-save btn-save-cancel fa-2x"
+                  onClick={(e) => handleSaveBtn(e)}
+                  data-action={note.action}
+                ></i>
+              </span>
+              <span tooltip="Cancel" flow="left">
+                <i
+                  className="far fa-window-close btn-save-cancel fa-2x"
+                  onClick={(e) => handleCancelBtn()}
+                ></i>
+              </span>
             </div>
           </div>
         </div>
       </div>
       {splitscreen && (
-        <NotePreview note={{ notebody: bodytxt, notetitle: title }} />
+          <div style={styles.note_preview} ref={previewRef}>
+            <h2 style={styles.title} dangerouslySetInnerHTML={{ __html: marked(title || "") }}></h2>
+            <div style={styles.body} dangerouslySetInnerHTML={{ __html: marked(bodytxt || "") }}></div>
+          </div>
       )}
     </div>
   );
