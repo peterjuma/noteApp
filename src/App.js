@@ -100,8 +100,6 @@ handlePinNote = async (noteid) => {
   });
 };
 
-
-
 // Unpin a note and persist
 handleUnpinNote = async (noteid) => {
   await this.handleIndexedDB("removepin", { noteid });
