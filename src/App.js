@@ -506,14 +506,19 @@ handleUnpinNote = async (noteid) => {
     const field = searchString.startsWith('title:') ? 'title' : 
                   searchString.startsWith('body:') ? 'body' : 'title';
 
+    const searchWords = searchQuery.split(/\s+/); // Split the search query into words
+
     const filteredNotes = this.state.allnotes.filter(note => {
         const contentToSearch = (field === 'title' ? note.title : note.body || '').toLowerCase();
-        return contentToSearch.includes(searchQuery);
+        return searchWords.every(word => contentToSearch.includes(word)); // Check if all words are present
     });
 
     this.setState({ filteredNotes });
+    if (filteredNotes.length === 1) {
+        this.handleNoteListItemClick(null, filteredNotes[0]);
+    }
 }
- 
+
 
   handleDownloadNote(note) {
     const title = `${note.notetitle.replace(/[^A-Z0-9]+/gi, "_") || "note"}.md`;
