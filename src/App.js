@@ -512,7 +512,7 @@ handleUnpinNote = async (noteid) => {
     });
 
     this.setState({ filteredNotes });
-    if (filteredNotes.length === 1) {
+    if (filteredNotes.length > 0) {
         this.handleNoteListItemClick(null, filteredNotes[0]);
     }
 }
