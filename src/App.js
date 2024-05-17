@@ -23,6 +23,7 @@ class App extends Component {
       action: "", // addnote // updatenote
       sortby: "4", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
       allnotes: [],
+      filteredNotes: [],
       pinnedNotes: [], // Store pinned notes by noteid
     };
     this.handleNoteListItemClick = this.handleNoteListItemClick.bind(this);
@@ -63,6 +64,8 @@ class App extends Component {
       // Sort notes by the default sort order
       this.handleSortNotes(this.state.sortby); 
     });
+
+    console.log("Current State:", this.state);
   
     this.updateCodeSyntaxHighlighting();
     this.handleCopyCodeButtonClick();
@@ -81,21 +84,22 @@ class App extends Component {
 
 // Pin a note and persist
 handlePinNote = async (noteid) => {
-  // If the number of pinned notes is 5 or greater, return early
   if (this.state.pinnedNotes.length >= 5) {
-    alert("You can only pin up to 5 notes.");
-    return;
+      alert("You can only pin up to 5 notes.");
+      return;
   }
-
   await this.handleIndexedDB("addpin", { noteid });
-  this.setState((prevState) => {
-    const pinnedNotes = [...prevState.pinnedNotes, noteid];
-    return { pinnedNotes };
-  }, () => {
-    this.handleSortNotes(this.state.sortby);
-    document.getElementById(noteid).click();
+  this.setState((prevState) => ({
+      pinnedNotes: [...prevState.pinnedNotes, noteid]
+  }), () => {
+      this.handleSortNotes(this.state.sortby); // Re-sort notes after pinning
+      const element = document.getElementById(noteid);
+      if (element) {
+          element.click(); // Simulate a click on the newly pinned note
+      }
   });
 };
+
 
 
 // Unpin a note and persist
@@ -214,30 +218,40 @@ handleUnpinNote = async (noteid) => {
   // Handle Click List Item
   handleNoteListItemClick = (e, note) => {
     this.setState({
-      noteid: note.noteid,
-      notetitle: note.title,
-      notebody: note.body,
-      activepage: "viewnote",
-      action: "",
+        noteid: note.noteid,
+        notetitle: note.title,
+        notebody: note.body,
+        activepage: "viewnote",
+        action: "",
+    }, () => {
+        // This callback ensures that the state update has completed.
+        const element = document.getElementById(note.noteid);
+        if (element) {
+            document.querySelectorAll(".note-list-item-clicked").forEach(el => {
+                el.classList.remove("note-list-item-clicked");
+            });
+            element.classList.add("note-list-item-clicked");
+        } else {
+            console.log("Note element not found, might be due to filtering or it is unpinned.");
+        }
     });
-    // Toggle note-clikced class
-    var noteList = document.querySelectorAll(".note-list-item-clicked");
-    noteList.length > 0
-      ? noteList.forEach((b) => b.classList.remove("note-list-item-clicked"))
-      : "";
-    document
-      .getElementById(note.noteid)
-      .classList.add("note-list-item-clicked");
-    };
+};
+
     
   // Handle Mouse Hover on List item
   handleNoteListItemMouseOver = (e, note) => {
-    var noteList = document.querySelectorAll(".note-list-item-hover");
-    noteList.length > 0
-      ? noteList.forEach((b) => b.classList.remove("note-list-item-hover"))
-      : "";
-    document.getElementById(note.noteid).classList.add("note-list-item-hover");
-  };
+    const elementId = note.noteid;  // Ensure the note ID exists and is correct
+    const element = document.getElementById(elementId);
+    if (element) {
+        document.querySelectorAll(".note-list-item-hover").forEach(el => {
+            el.classList.remove("note-list-item-hover");
+        });
+        element.classList.add("note-list-item-hover");
+    } else {
+        console.log("Note element with ID:", elementId, "not found.");
+    }
+};
+
   handleNoteListItemMouseOut = () => {
     var noteList = document.querySelectorAll(".note-list-item-hover");
     noteList.length > 0
@@ -330,7 +344,6 @@ handleUnpinNote = async (noteid) => {
     if (sortedNotes.length > 0 && this.state.action !== "addnote" && this.state.action !== "updatenote") {
       this.handleNoteListItemClick(null, sortedNotes[0]);
     }
-
   };
 
   handleEditNoteBtn = (e, note) => {
@@ -481,32 +494,26 @@ handleUnpinNote = async (noteid) => {
   }
 
   handleSearchNotes(e) {
-        const searchString = e.target.value.trim().toUpperCase();
+    const searchString = e.target.value.toLowerCase();
+    const searchQuery = searchString.replace(/^(title:|body:)/, '').trim();
 
-        if (!searchString) {
-            document.querySelectorAll(".note-list-item").forEach(note => {
-                note.style.display = "";
-            });
-            return;
-        }
+    if (!searchQuery) {
+        // If the search query is empty, reset to show all notes
+        this.setState({ filteredNotes: [] });
+        return;
+    }
 
-        const noteList = document.querySelectorAll(".note-list-item");
-        let displayList = [];
+    const field = searchString.startsWith('title:') ? 'title' : 
+                  searchString.startsWith('body:') ? 'body' : 'title';
 
-        noteList.forEach(note => {
-            const titleText = note.querySelector(".note-title").innerText.toUpperCase();
-            if (titleText.includes(searchString)) {
-                note.style.display = "";
-                displayList.push(note);
-            } else {
-                note.style.display = "none";
-            }
-        });
+    const filteredNotes = this.state.allnotes.filter(note => {
+        const contentToSearch = (field === 'title' ? note.title : note.body || '').toLowerCase();
+        return contentToSearch.includes(searchQuery);
+    });
 
-        if (this.state.activepage !== "editnote" && displayList.length > 0) {
-            displayList[0].click();
-        }
-      }
+    this.setState({ filteredNotes });
+}
+ 
 
   handleDownloadNote(note) {
     const title = `${note.notetitle.replace(/[^A-Z0-9]+/gi, "_") || "note"}.md`;
@@ -553,10 +560,13 @@ handleUnpinNote = async (noteid) => {
       await this.handleIndexedDB("addnote", newNote);
   
       // Add note to the state
-      this.setState((prevState) => ({
-        allnotes: [...prevState.allnotes, newNote],
-      }));
-      this.handleSortNotes("4");
+      this.setState(prevState => ({
+        ...prevState,
+        allnotes: [...prevState.allnotes, newNote]
+    }), () => {
+        // Now that the state is updated, perform actions that depend on the updated state
+        this.handleSortNotes("4");
+    });
       this.handleNoteListItemClick(null, newNote);
     };
     reader.readAsText(file);
@@ -565,12 +575,11 @@ handleUnpinNote = async (noteid) => {
 
   render() {
     // Separate pinned and unpinned notes
-    const pinnedNotes = this.state.allnotes.filter(note => this.state.pinnedNotes.includes(note.noteid));
-    const unpinnedNotes = this.state.allnotes.filter(note => !this.state.pinnedNotes.includes(note.noteid));
+    // const pinnedNotes = this.state.allnotes.filter(note => this.state.pinnedNotes.includes(note.noteid));
+    // const unpinnedNotes = this.state.allnotes.filter(note => !this.state.pinnedNotes.includes(note.noteid));
+
+    const { allnotes, pinnedNotes, filteredNotes } = this.state;
     
-    // Count the total number of notes
-    const totalPinned = pinnedNotes.length;
-    const totalUnpinned = unpinnedNotes.length;
 
     let ActivePage, RightNavbar;
     if (this.state.activepage === "viewnote") {
@@ -624,39 +633,51 @@ handleUnpinNote = async (noteid) => {
       );
     }
 
+    // Use a unified source of truth for notes to display
+    const displayNotes = filteredNotes.length > 0 ? filteredNotes : allnotes;
+
+    let filteredPinnedNotes = displayNotes.filter(note => pinnedNotes.includes(note.noteid));
+    let filteredUnpinnedNotes = displayNotes.filter(note => !pinnedNotes.includes(note.noteid));
+
+        // Count the total number of notes
+    const totalPinned = filteredPinnedNotes.length;
+    const totalUnpinned = filteredUnpinnedNotes.length;
+    
+
     let pinnedNoteListItems = (
-    <>
-    {pinnedNotes.map((note) => (
-      <NoteList
-        key={note.noteid}
-        note={note}
-        isPinned={true}
-        handlePinNote={this.handlePinNote}
-        handleUnpinNote={this.handleUnpinNote}
-        handleNoteListItemClick={this.handleNoteListItemClick}
-        handleMouseOver={this.handleNoteListItemMouseOver}
-        handleMouseOut={this.handleNoteListItemMouseOut}
-      />
-    ))}
-   </>
+        <>
+            {filteredPinnedNotes.map((note) => (
+                <NoteList
+                    key={note.noteid}
+                    note={note}
+                    isPinned={true}
+                    handlePinNote={this.handlePinNote}
+                    handleUnpinNote={this.handleUnpinNote}
+                    handleNoteListItemClick={this.handleNoteListItemClick}
+                    handleMouseOver={this.handleNoteListItemMouseOver}
+                    handleMouseOut={this.handleNoteListItemMouseOut}
+                />
+            ))}
+        </>
     );
 
     let otherNoteListItems = (
-      <>
-            {unpinnedNotes.map((note) => (
-              <NoteList
-                key={note.noteid}
-                note={note}
-                isPinned={false}
-                handlePinNote={this.handlePinNote}
-                handleUnpinNote={this.handleUnpinNote}
-                handleNoteListItemClick={this.handleNoteListItemClick}
-                handleMouseOver={this.handleNoteListItemMouseOver}
-                handleMouseOut={this.handleNoteListItemMouseOut}
-              />
+        <>
+            {filteredUnpinnedNotes.map((note) => (
+                <NoteList
+                    key={note.noteid}
+                    note={note}
+                    isPinned={false}
+                    handlePinNote={this.handlePinNote}
+                    handleUnpinNote={this.handleUnpinNote}
+                    handleNoteListItemClick={this.handleNoteListItemClick}
+                    handleMouseOver={this.handleNoteListItemMouseOver}
+                    handleMouseOut={this.handleNoteListItemMouseOut}
+                />
             ))}
-      </>
+        </>
     );
+
 
     return (
       <div className="container">
