@@ -6,11 +6,10 @@ import NoteList from "./NoteList";
 import NoteMain from "./NoteMain";
 import readmePath from "./README.md";
 import NoteEditor from "./NoteEditor";
-import FooterBar from "./FooterBar";
 import hljs from "highlight.js";
 import { openDB } from "idb/with-async-ittr.js";
 import { html2md, md2html } from "./useMarkDown";
-import marked from "marked";
+import { marked } from 'marked';
 import { saveAs } from "file-saver";
 
 class App extends Component {
@@ -24,6 +23,8 @@ class App extends Component {
       action: "", // addnote // updatenote
       sortby: "4", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
       allnotes: [],
+      filteredNotes: [],
+      pinnedNotes: [], // Store pinned notes by noteid
     };
     this.handleNoteListItemClick = this.handleNoteListItemClick.bind(this);
     this.handleClickHomeBtn = this.handleClickHomeBtn.bind(this);
@@ -35,8 +36,8 @@ class App extends Component {
     this.handleDeleteNote = this.handleDeleteNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
     this.handleSearchNotes = this.handleSearchNotes.bind(this);
+    this.debouncedSearch = this.debounce(this.handleSearchNotes, 250);
     this.handleIndexedDB = this.handleIndexedDB.bind(this);
-    this.handleCopyNote = this.handleCopyNote.bind(this);
     this.handleCopyEvent = this.handleCopyEvent.bind(this);
     this.handleSortNotes = this.handleSortNotes.bind(this);
     this.updateCodeSyntaxHighlighting;
@@ -44,22 +45,32 @@ class App extends Component {
     this.handleCopyCodeButtonClick;
     this.handleNoteEditor = this.handleNoteEditor.bind(this);
     this.handleNotesBackup = this.handleNotesBackup.bind(this);
+    this.handleNotesUpload = this.handleNotesUpload.bind(this);
   }
-
+  
   async componentDidMount() {
     const getnotes = await this.handleIndexedDB("getall");
-    if (getnotes.length == 0) {
-      this.handleClickHomeBtn();
-    } else {
-      this.setState({
-        allnotes: getnotes,
-      });
-      document.getElementById(getnotes[0].noteid).click();
-    }
+    const pinnedNotes = await this.handleIndexedDB("getallpins");
+    this.setState({
+      allnotes: getnotes,
+      pinnedNotes: pinnedNotes || [],
+    }, () => {
+
+      // Display the home page if there are no notes
+      if (this.state.allnotes.length === 0) {
+        this.handleClickHomeBtn();
+        return;
+      } 
+      // Sort notes by the default sort order
+      this.handleSortNotes(this.state.sortby); 
+    });
+
+    console.log("Current State:", this.state);
+  
     this.updateCodeSyntaxHighlighting();
     this.handleCopyCodeButtonClick();
   }
-
+    
   componentDidUpdate() {
     this.updateCodeSyntaxHighlighting();
     this.handleCopyCodeButtonClick();
@@ -70,6 +81,36 @@ class App extends Component {
       hljs.highlightElement(block);
     });
   };
+
+// Pin a note and persist
+handlePinNote = async (noteid) => {
+  if (this.state.pinnedNotes.length >= 10) {
+      alert("You can only pin up to 10 notes.");
+      return;
+  }
+  await this.handleIndexedDB("addpin", { noteid });
+  this.setState((prevState) => ({
+      pinnedNotes: [...prevState.pinnedNotes, noteid]
+  }), () => {
+      this.handleSortNotes(this.state.sortby); // Re-sort notes after pinning
+      const element = document.getElementById(noteid);
+      if (element) {
+          element.click(); // Simulate a click on the newly pinned note
+      }
+  });
+};
+
+// Unpin a note and persist
+handleUnpinNote = async (noteid) => {
+  await this.handleIndexedDB("removepin", { noteid });
+  this.setState((prevState) => {
+    const pinnedNotes = prevState.pinnedNotes.filter(id => id !== noteid);
+    return { pinnedNotes };
+  }, () => {
+    this.handleSortNotes(this.state.sortby);
+    document.getElementById(noteid).click();
+  });
+};
 
   handleCopyCodeButtonClick = () => {
     if (navigator && navigator.clipboard) {
@@ -134,77 +175,81 @@ class App extends Component {
 
   // Indexed DB class
   async handleIndexedDB(cmd = "", note = "") {
-    const db = await openDB("notesdb", 1, {
+    const dbVersion = 2; // Increment the version from your existing version
+    const db = await openDB("notesdb", dbVersion, {
       upgrade(db) {
-        // Create a store of objects
-        const store = db.createObjectStore("notes", {
-          // The 'noteid' property of the object will be the key.
-          keyPath: "noteid",
-          // If it isn't explicitly set, create a value by auto incrementing.
-          autoIncrement: true,
-        });
-        // Create an index on all fields of the objects.
-        store.createIndex("created_at", "created_at");
-        store.createIndex("noteid", "noteid");
+        // Create the 'notes' store if it doesn't exist
+        if (!db.objectStoreNames.contains('notes')) {
+          const store = db.createObjectStore("notes", {
+            keyPath: "noteid",
+            autoIncrement: true,
+          });
+          store.createIndex("created_at", "created_at");
+          store.createIndex("noteid", "noteid");
+        }
+        
+        // Create the 'pinnedNotes' store if it doesn't exist
+        if (!db.objectStoreNames.contains('pinnedNotes')) {
+          db.createObjectStore("pinnedNotes", { keyPath: "noteid" });
+        }
       },
     });
-    // 1. Create single note
-    if (cmd === "addnote") {
-      await db.add("notes", note);
+    
+    // Notes operations (existing code)
+    if (cmd === "addnote") await db.add("notes", note);
+    if (cmd === "getall") return await db.getAll("notes");
+    if (cmd === "getone") return await db.get("notes", note.noteid);
+    if (cmd === "update") await db.put("notes", note);
+    if (cmd === "delete") await db.delete("notes", note.noteid);
+  
+    // Pinned notes operations
+    if (cmd === "addpin") await db.put("pinnedNotes", { noteid: note.noteid });
+    if (cmd === "removepin") await db.delete("pinnedNotes", note.noteid);
+    if (cmd === "getallpins") {
+      const pins = await db.getAll("pinnedNotes");
+      return pins.map(pin => pin.noteid);
     }
-    // 2.1 Read all notes
-    if (cmd === "getall") {
-      let notes = await db.getAll("notes");
-      return notes;
-    }
-    // 2.2 Read single note
-    if (cmd === "getone") {
-      const db = await openDB("notesdb", 1);
-      const tx = db.transaction("notes");
-      const idx = tx.store.index("noteid");
-      let onenote = await idx.get(note);
-      return onenote;
-    }
-    // 3. Update single note
-    if (cmd === "update") {
-      const db = await openDB("notesdb", 1);
-      db.put("notes", note);
-    }
-    // 4. Delete single note
-    if (cmd === "delete") {
-      const db = await openDB("notesdb", 1);
-      db.delete("notes", note.noteid);
-    }
+  
     db.close();
   }
-
+  
   // Handle Click List Item
   handleNoteListItemClick = (e, note) => {
     this.setState({
-      noteid: note.noteid,
-      notetitle: note.title,
-      notebody: note.body,
-      activepage: "viewnote",
-      action: "",
+        noteid: note.noteid,
+        notetitle: note.title,
+        notebody: note.body,
+        activepage: "viewnote",
+        action: "",
+    }, () => {
+        // This callback ensures that the state update has completed.
+        const element = document.getElementById(note.noteid);
+        if (element) {
+            document.querySelectorAll(".note-list-item-clicked").forEach(el => {
+                el.classList.remove("note-list-item-clicked");
+            });
+            element.classList.add("note-list-item-clicked");
+        } else {
+            console.log("Note element not found, might be due to filtering or it is unpinned.");
+        }
     });
-    // Toggle note-clikced class
-    var noteList = document.querySelectorAll(".note-list-item-clicked");
-    noteList.length > 0
-      ? noteList.forEach((b) => b.classList.remove("note-list-item-clicked"))
-      : "";
-    document
-      .getElementById(note.noteid)
-      .classList.add("note-list-item-clicked");
-  };
+};
 
+    
   // Handle Mouse Hover on List item
   handleNoteListItemMouseOver = (e, note) => {
-    var noteList = document.querySelectorAll(".note-list-item-hover");
-    noteList.length > 0
-      ? noteList.forEach((b) => b.classList.remove("note-list-item-hover"))
-      : "";
-    document.getElementById(note.noteid).classList.add("note-list-item-hover");
-  };
+    const elementId = note.noteid;  // Ensure the note ID exists and is correct
+    const element = document.getElementById(elementId);
+    if (element) {
+        document.querySelectorAll(".note-list-item-hover").forEach(el => {
+            el.classList.remove("note-list-item-hover");
+        });
+        element.classList.add("note-list-item-hover");
+    } else {
+        console.log("Note element with ID:", elementId, "not found.");
+    }
+};
+
   handleNoteListItemMouseOut = () => {
     var noteList = document.querySelectorAll(".note-list-item-hover");
     noteList.length > 0
@@ -234,43 +279,69 @@ class App extends Component {
   };
 
   handleSortNotes = (sortby) => {
-    // "0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
-    var notesArray = [...this.state.allnotes];
-    var sortvalue = event ? event.target.value : sortby;
-    switch (sortvalue) {
-      case "0":
-        notesArray.sort(function (a, b) {
-          let x = a.title.toUpperCase(),
-            y = b.title.toUpperCase();
-          return x == y ? 0 : x > y ? 1 : -1;
-        });
+    const notesArray = [...this.state.allnotes];
+    const sortValue = sortby; // Directly use the passed value
+  
+    // Separate pinned and unpinned notes
+    const pinnedNotes = notesArray.filter(note => this.state.pinnedNotes.includes(note.noteid));
+    const unpinnedNotes = notesArray.filter(note => !this.state.pinnedNotes.includes(note.noteid));
+  
+    const sortByTitle = (a, b, order = 'asc') => {
+      // Check for empty titles and sort them last
+      const aTitle = a.title ? a.title.toUpperCase() : '';
+      const bTitle = b.title ? b.title.toUpperCase() : '';
+      
+      // If a title is empty, it goes last
+      if (!aTitle && bTitle) return 1; // `a` is empty, `b` isn't
+      if (aTitle && !bTitle) return -1; // `b` is empty, `a` isn't
+      if (!aTitle && !bTitle) return 0; // Both are empty
+      
+      // Normal alphabetical sorting
+      return order === 'asc' ? (aTitle > bTitle ? 1 : aTitle < bTitle ? -1 : 0) : (aTitle > bTitle ? -1 : aTitle < bTitle ? 1 : 0);
+    };
+  
+    switch (sortValue) {
+      case "0": // Title: A-Z
+        pinnedNotes.sort((a, b) => sortByTitle(a, b, 'asc'));
+        unpinnedNotes.sort((a, b) => sortByTitle(a, b, 'asc'));
         break;
-      case "1":
-        notesArray.sort(function (a, b) {
-          let x = a.title.toUpperCase(),
-            y = b.title.toUpperCase();
-          return x == y ? 0 : x > y ? -1 : 1;
-        });
+      case "1": // Title: Z-A
+        pinnedNotes.sort((a, b) => sortByTitle(a, b, 'desc'));
+        unpinnedNotes.sort((a, b) => sortByTitle(a, b, 'desc'));
         break;
-      case "2":
-        notesArray.sort((a, b) => b.created_at - a.created_at);
+      case "2": // Created: Newest
+        pinnedNotes.sort((a, b) => b.created_at - a.created_at);
+        unpinnedNotes.sort((a, b) => b.created_at - a.created_at);
         break;
-      case "3":
-        notesArray.sort((a, b) => a.created_at - b.created_at);
+      case "3": // Created: Oldest
+        pinnedNotes.sort((a, b) => a.created_at - b.created_at);
+        unpinnedNotes.sort((a, b) => a.created_at - b.created_at);
         break;
-      case "4":
-        notesArray.sort((a, b) => b.updated_at - a.updated_at);
+      case "4": // Modified: Newest
+        pinnedNotes.sort((a, b) => b.updated_at - a.updated_at);
+        unpinnedNotes.sort((a, b) => b.updated_at - a.updated_at);
         break;
-      case "5":
-        notesArray.sort((a, b) => a.updated_at - b.updated_at);
+      case "5": // Modified: Oldest
+        pinnedNotes.sort((a, b) => a.updated_at - b.updated_at);
+        unpinnedNotes.sort((a, b) => a.updated_at - b.updated_at);
         break;
       default:
+        return;
     }
+  
+    // Merge the sorted lists with pinned notes on top
+    const sortedNotes = [...pinnedNotes, ...unpinnedNotes];
+  
     this.setState({
-      sortby: sortvalue,
-      allnotes: notesArray,
+      sortby: sortValue,
+      allnotes: sortedNotes,
     });
-    document.getElementById(notesArray[0].noteid).click();
+  
+    // If there are any notes, select the first one
+    // If action is addnote or updatenote, do not select any note
+    if (sortedNotes.length > 0 && this.state.action !== "addnote" && this.state.action !== "updatenote") {
+      this.handleNoteListItemClick(null, sortedNotes[0]);
+    }
   };
 
   handleEditNoteBtn = (e, note) => {
@@ -319,13 +390,14 @@ class App extends Component {
   }
 
   handleSaveNote(e, note) {
-    const notebody = html2md.turndown(marked(marked(note.notebody)));
+    const noteHTML = marked(note.notebody);
+    const noteMarkdown = html2md.turndown(noteHTML);
     const notetitle = document.getElementById("notetitle").value;
     this.setState((prevState) => {
       const updatedNotes = prevState.allnotes.map((noteitem) => {
         if (noteitem.noteid === note.noteid) {
           noteitem.title = notetitle;
-          noteitem.body = notebody;
+          noteitem.body = noteMarkdown;
           noteitem.activepage = "viewnote";
         }
         return noteitem;
@@ -333,7 +405,7 @@ class App extends Component {
       return {
         noteid: note.noteid,
         notetitle: notetitle,
-        notebody: notebody,
+        notebody: noteMarkdown,
         activepage: "viewnote",
         action: note.action,
         allnotes: updatedNotes,
@@ -344,7 +416,7 @@ class App extends Component {
       this.state.allnotes.push({
         noteid: note.noteid,
         notetitle: notetitle,
-        notebody: notebody,
+        notebody: noteMarkdown,
         activepage: "viewnote",
         created_at: Date.now(),
         updated_at: Date.now(),
@@ -354,7 +426,7 @@ class App extends Component {
       this.handleIndexedDB("addnote", {
         noteid: note.noteid,
         title: notetitle,
-        body: notebody,
+        body: noteMarkdown,
         created_at: Date.now(),
         updated_at: Date.now(),
       });
@@ -363,48 +435,23 @@ class App extends Component {
       this.handleIndexedDB("update", {
         noteid: note.noteid,
         title: notetitle,
-        body: notebody,
+        body: noteMarkdown,
         updated_at: Date.now(),
       });
     }
   }
 
-  handleCopyNote(e, content) {
-    var textArea = document.createElement("textarea");
-    // Place in top-left corner of screen regardless of scroll position.
-    textArea.style.position = "fixed";
-    textArea.style.top = 0;
-    textArea.style.left = 0;
-    // Ensure it has a small width and height. Setting to 1px / 1em
-    // doesn't work as this gives a negative w/h on some browsers.
-    textArea.style.width = "2em";
-    textArea.style.height = "2em";
-    // We don't need padding, reducing the size if it does flash render.
-    textArea.style.padding = 0;
-    // Clean up any borders.
-    textArea.style.border = "none";
-    textArea.style.outline = "none";
-    textArea.style.boxShadow = "none";
-    // Avoid flash of white box if rendered for any reason.
-    textArea.style.background = "transparent";
-    textArea.value =
-      typeof content === "object"
-        ? `## ${content.notetitle}\n${content.notebody}`
-        : content;
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-      var successful = document.execCommand("copy");
-    } catch (err) {
-      console.log("Oops, unable to copy");
+  handleCopyEvent(e, copiedContent = "") {
+    if (copiedContent) {
+      return navigator.clipboard
+        .writeText(copiedContent)
+        .then(() => {
+          // Success!
+        })
+        .catch((err) => {
+          console.log("Something went wrong", err);
+        });
     }
-    document.body.removeChild(textArea);
-  }
-
-  handleCopyEvent(e) {
-    e.preventDefault();
-    var copiedContent = "";
     if (typeof window.getSelection != "undefined") {
       var sel = window.getSelection();
       if (sel.rangeCount) {
@@ -419,25 +466,57 @@ class App extends Component {
         copiedContent = document.selection.createRange().htmlText;
       }
     }
-    this.handleCopyNote("", html2md.turndown(copiedContent));
+    navigator.clipboard
+      .writeText(html2md.turndown(copiedContent))
+      .then(() => {
+        // Success!
+      })
+      .catch((err) => {
+        console.log("Something went wrong", err);
+      });
+  }
+
+  debounce(func, wait, immediate) {
+    let timeout;
+    return function() {
+        const context = this, args = arguments;
+        const later = function() {
+            timeout = null;
+            if (!immediate) func.apply(context, args);
+        };
+        const callNow = immediate && !timeout;
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow) func.apply(context, args);
+    };
   }
 
   handleSearchNotes(e) {
-    var noteList = document.querySelectorAll(".note-list-item");
-    var searchString = e.target.value.toUpperCase();
-    var DisplayList = [];
-    for (var i = 0; i < noteList.length; i++) {
-      var title = noteList[i].innerText;
-      var index = title.toUpperCase().indexOf(searchString);
-      if (index > -1) {
-        noteList[i].style.display = "";
-        DisplayList.push(noteList[i]);
-      } else {
-        noteList[i].style.display = "none";
-      }
+    const searchString = e.target.value.toLowerCase();
+    const searchQuery = searchString.replace(/^(title:|body:)/, '').trim();
+
+    if (!searchQuery) {
+        // If the search query is empty, reset to show all notes
+        this.setState({ filteredNotes: [] });
+        return;
     }
-    DisplayList.length > 0 && DisplayList[0].click();
-  }
+
+    const field = searchString.startsWith('title:') ? 'title' : 
+                  searchString.startsWith('body:') ? 'body' : 'title';
+
+    const searchWords = searchQuery.split(/\s+/); // Split the search query into words
+
+    const filteredNotes = this.state.allnotes.filter(note => {
+        const contentToSearch = (field === 'title' ? note.title : note.body || '').toLowerCase();
+        return searchWords.every(word => contentToSearch.includes(word)); // Check if all words are present
+    });
+
+    this.setState({ filteredNotes });
+    if (filteredNotes.length > 0) {
+        this.handleNoteListItemClick(null, filteredNotes[0]);
+    }
+}
+
 
   handleDownloadNote(note) {
     const title = `${note.notetitle.replace(/[^A-Z0-9]+/gi, "_") || "note"}.md`;
@@ -459,16 +538,51 @@ class App extends Component {
     });
   }
 
+  handleNotesUpload = async (event) => {
+    const file = event.target.files[0]; // Assuming single file selection
+    if (!file || !file.name.endsWith(".md")) {
+      alert("Please upload a valid Markdown file.");
+      return;
+    }
+  
+    // Read the file content
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const content = e.target.result;
+      const title = file.name.replace(".md", ""); // Use filename without extension as the title
+  
+      const newNote = {
+        noteid: new Date().getTime().toString(), // Generate a unique note ID
+        title,
+        body: content,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      };
+  
+      // Add note to IndexedDB
+      await this.handleIndexedDB("addnote", newNote);
+  
+      // Add note to the state
+      this.setState(prevState => ({
+        ...prevState,
+        allnotes: [...prevState.allnotes, newNote]
+    }), () => {
+        // Now that the state is updated, perform actions that depend on the updated state
+        this.handleSortNotes("4");
+    });
+      this.handleNoteListItemClick(null, newNote);
+    };
+    reader.readAsText(file);
+  };
+  
+
   render() {
-    const noteListItems = this.state.allnotes.map((note) => (
-      <NoteList
-        key={note.noteid}
-        note={note}
-        handleClick={this.handleNoteListItemClick}
-        handleMouseOver={this.handleNoteListItemMouseOver}
-        handleMouseOut={this.handleNoteListItemMouseOut}
-      />
-    ));
+    // Separate pinned and unpinned notes
+    // const pinnedNotes = this.state.allnotes.filter(note => this.state.pinnedNotes.includes(note.noteid));
+    // const unpinnedNotes = this.state.allnotes.filter(note => !this.state.pinnedNotes.includes(note.noteid));
+
+    const { allnotes, pinnedNotes, filteredNotes } = this.state;
+    
 
     let ActivePage, RightNavbar;
     if (this.state.activepage === "viewnote") {
@@ -483,7 +597,7 @@ class App extends Component {
           }}
           handleEditNoteBtn={this.handleEditNoteBtn}
           handleDeleteNote={this.handleDeleteNote}
-          handleCopyNote={this.handleCopyNote}
+          handleCopyEvent={this.handleCopyEvent}
           handleDownloadNote={this.handleDownloadNote}
         />
       );
@@ -498,7 +612,6 @@ class App extends Component {
             }}
             handleCopyEvent={this.handleCopyEvent}
           />
-          <FooterBar />
         </>
       );
     }
@@ -517,9 +630,57 @@ class App extends Component {
           handleSaveNote={this.handleSaveNote}
           handleClickHomeBtn={this.handleClickHomeBtn}
           handleNoteEditor={this.handleNoteEditor}
+          handleSortNotes={this.handleSortNotes}
+          handleNoteListItemClick={this.handleNoteListItemClick}
         />
       );
     }
+
+    // Use a unified source of truth for notes to display
+    const displayNotes = filteredNotes.length > 0 ? filteredNotes : allnotes;
+
+    let filteredPinnedNotes = displayNotes.filter(note => pinnedNotes.includes(note.noteid));
+    let filteredUnpinnedNotes = displayNotes.filter(note => !pinnedNotes.includes(note.noteid));
+
+        // Count the total number of notes
+    const totalPinned = filteredPinnedNotes.length;
+    const totalUnpinned = filteredUnpinnedNotes.length;
+    
+
+    let pinnedNoteListItems = (
+        <>
+            {filteredPinnedNotes.map((note) => (
+                <NoteList
+                    key={note.noteid}
+                    note={note}
+                    isPinned={true}
+                    handlePinNote={this.handlePinNote}
+                    handleUnpinNote={this.handleUnpinNote}
+                    handleNoteListItemClick={this.handleNoteListItemClick}
+                    handleMouseOver={this.handleNoteListItemMouseOver}
+                    handleMouseOut={this.handleNoteListItemMouseOut}
+                />
+            ))}
+        </>
+    );
+
+    let otherNoteListItems = (
+        <>
+            {filteredUnpinnedNotes.map((note) => (
+                <NoteList
+                    key={note.noteid}
+                    note={note}
+                    isPinned={false}
+                    handlePinNote={this.handlePinNote}
+                    handleUnpinNote={this.handleUnpinNote}
+                    handleNoteListItemClick={this.handleNoteListItemClick}
+                    handleMouseOver={this.handleNoteListItemMouseOver}
+                    handleMouseOut={this.handleNoteListItemMouseOut}
+                />
+            ))}
+        </>
+    );
+
 
     return (
       <div className="container">
@@ -529,10 +690,21 @@ class App extends Component {
             handleEditNoteBtn={this.handleEditNoteBtn}
             handleSearchNotes={this.handleSearchNotes}
           />
-          <ul className="note-list">{noteListItems}</ul>
+
+          <h4 className="fixed-header">Pinned Notes ({totalPinned})</h4>
+          <div className="note-list-pin">
+          {pinnedNoteListItems}
+          </div>
+
+          <h4 className="fixed-header">Other Notes ({totalUnpinned})</h4>
+          <div className="note-list-other">
+          {otherNoteListItems}
+          </div>
+
           <NoteSort
             handleSortNotes={this.handleSortNotes}
             handleNotesBackup={this.handleNotesBackup}
+            handleNotesUpload={this.handleNotesUpload}
           />
         </div>
         <div className="right">

@@ -15,43 +15,41 @@ body {
 }
 
 .container {
-  display: flex;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  padding-right: 0;
-  padding-left: 0;
+  display: flex; /* Flex layout to manage children */
+  width: 90vw; /* Adjust to desired viewport width */
+  max-width: 1440px; /* Maximum width for large screens */
+  height: 100vh; /* Adjust to allow top and bottom spacing */
+  margin: 0 auto; /* Center the container horizontally */
+  padding: 0; /* Remove padding */
 }
 
 /* Left Sidebar */
 .left {
-  height: 100%;
-  width: 20%;
-  position: absolute;
-  left: 0;
-  top: 0;
-  padding-top: 5px;
+  width: 25%; /* Adjust the width to a more suitable percentage */
   background-color: #fff;
-  border-left: none;
   border-right: 1px solid #dcdcde;
+  border-left: 1px solid #dcdcde;
+  border-bottom: 1px solid #dcdcde;
   display: flex;
+  overflow-y: auto;
   flex-direction: column;
   flex-shrink: 0;
   transition: transform 200ms ease-in-out;
+  padding: 0; /* Add some padding for spacing */
+  position: relative; /* Ensure child elements can be positioned relative to it */
+  height: calc(100% - 10px); /* Ensure enough height for content */
 }
 
 /* Main area */
 .right {
-  width: 80%;
+  width: 75%; /* Adjust width to fill remaining space */
   font-size: 18px;
-  height: 100%;
+  height: calc(100% - 10px);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  position: absolute;
-  right: 0;
+  border-right: 1px solid #dcdcde;
+  border-bottom: 1px solid #dcdcde;
 }
 
 .right-row {
@@ -62,7 +60,7 @@ body {
   height: 100%;
 }
 
-/* Cennter any element */
+/* Center any element */
 .center {
   position: absolute;
   top: 50%;
@@ -70,42 +68,24 @@ body {
   transform: translate(-50%, -50%);
 }
 
-.nav-bar-left {
-  position: relative;
-  border-bottom: 1px solid #eee;
-  border-top: none;
-  height: 50px;
-  background-color: #fff;
-  width: 100%;
-}
-
-.center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 /* Navbar */
 .nav-bar {
-  padding: 8px;
+  padding: 6px;
   margin: 0 auto;
   max-width: 1440px;
-  /* border: 1px solid #eee; */
-  border-bottom: 1px solid #eee;
-  border-top: none;
-  height: 50px;
-  background-color: #fff;
+  border-bottom: 1px solid #ddd;
+  /* height: 50px; */
+  background-color: whitesmoke;
   width: 100%;
+  height: 50px;
 }
 
-.footer-bar {
-  padding: 8px;
-  margin: 0 auto;
-  max-width: 1440px;
-  border-top: 1px solid #eee;
-  height: 53px;
-  background-color: #fff;
+.nav-bar-left {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
+  background-color: whitesmoke;
 }
 
 .hidden {
@@ -121,60 +101,34 @@ body {
   justify-content: space-between;
   position: relative;
   bottom: 0px;
+  height: 49px;
 }
 
 /* Search Bar */
 .search-bar {
-  background-color: #ced9f2;
-  border-bottom: 1px solid #dcdcde;
   display: flex;
+  overflow: hidden; /* Prevent overflow */
+  border-top: 1px solid #dcdcde;
 }
 
-/* Search button */
-.searchButton {
-  padding: 22px;
-  border: none;
-  color: #646970;
-  background-color: #fff;
-  cursor: pointer;
-  font-size: 1.3rem;
-  outline: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Search icon */
+.search-icon {
+  padding: 15px;
+  color: #dcdcde;
+  font-size: 1.5rem;
+  border: none
 }
 
-/* Search Input fieled */
+/* Search Input field */
 .search-field {
   width: 100%;
-  border: none;
+  border: none; /* Match border color with the search bar */
   outline: none;
-  padding: 20px;
-  font-size: medium;
+  padding: 15px; /* Adjusted padding */
+  border-radius: 0; /* No rounded corners */
+  font-size: 1.5rem; /* Adjust font size */
 }
 
-/* Note List Container*/
-.note-list {
-  padding-left: 15px;
-  overflow-x: hidden;
-  overflow-y: scroll;
-  padding-bottom: 0;
-  height: calc(100% - 162.5px);
-}
-
-/* Note List item */
-.note-list-item {
-  height: 60px;
-  padding: 10px 20px 0 25px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  margin: 0 4px;
-  cursor: pointer;
-  font-size: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
 
 ul,
 ol {
@@ -183,35 +137,24 @@ ol {
   margin-bottom: 0;
 }
 
-.note-list-item-hover {
-  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.11), 0 5px 5px rgba(0, 0, 0, 0.12);
-}
-
-.note-list-item-prev {
-  background: #f6f5f5;
-}
-
-/* Highlight Clicked note item */
-.note-list-item-clicked {
-  background: #ced9f2;
-  transition: 0.3s;
-}
-
-.sort-order-selector {
-  position: absolute;
-  width: 100%;
-  height: 50px;
-  line-height: 44px;
-  border-top: 1px solid #dcdcde;
-  margin: 0;
-  padding: 0 24px 0 24px;
-  font-size: 14px;
-  bottom: 0;
+.note-sort-bar {
+  position:absolute;
+  bottom: 0; /* Stick to the bottom of the parent */
+  left: 0; /* Align to the left edge */
+  width: 100%; /* Take the full width of the parent */
+  padding: 10px; /* Adjust padding for spacing */
+  padding-left: 10px;
+  background-color: whitesmoke; /* White background */
+  border-top: 1px solid #dcdcde; /* Border at the top */
+  display: flex; /* Flexbox layout */
+  justify-content: space-between; /* Space between child elements */
+  align-items: center;
 }
 
 .backupbtn {
   float: right;
 }
+
 
 .right-bottom-bar {
   height: 50px;
@@ -223,22 +166,20 @@ ol {
   margin: 0 auto;
 }
 
-.sort-order-selector option {
+.note-sort-bar option {
   font-weight: normal;
   color: #000;
 }
 
-.sort-order-selector select {
+.note-sort-bar select {
   appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
   border: none;
   padding: 0 5px;
-  margin: 0;
   font-weight: 500;
   background-color: transparent;
   cursor: pointer;
 }
+
 
 /* Cancel Icon inside search input */
 input[type="search"]::-webkit-search-cancel-button {
@@ -250,10 +191,10 @@ input[type="search"]::-webkit-search-cancel-button {
   border: none;
   outline: none;
   cursor: pointer;
-  margin: 2px;
-  background-color: #fff;
+  margin: 5px;
   color: #777;
   font-size: 1.5rem;
+  background-color: whitesmoke; 
 }
 
 .btn-save-cancel {
@@ -276,6 +217,127 @@ input[type="search"]::-webkit-search-cancel-button {
   color: #24292e;
   background-color: #eff3f6;
   background-image: linear-gradient(-180deg, #fafbfc 0%, #eff3f6 90%);
+}
+
+/* Note List Container*/
+.note-list-pin {
+  margin: 10px 0; /* Add margin for spacing */
+  padding-left: 0;
+  list-style: none; /* Remove default list styles */
+  margin-bottom: 10px; /* Add space between lists */
+  overflow-y: visible; /* Ensure the div expands to fit its contents */
+}
+
+/* Note List Container*/
+.note-list-other {
+  overflow-y: scroll; /* Enable vertical scrolling */
+  margin: 10px 0; /* Add margin for spacing */
+  padding-left: 0;
+  list-style: none; /* Remove default list styles */
+}
+
+/* Add this to your existing CSS */
+.note-list-item {
+  height: auto;
+  min-height: 50px;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #dcdcde; /* Optional: visually separate items */
+  align-items: center;
+  padding: 8px 10px; 
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  margin: 0 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smooth transition */
+}
+
+/* Hover state styling */
+.note-list-item:hover {
+  background-color: #f0f0f0; /* Change background color on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Slightly elevate shadow */
+  transform: translateY(-2px); /* Slightly raise the element */
+}
+
+.note-list-item-prev {
+  background: #f6f5f5;
+}
+
+/* Highlight Clicked note item */
+.note-list-item-clicked {
+  background: #ced9f2;
+  transition: 0.3s;
+}
+
+.note-title {
+  flex: 1; /* Allows the title to use available space */
+  overflow: hidden; /* Prevents overflowing text */
+  text-overflow: ellipsis; /* Displays "..." for overflowing text */
+  white-space: nowrap; /* Prevents text from wrapping */
+  margin-right: 30px; /* Space for the pin button */
+}
+
+.fixed-header {
+  position: sticky;
+  top: 0;
+  z-index: 2; /* Increase z-index to ensure it stays on top */
+  padding: 10px 5px; /* Reduced padding for compactness */
+  margin: 0;
+  border: 1px solid #dcdcde;
+  border-left: none;
+  border-right: none;
+  font-size: 1.4rem; /* Adjusted font size */
+  font-weight: bold;
+  background-color: whitesmoke; 
+}
+
+
+/* General styles for the pin button */
+.pin-btn {
+  position: relative; /* Required for absolute positioning */
+  font-size: 1.1rem; /* Adjust size as needed */
+  margin-right: 4px; /* Space between icon and text */
+  transition: color 0.3s ease; /* Smooth color transition */
+  color: #ced9f2; /* Default color for unpinned */
+}
+
+/* Strikethrough effect for unpin */
+.pin-btn.unpin::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background-color: white; /* Adjust color */
+  transform: rotate(-45deg); /* Adjust angle */
+  top: 50%; /* Adjust position */
+  left: 0;
+}
+/* Darker shade for pinned state */
+.pin-btn.pinned {
+  color: #24292e; /* Darker shade of gray for pinned state */
+}
+
+/* Ensuring the tooltip shows immediately */
+.pin-btn[title] {
+  position: relative;
+  opacity: 1; /* Make it fully visible immediately */
+  transition: opacity 0s ease; /* Remove any delay */
+}
+
+.pin-icon-container {
+  position: absolute;
+  right: 4px; /* Adjust as needed */
+  top: 50%;
+  transform: translateY(-50%);
+}
+.pin-btn.unpin {
+  color: #777; /* Darker color for unpinned state */
+}
+
+.pin-btn:hover {
+  color: #777; /* Change to any hover color */
 }
 
 button {
@@ -322,20 +384,21 @@ h3 {
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;
-  padding: 50px 150px;
-  overflow-y: scroll;
+  padding: 25px 100px;
+  overflow-y:auto;
   /* border: 1px solid #eee; */
   border-bottom: none;
   border-top: none;
-  height: calc(100% - 50px);
+  height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .main-editor {
   padding-left: 5px;
   padding-right: 1px;
-  height: 100%;
+  height: calc(100% - 50px);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -354,22 +417,22 @@ h3 {
   max-width: 1440px;
   width: 100%;
   flex-direction: column;
-  font-size: x-large;
+  font-size:large;
+  border-left: 1px solid #dcdcde;
 }
 
 .page-header {
   padding-bottom: 9px;
   margin: 5px 0 20px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #dcdcde;
 }
 
 #notetitle {
   height: 50px;
-  padding: 40px 20px;
+  padding-left: 20px;
   border: none;
-  background-color: #1212;
+  background-color: #fafafa;
   border-bottom: 1px solid #dcdcde;
-  border-radius: 5px;
 }
 
 /* Editor Textarea */
@@ -380,7 +443,6 @@ h3 {
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;
-  font-size: 16px;
   font-weight: 400;
   overflow: auto;
   line-height: 1.45;
@@ -390,10 +452,14 @@ h3 {
   border: none;
   /* border-top: 1px solid #dcdcde; */
   /* border-right: 1px solid #dcdcde; */
-  /* border-left: 1px solid #dcdcde; */
+  border-left: 1px solid #dcdcde;
   font-family: -apple-system, "Segoe UI", "Roboto", "Oxygen-Sans", "Ubuntu",
     "Cantarell", "Helvetica Neue", sans-serif, sans-serif;
-  height: calc(100% - 50px);
+  height: calc(100% - 57px);
+}
+
+textarea:focus {
+  background: hsl(0, 7%, 20%);
 }
 
 .md-txtarea {
@@ -406,21 +472,22 @@ h3 {
   width: 100%;
   margin: 0 auto;
   border: none;
-  /* border-right: 1px solid #dcdcde;
-  border-left: 1px solid #dcdcde; */
   border-bottom: 1px solid #dcdcde;
+  border-left: 1px solid #dcdcde;
   /* display: flex; */
   padding: 10px;
+  padding-right: 0;
+  padding-left: 0;
 }
 
 .saveCancelBar {
   margin: 0 auto;
   display: flex;
-  max-width: 1440px;
   width: 100%;
   justify-content: space-between;
-  padding-right: 30px;
-  padding-left: 30px;
+  padding-top: 3px;
+  padding-right: 5px;
+  border-left: 1px solid #dcdcde;
 }
 
 .md-buttons {
@@ -548,41 +615,197 @@ button[disabled]:hover {
   padding: 6px 12px;
 }
 
-.tooltiptext {
-  visibility: hidden;
-  width: 120px;
-  background-color: #555;
-  color: #fff;
+.fnt_btn {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  margin: 2px;
+  background-color: #fff;
+  color: #5c5c5c;
+  font-size: 1.8rem;
   text-align: center;
-  border-radius: 6px;
-  padding: 5px 0;
-  position: absolute;
-  z-index: 1;
-  bottom: 125%;
-  left: 50%;
-  margin-left: -60px;
-  opacity: 0;
-  transition: opacity 0.3s;
-  font-family: "-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji";
-}
-
-.tooltiptext::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: #555 transparent transparent transparent;
-}
-
-.md_btn:hover .tooltiptext {
-  visibility: visible;
-  opacity: 1;
+  white-space: nowrap;
+  vertical-align: middle;
+  padding: 6px 12px;
 }
 
 .md_btn:hover {
   opacity: 0.6;
   font-size: 1.55rem;
 }
+
+.fnt_btn:hover {
+  opacity: 0.6;
+}
+
+input[type="number"] {
+  width: 4rem;
+}
+
+.input-div {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-list-item {
+  border-bottom: 1px solid #dcdcde; /* Optional: visually separate items */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+/* Tooltip */
+[tooltip] {
+  position: relative; /* opinion 1 */
+}
+
+/* Applies to all tooltips */
+[tooltip]::before,
+[tooltip]::after {
+  text-transform: none; /* opinion 2 */
+  font-size: 0.9em; /* opinion 3 */
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
+  position: absolute;
+  /* display: none; */
+  opacity: 0;
+}
+[tooltip]::before {
+  content: "";
+  border: 5px solid transparent; /* opinion 4 */
+  z-index: 1001; /* absurdity 1 */
+}
+[tooltip]::after {
+  content: attr(tooltip); /* magic! */
+
+  /* most of the rest of this is opinion */
+  font-family: Helvetica, sans-serif;
+  text-align: center;
+
+  /* 
+    Let the content set the size of the tooltips 
+    but this will also keep them from being obnoxious
+    */
+  min-width: 3em;
+  max-width: 21em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 1ch 1.5ch;
+  border-radius: 0.3ch;
+  box-shadow: 0 1em 2em -0.5em rgba(0, 0, 0, 0.35);
+  background: #333;
+  color: #fff;
+  z-index: 1000; /* absurdity 2 */
+}
+
+/* Make the tooltips respond to hover */
+[tooltip]:hover::before,
+[tooltip]:hover::after {
+  display: block;
+}
+
+/* don't show empty tooltips */
+[tooltip=""]::before,
+[tooltip=""]::after {
+  display: none !important;
+}
+
+/* FLOW: UP */
+[tooltip]:not([flow])::before,
+[tooltip][flow^="up"]::before {
+  bottom: 100%;
+  border-bottom-width: 0;
+  border-top-color: #333;
+}
+[tooltip]:not([flow])::after,
+[tooltip][flow^="up"]::after {
+  bottom: calc(100% + 5px);
+}
+[tooltip]:not([flow])::before,
+[tooltip]:not([flow])::after,
+[tooltip][flow^="up"]::before,
+[tooltip][flow^="up"]::after {
+  left: 50%;
+  transform: translate(-50%, -0.5em);
+}
+
+/* FLOW: DOWN */
+[tooltip][flow^="down"]::before {
+  top: 100%;
+  border-top-width: 0;
+  border-bottom-color: #333;
+}
+[tooltip][flow^="down"]::after {
+  top: calc(100% + 5px);
+}
+[tooltip][flow^="down"]::before,
+[tooltip][flow^="down"]::after {
+  left: 50%;
+  transform: translate(-50%, 0.5em);
+}
+
+/* FLOW: LEFT */
+[tooltip][flow^="left"]::before {
+  top: 50%;
+  border-right-width: 0;
+  border-left-color: #333;
+  left: calc(0em - 5px);
+  transform: translate(-0.5em, -50%);
+}
+[tooltip][flow^="left"]::after {
+  top: 50%;
+  right: calc(100% + 5px);
+  transform: translate(-0.5em, -50%);
+}
+
+/* FLOW: RIGHT */
+[tooltip][flow^="right"]::before {
+  top: 50%;
+  border-left-width: 0;
+  border-right-color: #333;
+  right: calc(0em - 5px);
+  transform: translate(0.5em, -50%);
+}
+[tooltip][flow^="right"]::after {
+  top: 50%;
+  left: calc(100% + 5px);
+  transform: translate(0.5em, -50%);
+}
+
+/* KEYFRAMES */
+@keyframes tooltips-vert {
+  to {
+    opacity: 0.9;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes tooltips-horz {
+  to {
+    opacity: 0.9;
+    transform: translate(0, -50%);
+  }
+}
+
+/* FX All The Things */
+[tooltip]:not([flow]):hover::before,
+[tooltip]:not([flow]):hover::after,
+[tooltip][flow^="up"]:hover::before,
+[tooltip][flow^="up"]:hover::after,
+[tooltip][flow^="down"]:hover::before,
+[tooltip][flow^="down"]:hover::after {
+  animation: tooltips-vert 300ms ease-out forwards;
+}
+
+[tooltip][flow^="left"]:hover::before,
+[tooltip][flow^="left"]:hover::after,
+[tooltip][flow^="right"]:hover::before,
+[tooltip][flow^="right"]:hover::after {
+  animation: tooltips-horz 300ms ease-out forwards;
+}
+
+
