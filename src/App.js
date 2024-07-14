@@ -84,8 +84,8 @@ class App extends Component {
 
 // Pin a note and persist
 handlePinNote = async (noteid) => {
-  if (this.state.pinnedNotes.length >= 5) {
-      alert("You can only pin up to 5 notes.");
+  if (this.state.pinnedNotes.length >= 10) {
+      alert("You can only pin up to 10 notes.");
       return;
   }
   await this.handleIndexedDB("addpin", { noteid });
