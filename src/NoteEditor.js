@@ -11,7 +11,7 @@ import { searchKeymap } from "@codemirror/search";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import * as noteDB from "./services/notesDB";
 import {
-  Bold, Italic, Heading2, Link, ListOrdered, List, Quote, ImagePlus, Image,
+  Bold, Italic, Heading2, Link, ListOrdered, List, Quote, Paperclip, Image,
   Code, Braces, CheckSquare, Table, Strikethrough, Save, X,
   Columns2, Maximize2, Eye, EyeOff, Minus,
 } from "lucide-react";
@@ -118,7 +118,7 @@ function NoteEditor(props) {
     { icon: Braces, command: "codeblock", tooltip: "Code Block", size: 15 },
     { icon: Link, command: "link", tooltip: "Link (Ctrl+K)", size: 15 },
     { icon: Image, command: "image", tooltip: "Image Link", size: 15 },
-    { icon: ImagePlus, command: "uploadImage", tooltip: "Upload Image", size: 15 },
+    { icon: Paperclip, command: "uploadImage", tooltip: "Attach Image", size: 15 },
     { divider: true },
     { icon: List, command: "ulist", tooltip: "Bullet List", size: 15 },
     { icon: ListOrdered, command: "olist", tooltip: "Numbered List", size: 15 },
