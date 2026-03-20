@@ -142,18 +142,19 @@ handleUnpinNote = async (noteid) => {
       if (prevElem && prevElem.classList && prevElem.classList.contains("copy-code-button")) {
         return;
       }
+      // Check if button already inside pre
+      if (pre.querySelector(".copy-code-button")) {
+        return;
+      }
       var button = document.createElement("button");
       button.setAttribute("aria-label", "Copy code to clipboard");
       button.className = "copy-code-button";
-      button.setAttribute("id", "copy-code-button");
       button.type = "button";
       button.innerText = "Copy";
 
       button.addEventListener("click", function () {
         clipboard.writeText(codeBlock.innerText).then(
           function () {
-            /* Chrome doesn't seem to blur automatically,
-                   leaving the button in a focused state. */
             button.blur();
             button.innerText = "Copied!";
             setTimeout(function () {
@@ -166,12 +167,9 @@ handleUnpinNote = async (noteid) => {
         );
       });
 
-      if (pre.parentNode.classList.contains("highlight")) {
-        var highlight = pre.parentNode;
-        highlight.parentNode.insertBefore(button, highlight);
-      } else {
-        pre.parentNode.insertBefore(button, pre);
-      }
+      // Insert inside the pre element and make pre relative
+      pre.style.position = "relative";
+      pre.insertBefore(button, pre.firstChild);
     });
   };
 
