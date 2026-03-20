@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-function ConfirmDialog({ title, message, confirmText, cancelText, onConfirm, onCancel, danger }) {
+function ConfirmDialog({ title, message, confirmText, cancelText, secondaryText, onConfirm, onCancel, onSecondary, danger }) {
   const confirmRef = useRef(null);
 
   useEffect(() => {
@@ -23,6 +23,9 @@ function ConfirmDialog({ title, message, confirmText, cancelText, onConfirm, onC
         </div>
         <div className="modal-footer">
           <button className="btn-cancel" onClick={onCancel}>{cancelText || "Cancel"}</button>
+          {onSecondary && (
+            <button className="btn-save" onClick={onSecondary}>{secondaryText || "Save"}</button>
+          )}
           <button
             ref={confirmRef}
             className={danger ? "btn-danger" : "btn-save"}

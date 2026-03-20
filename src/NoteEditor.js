@@ -34,7 +34,6 @@ function NoteEditor(props) {
   const editorRef = useRef(null);
   const viewRef = useRef(null);
   const insertMarkdownRef = useRef(null);
-  const autosaveTimerRef = useRef(null);
 
   // Word/character count
   const wordCount = bodytxt.trim() ? bodytxt.trim().split(/\s+/).length : 0;
@@ -47,28 +46,7 @@ function NoteEditor(props) {
     }
   }, [bodytxt, title, initialBody, initialTitle]);
 
-  // Autosave: debounced 3 seconds after typing
-  useEffect(() => {
-    if (!isDirty) return;
-    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-    autosaveTimerRef.current = setTimeout(() => {
-      const noteToSave = { ...note };
-      noteToSave.notetitle = title;
-      noteToSave.notebody = bodytxt;
-      noteToSave.tags = tags;
-      noteToSave.action = noteAction;
-      props.handleSaveNote(null, noteToSave);
-      // After first save, switch to update mode
-      if (noteAction === "addnote") setNoteAction("updatenote");
-      setIsDirty(false);
-      setLastSaved(new Date());
-    }, 3000);
-    return () => {
-      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-    };
-  }, [bodytxt, title]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Warn before navigating away with unsaved changes
+  // Warn before navigating away with unsaved changes (browser close/refresh)
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (isDirty) {
@@ -395,7 +373,6 @@ function NoteEditor(props) {
     if (isDirty && !window.confirm("You have unsaved changes. Discard them?")) {
       return;
     }
-    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     setIsDirty(false);
     if (noteAction === "updatenote" || note.action === "updatenote") {
       props.handleNoteListItemClick(null, { noteid: note.noteid, title: note.notetitle, body: note.notebody });
@@ -405,7 +382,6 @@ function NoteEditor(props) {
   };
 
   const handleSaveBtn = (e) => {
-    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     note.notetitle = title;
     note.notebody = bodytxt;
     note.tags = tags;

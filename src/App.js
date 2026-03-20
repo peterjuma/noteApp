@@ -265,6 +265,17 @@ handleUnpinNote = async (noteid) => {
     if (note) this._navigateToNote(note);
   };
 
+  handleNavConfirmSave = () => {
+    // Trigger save via the DOM save button (which has the current editor state)
+    const saveBtn = document.querySelector("[data-action]");
+    if (saveBtn) saveBtn.click();
+    // Then navigate
+    const note = this.state.pendingNav;
+    if (note) {
+      setTimeout(() => this._navigateToNote(note), 100);
+    }
+  };
+
   handleNavConfirmCancel = () => {
     this.setState({ pendingNav: null, showNavConfirm: false });
   };
@@ -956,11 +967,13 @@ handleUnpinNote = async (noteid) => {
         {this.state.showNavConfirm && (
           <ConfirmDialog
             title="Unsaved Changes"
-            message="You have a note open in the editor. Discard changes and switch to the selected note?"
-            confirmText="Discard & Switch"
+            message="You have unsaved changes in the editor. What would you like to do?"
+            confirmText="Discard"
+            secondaryText="Save & Switch"
             cancelText="Keep Editing"
             danger
             onConfirm={this.handleNavConfirmDiscard}
+            onSecondary={this.handleNavConfirmSave}
             onCancel={this.handleNavConfirmCancel}
           />
         )}
