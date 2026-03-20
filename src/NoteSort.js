@@ -129,9 +129,14 @@ function NoteSort(props) {
                             title="Delete"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (window.confirm(`Delete workspace "${w.name}"? This cannot be undone.`)) {
-                                props.handleDeleteWorkspace(w.dbName);
-                              }
+                              const name = w.name;
+                              const dbName = w.dbName;
+                              props.showConfirm(
+                                "Delete Workspace",
+                                `Delete workspace "${name}"? All notes in this workspace will be lost.`,
+                                () => props.handleDeleteWorkspace(dbName),
+                                { confirmText: "Delete", danger: true }
+                              );
                             }}
                           >
                             <Trash2 size={13} />

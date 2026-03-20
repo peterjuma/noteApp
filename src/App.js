@@ -42,9 +42,9 @@ class App extends Component {
       sidebarWidth: parseInt(localStorage.getItem("noteapp_sidebar_width")) || 260,
       pendingNav: null,
       showNavConfirm: false,
+      dialog: null,  // { title, message, confirmText, cancelText, danger, onConfirm, onCancel }
     };
     this.handleSaveNote = this.handleSaveNote.bind(this);
-    this.handleDeleteNote = this.handleDeleteNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
     this.handleSearchNotes = this.handleSearchNotes.bind(this);
     this.debouncedSearch = this.debounce(this.handleSearchNotes, 250);
@@ -104,7 +104,7 @@ class App extends Component {
 handlePinNote = async (noteid) => {
   if (this.state.pinnedNotes.includes(noteid)) return; // Already pinned
   if (this.state.pinnedNotes.length >= 10) {
-      alert("You can only pin up to 10 notes.");
+      this.showAlert("Pin Limit", "You can only pin up to 10 notes.");
       return;
   }
   await db.addPin(noteid, this.state.activeDb);
@@ -281,6 +281,27 @@ handleUnpinNote = async (noteid) => {
     this.setState({ pendingNav: null, showNavConfirm: false });
   };
 
+  // Generic dialog helpers
+  showAlert = (title, message) => {
+    this.setState({
+      dialog: { title, message, confirmText: "OK", onConfirm: () => this.setState({ dialog: null }) },
+    });
+  };
+
+  showConfirm = (title, message, onConfirm, opts = {}) => {
+    this.setState({
+      dialog: {
+        title,
+        message,
+        confirmText: opts.confirmText || "Confirm",
+        cancelText: opts.cancelText || "Cancel",
+        danger: opts.danger || false,
+        onConfirm: () => { this.setState({ dialog: null }); onConfirm(); },
+        onCancel: () => this.setState({ dialog: null }),
+      },
+    });
+  };
+
   // Navigate to a note based on URL hash
   navigateFromHash = () => {
     const hash = window.location.hash;
@@ -433,10 +454,16 @@ handleUnpinNote = async (noteid) => {
     });
   };
 
-  handleDeleteNote(e, note) {
-    if (!window.confirm("Are you sure you want to delete this note?")) {
-      return;
-    }
+  handleDeleteNote = (e, note) => {
+    this.showConfirm(
+      "Delete Note",
+      `Are you sure you want to delete "${note.notetitle || note.title || "this note"}"? This cannot be undone.`,
+      () => this._doDeleteNote(note),
+      { confirmText: "Delete", danger: true }
+    );
+  };
+
+  _doDeleteNote(note) {
     var index = this.state.allnotes.findIndex(
       (noteitem) => noteitem.noteid === note.noteid
     );
@@ -635,7 +662,7 @@ handleUnpinNote = async (noteid) => {
   handleNotesUpload = async (event) => {
     const file = event.target.files[0]; // Assuming single file selection
     if (!file || !file.name.endsWith(".md")) {
-      alert("Please upload a valid Markdown file.");
+      this.showAlert("Invalid File", "Please upload a valid Markdown (.md) file.");
       return;
     }
   
@@ -705,9 +732,9 @@ handleUnpinNote = async (noteid) => {
         );
       }
 
-      alert(`Imported ${importedNotes.length} note${importedNotes.length !== 1 ? "s" : ""} from archive.`);
+      this.showAlert("Import Complete", `Imported ${importedNotes.length} note${importedNotes.length !== 1 ? "s" : ""} from archive.`);
     } catch {
-      alert("Failed to read ZIP archive. Please ensure it's a valid .zip file.");
+      this.showAlert("Import Failed", "Failed to read ZIP archive. Please ensure it's a valid .zip file.");
     }
     event.target.value = "";
   };
@@ -767,6 +794,7 @@ handleUnpinNote = async (noteid) => {
             tags: (this.state.allnotes.find(n => n.noteid === this.state.noteid) || {}).tags || [],
           }}
           darkMode={this.state.darkMode}
+          showConfirm={this.showConfirm}
           handleEditNoteBtn={this.handleEditNoteBtn}
           handleSaveNote={this.handleSaveNote}
           handleClickHomeBtn={this.handleClickHomeBtn}
@@ -912,6 +940,7 @@ handleUnpinNote = async (noteid) => {
             handleAddWorkspace={this.handleAddWorkspace}
             handleRenameWorkspace={this.handleRenameWorkspace}
             handleDeleteWorkspace={this.handleDeleteWorkspace}
+            showConfirm={this.showConfirm}
           />
         </div>
 
@@ -976,6 +1005,18 @@ handleUnpinNote = async (noteid) => {
             onConfirm={this.handleNavConfirmDiscard}
             onSecondary={this.handleNavConfirmSave}
             onCancel={this.handleNavConfirmCancel}
+          />
+        )}
+        {/* Generic dialog */}
+        {this.state.dialog && (
+          <ConfirmDialog
+            title={this.state.dialog.title}
+            message={this.state.dialog.message}
+            confirmText={this.state.dialog.confirmText}
+            cancelText={this.state.dialog.cancelText}
+            danger={this.state.dialog.danger}
+            onConfirm={this.state.dialog.onConfirm}
+            onCancel={this.state.dialog.onCancel || (() => this.setState({ dialog: null }))}
           />
         )}
       </div>

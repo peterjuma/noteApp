@@ -370,10 +370,22 @@ function NoteEditor(props) {
   }, [bodytxt, showPreview, splitscreen]);
 
   const handleCancelBtn = () => {
-    if (isDirty && !window.confirm("You have unsaved changes. Discard them?")) {
+    if (isDirty) {
+      props.showConfirm(
+        "Discard Changes",
+        "You have unsaved changes. Are you sure you want to discard them?",
+        () => {
+          setIsDirty(false);
+          if (noteAction === "updatenote" || note.action === "updatenote") {
+            props.handleNoteListItemClick(null, { noteid: note.noteid, title: note.notetitle, body: note.notebody });
+          } else {
+            props.handleClickHomeBtn();
+          }
+        },
+        { confirmText: "Discard", danger: true }
+      );
       return;
     }
-    setIsDirty(false);
     if (noteAction === "updatenote" || note.action === "updatenote") {
       props.handleNoteListItemClick(null, { noteid: note.noteid, title: note.notetitle, body: note.notebody });
       return;
