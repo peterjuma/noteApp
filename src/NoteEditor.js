@@ -487,25 +487,28 @@ function NoteEditor(props) {
           </div>
         </div>
 
-        {/* Title — below toolbar */}
-        <input
-          name="notetitle"
-          type="text"
-          id="notetitle"
-          data-action={note.action}
-          value={title}
-          placeholder="Untitled"
-          autoComplete="off"
-          ref={titleRef}
-          aria-label="Note title"
-          onChange={(e) => setTitle(e.target.value)}
-          className={`editor-title ${darkMode ? "editor-title-dark" : ""}`}
-        />
+        {/* Title — hidden in preview mode */}
+        {!showPreview && (
+          <input
+            name="notetitle"
+            type="text"
+            id="notetitle"
+            data-action={note.action}
+            value={title}
+            placeholder="Untitled"
+            autoComplete="off"
+            ref={titleRef}
+            aria-label="Note title"
+            onChange={(e) => setTitle(e.target.value)}
+            className={`editor-title ${darkMode ? "editor-title-dark" : ""}`}
+          />
+        )}
 
         {/* Editor / Preview */}
         <div className={`editor-codemirror ${darkMode ? "editor-codemirror-dark" : ""}`}>
           {showPreview ? (
             <div className="editor-preview-inline" ref={previewRef}>
+              <h1 className="note-view-title" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(title || "Untitled")) }}></h1>
               <div
                 className="markdown-body"
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(bodytxt || "")) }}
