@@ -6,6 +6,7 @@ import NoteList from "./NoteList";
 import NoteMain from "./NoteMain";
 import readmePath from "./README.md";
 import NoteEditor from "./NoteEditor";
+import ConfirmDialog from "./ConfirmDialog";
 import hljs from "highlight.js";
 import { html2md, md2html } from "./useMarkDown";
 import { saveAs } from "file-saver";
@@ -39,6 +40,8 @@ class App extends Component {
       workspaces: db.getWorkspaces(),
       sidebarOpen: false,
       sidebarWidth: parseInt(localStorage.getItem("noteapp_sidebar_width")) || 260,
+      pendingNav: null,
+      showNavConfirm: false,
     };
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDeleteNote = this.handleDeleteNote.bind(this);
@@ -232,13 +235,15 @@ handleUnpinNote = async (noteid) => {
   
   // Handle Click List Item
   handleNoteListItemClick = (e, note) => {
-    // Guard: if editing, prompt to save or discard
+    // Guard: if editing, show custom confirm dialog
     if (this.state.activepage === "editnote") {
-      const choice = window.confirm(
-        "You have a note open in the editor. Click OK to save and switch, or Cancel to keep editing."
-      );
-      if (!choice) return;
+      this.setState({ pendingNav: note, showNavConfirm: true });
+      return;
     }
+    this._navigateToNote(note);
+  };
+
+  _navigateToNote = (note) => {
     this.setState({
         noteid: note.noteid,
         notetitle: note.title,
@@ -246,12 +251,22 @@ handleUnpinNote = async (noteid) => {
         activepage: "viewnote",
         action: "",
         sidebarOpen: false,
+        pendingNav: null,
+        showNavConfirm: false,
     });
-    // Update URL hash with note slug (push to history for back/forward)
     const slug = slugify(note.title);
     if (slug) {
       window.history.pushState(null, "", `#note/${slug}`);
     }
+  };
+
+  handleNavConfirmDiscard = () => {
+    const note = this.state.pendingNav;
+    if (note) this._navigateToNote(note);
+  };
+
+  handleNavConfirmCancel = () => {
+    this.setState({ pendingNav: null, showNavConfirm: false });
   };
 
   // Navigate to a note based on URL hash
@@ -396,6 +411,8 @@ handleUnpinNote = async (noteid) => {
     if (e.target.dataset.action === "addnote") {
       this.setState({ noteid: "" });
     }
+    // Clear URL hash during editing
+    window.history.replaceState(null, "", window.location.pathname);
   };
 
   handleNoteEditor = (e) => {
@@ -934,6 +951,19 @@ handleUnpinNote = async (noteid) => {
           {RightNavbar}
           {ActivePage}
         </div>
+
+        {/* Navigation confirm dialog */}
+        {this.state.showNavConfirm && (
+          <ConfirmDialog
+            title="Unsaved Changes"
+            message="You have a note open in the editor. Discard changes and switch to the selected note?"
+            confirmText="Discard & Switch"
+            cancelText="Keep Editing"
+            danger
+            onConfirm={this.handleNavConfirmDiscard}
+            onCancel={this.handleNavConfirmCancel}
+          />
+        )}
       </div>
     );
   }

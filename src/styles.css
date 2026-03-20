@@ -467,6 +467,19 @@ a:hover { text-decoration: underline; }
 .btn-cancel:hover { background: #f3f4f6; }
 .dark .btn-cancel { color: #9ca3af; border-color: #4b5563; background: #1f2937; }
 .dark .btn-cancel:hover { background: #374151; }
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+.btn-danger:hover { background: #b91c1c; }
 .editor-hint {
   font-size: 11px;
   color: #9ca3af;
