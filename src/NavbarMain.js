@@ -24,7 +24,7 @@ function NavbarMain(props) {
         <button onClick={handlePrint} className="icon-btn" title="Print / Export PDF" aria-label="Print or export as PDF">
           <Printer size={18} />
         </button>
-        <button onClick={() => props.handleDownloadNote(note)} className="icon-btn" title="Download Markdown" aria-label="Download as markdown file">
+        <button onClick={() => props.handleDownloadNote(note)} className="icon-btn" title="Download" aria-label="Download as markdown file">
           <Download size={18} />
         </button>
         <button onClick={(e) => props.handleDeleteNote(e, note)} className="icon-btn icon-btn-danger" title="Delete" aria-label="Delete this note">

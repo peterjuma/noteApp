@@ -1,5 +1,5 @@
 import React from "react";
-import { Upload, Download, ArrowUpDown, ArrowLeftRight, Plus, X, Check, Trash2, PencilLine, Archive } from "lucide-react";
+import { Upload, Download, ArrowUpDown, ArrowLeftRight, Plus, X, Check, Trash2, PencilLine, FolderUp } from "lucide-react";
 
 function NoteSort(props) {
   const fileInputRef = React.useRef(null);
@@ -73,13 +73,13 @@ function NoteSort(props) {
           <div className="sort-bar-right">
             <input ref={fileInputRef} type="file" accept=".md" className="hidden" aria-label="Select markdown file" onChange={props.handleNotesUpload} />
             <input ref={zipInputRef} type="file" accept=".zip" className="hidden" aria-label="Select ZIP archive" onChange={props.handleZipImport} />
-            <button onClick={triggerFileInputClick} className="icon-btn" title="Upload Note (.md)" aria-label="Upload a markdown note">
+            <button onClick={triggerFileInputClick} className="icon-btn" title="Upload Note" aria-label="Upload a markdown note">
               <Upload size={14} />
             </button>
-            <button onClick={() => zipInputRef.current.click()} className="icon-btn" title="Import Archive (.zip)" aria-label="Import notes from ZIP archive">
-              <Archive size={14} />
+            <button onClick={() => zipInputRef.current.click()} className="icon-btn" title="Import Archive" aria-label="Import notes from ZIP archive">
+              <FolderUp size={14} />
             </button>
-            <button onClick={props.handleNotesBackup} className="icon-btn" title="Download Backup (.zip)" aria-label="Download all notes as ZIP">
+            <button onClick={props.handleNotesBackup} className="icon-btn" title="Download Backup" aria-label="Download all notes as ZIP">
               <Download size={14} />
             </button>
           </div>
