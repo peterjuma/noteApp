@@ -50,7 +50,7 @@ function NoteEditor(props) {
 
   // Autosave: debounced 3s, only when enabled and dirty
   useEffect(() => {
-    if (!autoSave || !isDirty) return;
+    if (!autoSave || !isDirty || !title.trim()) return;
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     autosaveTimerRef.current = setTimeout(() => {
       // Silent save — stays in editor, no view switch
