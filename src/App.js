@@ -675,20 +675,25 @@ handleUnpinNote = async (noteid) => {
 
   handleSearchNotes(e) {
     const searchString = e.target.value.toLowerCase();
-    const searchQuery = searchString.replace(/^(title:|body:)/, '').trim();
+    const searchQuery = searchString.replace(/^(title:|body:|tag:)/, '').trim();
 
     if (!searchQuery) {
         this.setState({ filteredNotes: [] });
         return;
     }
 
-    // Search both title and body by default; use "title:" or "body:" prefix to restrict
+    // Search scope: title:, body:, tag:, or all (default)
     const field = searchString.startsWith('title:') ? 'title' :
-                  searchString.startsWith('body:') ? 'body' : 'all';
+                  searchString.startsWith('body:') ? 'body' :
+                  searchString.startsWith('tag:') ? 'tag' : 'all';
 
     const searchWords = searchQuery.split(/\s+/);
 
     const filteredNotes = this.state.allnotes.filter(note => {
+        if (field === 'tag') {
+          const tagStr = (note.tags || []).join(' ').toLowerCase();
+          return searchWords.every(word => tagStr.includes(word));
+        }
         if (field === 'all') {
           const combined = ((note.title || '') + ' ' + (note.body || '') + ' ' + (note.tags || []).join(' ')).toLowerCase();
           return searchWords.every(word => combined.includes(word));

@@ -88,7 +88,7 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 | `react hooks` | Title + body + tags (default) |
 | `title:meeting` | Title only |
 | `body:TODO` | Body content only |
-| `#projectx` | Matches notes tagged "projectx" |
+| `tag:projectx` | Tags only |
 
 Multiple words are matched with AND logic — all words must appear in the searched content.
 
