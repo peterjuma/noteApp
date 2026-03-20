@@ -404,7 +404,6 @@ function NoteEditor(props) {
     note.notebody = bodytxt;
     note.tags = tags;
     props.handleSaveNote(e, note);
-    props.handleSortNotes("4");
     setIsDirty(false);
     setLastSaved(new Date());
   };

@@ -57,7 +57,7 @@ function NoteSort(props) {
             <ArrowUpDown size={13} />
             <select
               id="sort-selection"
-              defaultValue="4"
+              value={props.sortby || "4"}
               aria-label="Sort notes by"
               onChange={(e) => props.handleSortNotes(e.target.value)}
             >
@@ -67,6 +67,7 @@ function NoteSort(props) {
               <option value="3">Created: Oldest</option>
               <option value="0">Title: A-Z</option>
               <option value="1">Title: Z-A</option>
+              {props.sortby === "manual" && <option value="manual">Manual</option>}
             </select>
           </div>
           <div className="sort-bar-right">

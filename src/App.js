@@ -313,26 +313,30 @@ handleUnpinNote = async (noteid) => {
   };
 
   handleSortNotes = (sortby) => {
+    // "manual" means user dragged to reorder — just preserve current order
+    if (sortby === "manual") {
+      this.setState({ sortby: "manual" });
+      return;
+    }
+
     const notesArray = [...this.state.allnotes];
-    const sortValue = sortby; // Directly use the passed value
+    const sortValue = sortby;
   
     // Separate pinned and unpinned notes
     const pinnedNotes = notesArray.filter(note => this.state.pinnedNotes.includes(note.noteid));
     const unpinnedNotes = notesArray.filter(note => !this.state.pinnedNotes.includes(note.noteid));
   
     const sortByTitle = (a, b, order = 'asc') => {
-      // Check for empty titles and sort them last
-      const aTitle = a.title ? a.title.toUpperCase() : '';
-      const bTitle = b.title ? b.title.toUpperCase() : '';
-      
-      // If a title is empty, it goes last
-      if (!aTitle && bTitle) return 1; // `a` is empty, `b` isn't
-      if (aTitle && !bTitle) return -1; // `b` is empty, `a` isn't
-      if (!aTitle && !bTitle) return 0; // Both are empty
-      
-      // Normal alphabetical sorting
-      return order === 'asc' ? (aTitle > bTitle ? 1 : aTitle < bTitle ? -1 : 0) : (aTitle > bTitle ? -1 : aTitle < bTitle ? 1 : 0);
+      const aTitle = (a.title || '').toLowerCase();
+      const bTitle = (b.title || '').toLowerCase();
+      if (!aTitle && bTitle) return 1;
+      if (aTitle && !bTitle) return -1;
+      if (!aTitle && !bTitle) return 0;
+      const cmp = aTitle.localeCompare(bTitle);
+      return order === 'asc' ? cmp : -cmp;
     };
+
+    const safeTs = (ts) => ts || 0; // Handle missing timestamps
   
     switch (sortValue) {
       case "0": // Title: A-Z
@@ -344,26 +348,25 @@ handleUnpinNote = async (noteid) => {
         unpinnedNotes.sort((a, b) => sortByTitle(a, b, 'desc'));
         break;
       case "2": // Created: Newest
-        pinnedNotes.sort((a, b) => b.created_at - a.created_at);
-        unpinnedNotes.sort((a, b) => b.created_at - a.created_at);
+        pinnedNotes.sort((a, b) => safeTs(b.created_at) - safeTs(a.created_at));
+        unpinnedNotes.sort((a, b) => safeTs(b.created_at) - safeTs(a.created_at));
         break;
       case "3": // Created: Oldest
-        pinnedNotes.sort((a, b) => a.created_at - b.created_at);
-        unpinnedNotes.sort((a, b) => a.created_at - b.created_at);
+        pinnedNotes.sort((a, b) => safeTs(a.created_at) - safeTs(b.created_at));
+        unpinnedNotes.sort((a, b) => safeTs(a.created_at) - safeTs(b.created_at));
         break;
       case "4": // Modified: Newest
-        pinnedNotes.sort((a, b) => b.updated_at - a.updated_at);
-        unpinnedNotes.sort((a, b) => b.updated_at - a.updated_at);
+        pinnedNotes.sort((a, b) => safeTs(b.updated_at) - safeTs(a.updated_at));
+        unpinnedNotes.sort((a, b) => safeTs(b.updated_at) - safeTs(a.updated_at));
         break;
       case "5": // Modified: Oldest
-        pinnedNotes.sort((a, b) => a.updated_at - b.updated_at);
-        unpinnedNotes.sort((a, b) => a.updated_at - b.updated_at);
+        pinnedNotes.sort((a, b) => safeTs(a.updated_at) - safeTs(b.updated_at));
+        unpinnedNotes.sort((a, b) => safeTs(a.updated_at) - safeTs(b.updated_at));
         break;
       default:
         return;
     }
   
-    // Merge the sorted lists with pinned notes on top
     const sortedNotes = [...pinnedNotes, ...unpinnedNotes];
   
     this.setState({
@@ -371,9 +374,8 @@ handleUnpinNote = async (noteid) => {
       allnotes: sortedNotes,
     });
   
-    // If there are any notes, select the first one
-    // If action is addnote or updatenote, do not select any note
-    if (sortedNotes.length > 0 && this.state.action !== "addnote" && this.state.action !== "updatenote") {
+    // Auto-select the first note only on initial load (no current note selected)
+    if (sortedNotes.length > 0 && !this.state.noteid && this.state.action !== "addnote" && this.state.action !== "updatenote") {
       this.handleNoteListItemClick(null, sortedNotes[0]);
     }
   };
@@ -857,6 +859,7 @@ handleUnpinNote = async (noteid) => {
 
           <NoteSort
             handleSortNotes={this.handleSortNotes}
+            sortby={this.state.sortby}
             handleNotesBackup={this.handleNotesBackup}
             handleNotesUpload={this.handleNotesUpload}
             handleZipImport={this.handleZipImport}
