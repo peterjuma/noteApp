@@ -38,6 +38,7 @@ class App extends Component {
       activeDb: db.getActiveWorkspace(),
       workspaces: db.getWorkspaces(),
       sidebarOpen: false,
+      sidebarWidth: parseInt(localStorage.getItem("noteapp_sidebar_width")) || 260,
     };
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDeleteNote = this.handleDeleteNote.bind(this);
@@ -792,7 +793,7 @@ handleUnpinNote = async (noteid) => {
         >
           <Menu size={20} />
         </button>
-        <div className={`sidebar ${this.state.sidebarOpen ? "sidebar-open" : ""}`}>
+        <div className={`sidebar ${this.state.sidebarOpen ? "sidebar-open" : ""}`} style={{ width: this.state.sidebarWidth, minWidth: 180 }}>
           <NavbarSidebar
             handleClickHomeBtn={this.handleClickHomeBtn}
             handleEditNoteBtn={this.handleEditNoteBtn}
@@ -867,6 +868,50 @@ handleUnpinNote = async (noteid) => {
             handleDeleteWorkspace={this.handleDeleteWorkspace}
           />
         </div>
+
+        {/* Resize handle */}
+        <div
+          className="sidebar-resize-handle"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            const startX = e.clientX;
+            const startWidth = this.state.sidebarWidth;
+            const onMouseMove = (ev) => {
+              const newWidth = Math.max(180, Math.min(500, startWidth + ev.clientX - startX));
+              this.setState({ sidebarWidth: newWidth });
+            };
+            const onMouseUp = () => {
+              document.removeEventListener("mousemove", onMouseMove);
+              document.removeEventListener("mouseup", onMouseUp);
+              document.body.style.cursor = "";
+              document.body.style.userSelect = "";
+              localStorage.setItem("noteapp_sidebar_width", this.state.sidebarWidth);
+            };
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mouseup", onMouseUp);
+            document.body.style.cursor = "col-resize";
+            document.body.style.userSelect = "none";
+          }}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowLeft") {
+              this.setState((s) => {
+                const w = Math.max(180, s.sidebarWidth - 20);
+                localStorage.setItem("noteapp_sidebar_width", w);
+                return { sidebarWidth: w };
+              });
+            } else if (e.key === "ArrowRight") {
+              this.setState((s) => {
+                const w = Math.min(500, s.sidebarWidth + 20);
+                localStorage.setItem("noteapp_sidebar_width", w);
+                return { sidebarWidth: w };
+              });
+            }
+          }}
+        />
 
         <div className="main-content">
           {RightNavbar}
