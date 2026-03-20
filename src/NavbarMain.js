@@ -13,7 +13,7 @@ function NavbarMain(props) {
   return (
     <nav className="view-toolbar" aria-label="Note actions">
       <div className="toolbar-group">
-        <button onClick={(e) => props.handleCopyEvent(e, note.notebody)} className="icon-btn" title="Copy Markdown" aria-label="Copy note as markdown">
+        <button onClick={(e) => props.handleCopyEvent(e, note.notebody)} className="icon-btn" title="Copy" aria-label="Copy note as markdown">
           <Copy size={18} />
         </button>
         <button data-action="updatenote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="Edit" aria-label="Edit this note">
