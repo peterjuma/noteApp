@@ -512,7 +512,18 @@ function NoteEditor(props) {
               />
             </div>
           ) : (
-            <div ref={editorRef} style={{ height: "100%" }} />
+            <div
+              ref={editorRef}
+              style={{ height: "100%" }}
+              onClick={(e) => {
+                // If clicking empty space below content, focus editor at end
+                if (e.target === editorRef.current && viewRef.current) {
+                  const len = viewRef.current.state.doc.length;
+                  viewRef.current.dispatch({ selection: { anchor: len } });
+                  viewRef.current.focus();
+                }
+              }}
+            />
           )}
         </div>
 

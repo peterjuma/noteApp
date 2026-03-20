@@ -54,7 +54,7 @@ function NavbarSidebar(props) {
         <Search size={14} />
         <input
           type="search"
-          placeholder="Search notes..."
+          placeholder="Search notes, tags..."
           ref={searchRef}
           aria-label="Search notes"
           onChange={(e) => props.handleSearchNotes(e)}

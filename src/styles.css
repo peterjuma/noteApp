@@ -606,7 +606,7 @@ a:hover { text-decoration: underline; }
 
 /* ===== CodeMirror Overrides ===== */
 .cm-editor { height: 100%; font-size: 15px; }
-.cm-editor .cm-scroller { font-family: 'SF Mono', 'Fira Code', Menlo, Consolas, monospace; }
+.cm-editor .cm-scroller { font-family: 'SF Mono', 'Fira Code', Menlo, Consolas, monospace; min-height: 100%; }
 .cm-editor.cm-focused { outline: none; }
 
 /* ===== Mermaid ===== */
