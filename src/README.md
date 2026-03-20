@@ -30,7 +30,7 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 ### Organization
 - **Pin notes** — Pin up to 10 important notes to the top (click or drag-to-pin)
 - **Sort** — By title (A-Z, Z-A), created date, modified date, or manual drag-to-reorder
-- **Full-text search** — Searches title, body, and tags simultaneously
+- **Full-text search** — Searches title, body, and tags simultaneously. Use `title:query` or `body:query` to restrict search scope
 - **Tags** — Add tags to notes; type a tag + Enter to add, Backspace to remove
 - **Note metadata** — Created and modified timestamps shown on each note
 
@@ -78,6 +78,19 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 | `Tab` | Indent |
 | `Arrow Up/Down` | Navigate note list |
 | `Enter / Space` | Open selected note |
+
+---
+
+## Search Syntax
+
+| Query | What It Searches |
+|-------|-----------------|
+| `react hooks` | Title + body + tags (default) |
+| `title:meeting` | Title only |
+| `body:TODO` | Body content only |
+| `#projectx` | Matches notes tagged "projectx" |
+
+Multiple words are matched with AND logic — all words must appear in the searched content.
 
 ---
 
