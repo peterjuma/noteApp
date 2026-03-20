@@ -11,7 +11,7 @@ import hljs from "highlight.js";
 import { html2md, md2html } from "./useMarkDown";
 import { saveAs } from "file-saver";
 import * as db from "./services/notesDB";
-import { Menu } from "lucide-react";
+import { Menu, RotateCcw, Trash2 as TrashIcon } from "lucide-react";
 
 // Slugify a note title for URL hash
 function slugify(title) {
@@ -42,7 +42,9 @@ class App extends Component {
       sidebarWidth: parseInt(localStorage.getItem("noteapp_sidebar_width")) || 260,
       pendingNav: null,
       showNavConfirm: false,
-      dialog: null,  // { title, message, confirmText, cancelText, danger, onConfirm, onCancel }
+      dialog: null,
+      viewingArchive: false,
+      archivedNotes: [],
     };
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
@@ -302,6 +304,44 @@ handleUnpinNote = async (noteid) => {
     });
   };
 
+  // Archive view
+  toggleArchiveView = async () => {
+    if (this.state.viewingArchive) {
+      this.setState({ viewingArchive: false });
+    } else {
+      const archived = await db.getArchivedNotes();
+      this.setState({ viewingArchive: true, archivedNotes: archived });
+    }
+  };
+
+  handleRestoreNote = async (noteid) => {
+    const result = await db.restoreNoteFromArchive(noteid);
+    if (result) {
+      // Refresh archive list
+      const archived = await db.getArchivedNotes();
+      this.setState({ archivedNotes: archived });
+      // If restored to current workspace, refresh notes
+      if (result.workspace === this.state.activeDb) {
+        const notes = await db.getAllNotes(this.state.activeDb);
+        this.setState({ allnotes: notes }, () => this.handleSortNotes(this.state.sortby));
+      }
+      this.showAlert("Restored", `Note restored to workspace.`);
+    }
+  };
+
+  handlePermanentDelete = (noteid) => {
+    this.showConfirm(
+      "Delete Permanently",
+      "This will permanently delete the archived note. This cannot be undone.",
+      async () => {
+        await db.permanentlyDeleteArchived(noteid);
+        const archived = await db.getArchivedNotes();
+        this.setState({ archivedNotes: archived });
+      },
+      { confirmText: "Delete Forever", danger: true }
+    );
+  };
+
   // Navigate to a note based on URL hash
   navigateFromHash = () => {
     const hash = window.location.hash;
@@ -455,12 +495,28 @@ handleUnpinNote = async (noteid) => {
   };
 
   handleDeleteNote = (e, note) => {
-    this.showConfirm(
-      "Delete Note",
-      `Are you sure you want to delete "${note.notetitle || note.title || "this note"}"? This cannot be undone.`,
-      () => this._doDeleteNote(note),
-      { confirmText: "Delete", danger: true }
-    );
+    const noteTitle = note.notetitle || note.title || "this note";
+    this.setState({
+      dialog: {
+        title: "Delete Note",
+        message: `What would you like to do with "${noteTitle}"?`,
+        confirmText: "Delete Forever",
+        secondaryText: "Archive",
+        cancelText: "Cancel",
+        danger: true,
+        onConfirm: () => { this.setState({ dialog: null }); this._doDeleteNote(note); },
+        onSecondary: () => { this.setState({ dialog: null }); this._doArchiveNote(note); },
+        onCancel: () => this.setState({ dialog: null }),
+      },
+    });
+  };
+
+  _doArchiveNote = async (note) => {
+    const noteObj = this.state.allnotes.find(n => n.noteid === (note.noteid || note.noteid));
+    if (noteObj) {
+      await db.archiveNote(noteObj, this.state.activeDb);
+    }
+    this._doDeleteNote(note);
   };
 
   _doDeleteNote(note) {
@@ -872,6 +928,8 @@ handleUnpinNote = async (noteid) => {
             handleEditNoteBtn={this.handleEditNoteBtn}
             handleSearchNotes={this.handleSearchNotes}
             darkMode={this.state.darkMode}
+            viewingArchive={this.state.viewingArchive}
+            onToggleArchive={this.toggleArchiveView}
             onToggleDarkMode={() => this.setState((s) => {
               const next = !s.darkMode;
               localStorage.setItem("noteapp_dark_mode", next);
@@ -880,6 +938,43 @@ handleUnpinNote = async (noteid) => {
           />
 
           <div className="sidebar-scroll">
+            {this.state.viewingArchive ? (
+              // Archive view
+              <>
+                <h4 className="section-header">Archived ({this.state.archivedNotes.length})</h4>
+                {this.state.archivedNotes.length > 0 ? (
+                  <ul>
+                    {this.state.archivedNotes.map((note) => (
+                      <li key={note.noteid} className="note-item archive-item">
+                        <div className="archive-item-info">
+                          <span className="note-item-title">{note.title}</span>
+                          <span className="archive-item-meta">
+                            {note.sourceWorkspace === "notesdb" ? "Default" : note.sourceWorkspace.replace("notesdb_", "")}
+                            {note.archivedAt && ` · ${new Date(note.archivedAt).toLocaleDateString()}`}
+                          </span>
+                        </div>
+                        <div className="archive-item-actions">
+                          <button onClick={() => this.handleRestoreNote(note.noteid)} className="icon-btn" title="Restore" aria-label="Restore note">
+                            <RotateCcw size={14} />
+                          </button>
+                          <button onClick={() => this.handlePermanentDelete(note.noteid)} className="icon-btn icon-btn-danger" title="Delete forever" aria-label="Delete permanently">
+                            <TrashIcon size={14} />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="empty-state">
+                    <p className="empty-state-icon">📦</p>
+                    <p className="empty-state-text">No archived notes</p>
+                    <p className="empty-state-hint">Archived notes appear here when you choose Archive instead of Delete</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              // Normal notes view
+              <>
             <h4
               className="section-header section-header-drop"
               onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; e.currentTarget.classList.add("section-header-dragover"); }}
@@ -926,6 +1021,8 @@ handleUnpinNote = async (noteid) => {
                 <p className="empty-state-hint">Try a different search term</p>
               </div>
             ) : null}
+              </>
+            )}
           </div>
 
           <NoteSort
@@ -1014,8 +1111,10 @@ handleUnpinNote = async (noteid) => {
             message={this.state.dialog.message}
             confirmText={this.state.dialog.confirmText}
             cancelText={this.state.dialog.cancelText}
+            secondaryText={this.state.dialog.secondaryText}
             danger={this.state.dialog.danger}
             onConfirm={this.state.dialog.onConfirm}
+            onSecondary={this.state.dialog.onSecondary}
             onCancel={this.state.dialog.onCancel || (() => this.setState({ dialog: null }))}
           />
         )}

@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Plus, Search, Moon, Sun } from "lucide-react";
+import { Home, Plus, Search, Moon, Sun, Archive } from "lucide-react";
 
 function NavbarSidebar(props) {
   var note = {
@@ -22,8 +22,16 @@ function NavbarSidebar(props) {
         >
           <Home size={18} />
         </button>
-        <h4 className="sidebar-title">Notes</h4>
+        <h4 className="sidebar-title">{props.viewingArchive ? "Archive" : "Notes"}</h4>
         <div style={{ display: "flex", gap: "2px" }}>
+          <button
+            onClick={props.onToggleArchive}
+            className={`icon-btn ${props.viewingArchive ? "icon-btn-active" : ""}`}
+            title={props.viewingArchive ? "Back to Notes" : "View Archive"}
+            aria-label={props.viewingArchive ? "Back to notes" : "View archived notes"}
+          >
+            <Archive size={16} />
+          </button>
           <button
             onClick={props.onToggleDarkMode}
             className="icon-btn"

@@ -166,3 +166,62 @@ export function closeDB() {
     currentDbName = null;
   }
 }
+
+// ===== Archive =====
+const ARCHIVE_DB = "notesdb_archive";
+let archiveInstance = null;
+
+async function getArchiveDB() {
+  if (archiveInstance) return archiveInstance;
+  archiveInstance = await openDB(ARCHIVE_DB, 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains("archived")) {
+        const store = db.createObjectStore("archived", { keyPath: "noteid" });
+        store.createIndex("archivedAt", "archivedAt");
+      }
+    },
+  });
+  return archiveInstance;
+}
+
+export async function archiveNote(note, sourceWorkspace) {
+  const archiveDb = await getArchiveDB();
+  const archivedNote = {
+    ...note,
+    archivedAt: Date.now(),
+    sourceWorkspace: sourceWorkspace || "notesdb",
+  };
+  await archiveDb.put("archived", archivedNote);
+}
+
+export async function getArchivedNotes() {
+  const archiveDb = await getArchiveDB();
+  const notes = await archiveDb.getAll("archived");
+  return notes.sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0));
+}
+
+export async function restoreNoteFromArchive(noteid) {
+  const archiveDb = await getArchiveDB();
+  const note = await archiveDb.get("archived", noteid);
+  if (!note) return null;
+  const targetDb = note.sourceWorkspace || "notesdb";
+  // Remove archive-specific fields
+  const { archivedAt, sourceWorkspace, ...restoredNote } = note;
+  restoredNote.updated_at = Date.now();
+  // Add back to original workspace
+  const db = await getDB(targetDb);
+  await db.put("notes", restoredNote);
+  // Remove from archive
+  await archiveDb.delete("archived", noteid);
+  return { note: restoredNote, workspace: targetDb };
+}
+
+export async function permanentlyDeleteArchived(noteid) {
+  const archiveDb = await getArchiveDB();
+  await archiveDb.delete("archived", noteid);
+}
+
+export async function getArchiveCount() {
+  const archiveDb = await getArchiveDB();
+  return (await archiveDb.getAll("archived")).length;
+}
