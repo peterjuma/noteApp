@@ -360,9 +360,9 @@ function NoteEditor(props) {
   // Track latest doc content for dark mode switch
   const docRef = useRef(initialBody);
 
-  // Initialize / recreate editor when darkMode changes
+  // Initialize / recreate editor when darkMode or showPreview changes
   useEffect(() => {
-    if (!editorRef.current) return;
+    if (!editorRef.current || showPreview) return;
     // Read current content before destroying
     if (viewRef.current) {
       docRef.current = viewRef.current.state.doc.toString();
@@ -380,7 +380,7 @@ function NoteEditor(props) {
         viewRef.current = null;
       }
     };
-  }, [darkMode, createExtensions, initialBody]);
+  }, [darkMode, showPreview, createExtensions, initialBody]);
 
   // Resolve noteapp-img: references in preview panels
   const previewRef = useRef(null);
@@ -471,7 +471,13 @@ function NoteEditor(props) {
 
           <div className="toolbar-right">
             <button
-              onClick={() => setShowPreview(!showPreview)}
+              onClick={() => {
+                // Save current doc before toggling preview
+                if (!showPreview && viewRef.current) {
+                  docRef.current = viewRef.current.state.doc.toString();
+                }
+                setShowPreview(!showPreview);
+              }}
               className={`toolbar-btn ${darkMode ? "toolbar-btn-dark" : ""} ${showPreview ? "toolbar-btn-active" : ""}`}
               title={showPreview ? "Write" : "Preview"}
             >
