@@ -1,521 +1,549 @@
-import React, { Fragment, useRef, useState, useEffect } from "react";
-import keyCodes from "./KeyCodes";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { html2md, md2html } from "./useMarkDown";
-import { marked } from 'marked';
-import InputNumber from "react-input-number";
+import DOMPurify from "dompurify";
+import { EditorView, keymap, placeholder } from "@codemirror/view";
+import { EditorState } from "@codemirror/state";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+import { languages } from "@codemirror/language-data";
+import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+import { oneDark } from "@codemirror/theme-one-dark";
+import { searchKeymap } from "@codemirror/search";
+import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
+import * as noteDB from "./services/notesDB";
+import {
+  Bold, Italic, Heading2, Link, ListOrdered, List, Quote, ImagePlus,
+  Code, Braces, CheckSquare, Table, Strikethrough, Save, X,
+  Columns2, Maximize2, Eye, EyeOff, Minus,
+} from "lucide-react";
 
 function NoteEditor(props) {
-
-  var note = props.editNoteData;
-  const [fontsize, setFontsize] = useState(16);
-  const [splitscreen, setSplitscreen] = useState(false);
-  const initialBody = note.notebody || '';
-  const initialTitle = note.notetitle || '';
+  const note = props.editNoteData;
+  const darkMode = props.darkMode;
+  const initialBody = note.notebody || "";
+  const initialTitle = note.notetitle || "";
   const [bodytxt, setBodyTxt] = useState(initialBody);
   const [title, setTitle] = useState(initialTitle);
+  const [splitscreen, setSplitscreen] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [tags, setTags] = useState(note.tags || []);
+  const [tagInput, setTagInput] = useState("");
   const titleRef = useRef();
-  const [history, setHistory] = useState([initialBody]); // Initialize history with the initial or an empty text
-  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
-  const textAreaRef = useRef();
-  const previewRef = useRef();
-  const [cusor, setCursor] = useState({ start: 0, end: 0 });
+  const editorRef = useRef(null);
+  const viewRef = useRef(null);
+  const insertMarkdownRef = useRef(null);
+  const autosaveTimerRef = useRef(null);
 
-  const styles = {
-    main_editor: {
-      paddingLeft: "5px",
-      paddingRight: "1px",
-      height: "100vh",
-      display: "flex",
-      flexDirection: "column",
-      width: splitscreen ? "50%" : "100%",
-    },
-    buttons: {
-      display: "inline-flex",
-      float: "right",
-      borderLeft: "1px solid #dcdcde",
-    },
-    textarea: {
-      display: "flex",
-      flexDirection: "column",
-      maxWidth: "1440px",
-      margin: "0 auto",
-      width: "100%",
-      padding: "30px",
-      fontSize: `${fontsize}px`,
-      fontWeight: "400",
-      overflow: "auto",
-      lineHeight: "1.45",
-      borderRadius: "0",
-      resize: "none",
-      boxShadow: "none",
-      border: "none",
-      height: "100%",
-      borderRadius: "5px",
-    },
-    inputNum: {
-      width: "4.26rem",
-      height: "2.7rem",
-      borderRadius: "4px 2px 2px 4px",
-      color: "#292a2b",
-      padding: "0.1ex 1ex",
-      border: "1px solid #ccc",
-      fontWeight: 250,
-      textShadow: "1px 1px 1px rgba(0, 0, 0, 0.1)",
-      outline: "none",
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    dark: {
-      backgroundColor: "hsl(0, 0%, 14%)",
-      color: "#afafaf",
-    },
-    light: {
-      backgroundColor: "#fafafa",
-      color: "#000000",
-    },
-    mdtools_dark: {
-      backgroundColor: "hsl(0, 0%, 14%)",
-      color: "#292a2b",
-    },
-    btn_dark: {
-      backgroundColor: "hsl(0, 0%, 14%)",
-      color: "#afafaf",
-    },
-    mdtools_light: {
-      color: "#333",
-      backgroundColor: "#fff",
-    },
-    btn_light: {
-      backgroundColor: "#fff",
-      color: "#777",
-    },
-    note_preview: {
-      width: "50%",
-      height: "100%",
-      borderLeft: "1px solid #dcdcde",
-    },
-    title: {
-      paddingTop: "40px",
-      paddingBottom: "10px",
-      margin: "0 50px", // Adjusted margins to provide padding on smaller screens
-      borderBottom: "1px solid #eee",
-      whiteSpace: "nowrap", // Prevents the text from wrapping to the next line
-      overflow: "auto", // Keeps the text within the bounds of its container
-    },
-    body: {
-      color: "#24292e",
-      fontFamily:
-        "-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji",
-      fontSize: "16px",
-      lineHeight: "1.5",
-      wordWrap: "break-word",
-      overflow: "auto",
-      height: "calc(100% - 150px)",
-      padding: "40px 50px 50px",
-    },
-    bottom: {
-      position: "flex",
-      bottom: "0",
-      // borderTop: "1px solid #dcdcde",
-      // height: "50px",
-      margin: "0 50px",
-      width: "100%",
-    },
-  };
+  // Word/character count
+  const wordCount = bodytxt.trim() ? bodytxt.trim().split(/\s+/).length : 0;
+  const charCount = bodytxt.length;
 
-  // Toggle screensize
-  
-  const curscreensize = splitscreen
-    ? {
-        split: true,
-        buttonClass: "far fa-window-maximize fa-lg md_btn",
-        description: "Full Screen",
+  // Mark dirty when content changes
+  useEffect(() => {
+    if (bodytxt !== initialBody || title !== initialTitle) {
+      setIsDirty(true);
+    }
+  }, [bodytxt, title, initialBody, initialTitle]);
+
+  // Autosave: debounced 3 seconds after typing
+  useEffect(() => {
+    if (!isDirty) return;
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(() => {
+      const noteToSave = { ...note };
+      noteToSave.notetitle = title;
+      noteToSave.notebody = bodytxt;
+      noteToSave.tags = tags;
+      props.handleSaveNote(null, noteToSave);
+      setIsDirty(false);
+      setLastSaved(new Date());
+    }, 3000);
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
+  }, [bodytxt, title]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Warn before navigating away with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
       }
-    : {
-        split: false,
-        buttonClass: "fas fa-columns fa-lg md_btn",
-        description: "Split Screen",
-      };
-  const [screenSize, setScreenSize] = useState(curscreensize);
-  const toggleScreen = () => {
-    screenSizer(screenSize, setScreenSize);
-    handleSplitScreen();
-  };
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+  const imageInputRef = useRef(null);
 
-  const handleSplitScreen = () => setSplitscreen(!splitscreen);
+  // Handle image file selection from toolbar
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !file.type.startsWith("image/")) return;
+    const view = viewRef.current;
+    if (!view) return;
+    const id = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    await noteDB.saveImage(id, file, file.name);
+    const mdImage = `![${file.name}](noteapp-img:${id})`;
+    const { from, to } = view.state.selection.main;
+    view.dispatch({
+      changes: { from, to, insert: mdImage },
+      selection: { anchor: from + mdImage.length },
+    });
+    view.focus();
+    e.target.value = ""; // Reset so same file can be selected again
+  };
 
   const toolbarItems = [
-    { icon: 'fa-bold', command: 'bold', tooltip: 'Bold' },
-    { icon: 'fa-italic', command: 'italic', tooltip: 'Italic' },
-    { icon: 'fa-heading', command: 'heading', tooltip: 'Heading' },
-    { icon: 'fa-link', command: 'link', tooltip: 'Link' },
-    { icon: 'fa-list-ol', command: 'olist', tooltip: 'Ordered List' },
-    { icon: 'fa-list', command: 'ulist', tooltip: 'Unordered List' },
-    { icon: 'fa-quote-left', command: 'blockquote', tooltip: 'Blockquote' },
-    { icon: 'fa-image', command: 'image', tooltip: 'Image' },
-    { icon: 'fa-terminal', command: 'backticks', tooltip: 'Backticks' },
-    { icon: 'fa-code', command: 'codeblock', tooltip: 'Fenced Code' },
-    { icon: 'fa-check-square', command: 'tasklist', tooltip: 'Tasklist' },
-    { icon: 'fa-table', command: 'table', tooltip: 'Table' },
-    { icon: 'fa-strikethrough', command: 'strike', tooltip: 'Strikethrough' },
-    // { icon: 'fa-undo', command: 'undo', tooltip: 'Undo' },
-    // { icon: 'fa-redo', command: 'redo', tooltip: 'Redo' },
+    { icon: Heading2, command: "heading", tooltip: "Heading", size: 15 },
+    { icon: Bold, command: "bold", tooltip: "Bold (Ctrl+B)", size: 15 },
+    { icon: Italic, command: "italic", tooltip: "Italic (Ctrl+I)", size: 15 },
+    { divider: true },
+    { icon: Quote, command: "blockquote", tooltip: "Quote", size: 15 },
+    { icon: Code, command: "backticks", tooltip: "Code (Ctrl+E)", size: 15 },
+    { icon: Braces, command: "codeblock", tooltip: "Code Block", size: 15 },
+    { icon: Link, command: "link", tooltip: "Link (Ctrl+K)", size: 15 },
+    { icon: ImagePlus, command: "uploadImage", tooltip: "Upload Image", size: 15 },
+    { divider: true },
+    { icon: List, command: "ulist", tooltip: "Bullet List", size: 15 },
+    { icon: ListOrdered, command: "olist", tooltip: "Numbered List", size: 15 },
+    { icon: CheckSquare, command: "tasklist", tooltip: "Task List", size: 15 },
+    { divider: true },
+    { icon: Table, command: "table", tooltip: "Table", size: 15 },
+    { icon: Minus, command: "hr", tooltip: "Horizontal Rule", size: 15 },
+    { icon: Strikethrough, command: "strike", tooltip: "Strikethrough", size: 15 },
   ];
 
-  const screenSizer = (screenSize, setScreenSize) => {
-    screenSize.split
-      ? setScreenSize({
-          split: false,
-          buttonClass: "fas fa-columns fa-lg md_btn",
-          description: "Split Screen",
-        })
-      : setScreenSize({
-          split: true,
-          buttonClass: "far fa-window-maximize fa-lg md_btn",
-          description: "Full Screen",
-        });
-  };
-  //  Toggle theme
-  const [toggleState, setToggleState] = useState({
-    theme: "vs-light",
-    description: "Dark Mode",
-    themeclass: "fas fa-moon fa-lg md_btn",
-    buttonstyle: { ...styles.btn_light },
-  });
+  // Markdown insertion logic
+  const insertMarkdown = useCallback((command) => {
+    const view = viewRef.current;
+    if (!view) return;
 
-  const toggleTheme = () => {
-    toggleDarkMode(toggleState, setToggleState);
-  };
+    const { from, to } = view.state.selection.main;
+    const selected = view.state.sliceDoc(from, to);
+    let insert, selectFrom, selectTo;
 
-  const toggleDarkMode = (toggleState, setToggleState) => {
-    toggleState.theme == "vs-dark"
-      ? setToggleState({
-          theme: "vs-light",
-          description: "Dark Mode",
-          themeclass: "fas fa-moon fa-lg md_btn",
-          buttonstyle: { ...styles.btn_light },
-        })
-      : setToggleState({
-          theme: "vs-dark",
-          description: "Light Mode",
-          themeclass: "fas fa-sun fa-lg md_btn",
-          buttonstyle: { ...styles.btn_dark },
-        });
-  };
-
-  const handleBodyChange = (e) => {
-    const newText = e.target.value;
-    setBodyTxt(newText);
-    if (newText !== history[currentHistoryIndex]) {
-        const newHistory = history.slice(0, currentHistoryIndex + 1); // Cut the history if new text is added after undoing
-        newHistory.push(newText);
-        setHistory(newHistory);
-        setCurrentHistoryIndex(newHistory.length - 1); // Set current index to the latest item
+    switch (command) {
+      case "bold": {
+        const text = selected || "bold text";
+        insert = `**${text}**`;
+        selectFrom = from + 2;
+        selectTo = from + 2 + text.length;
+        break;
+      }
+      case "italic": {
+        const text = selected || "italic text";
+        insert = `_${text}_`;
+        selectFrom = from + 1;
+        selectTo = from + 1 + text.length;
+        break;
+      }
+      case "strike": {
+        const text = selected || "text";
+        insert = `~~${text}~~`;
+        selectFrom = from + 2;
+        selectTo = from + 2 + text.length;
+        break;
+      }
+      case "backticks": {
+        const text = selected || "code";
+        insert = `\`${text}\``;
+        selectFrom = from + 1;
+        selectTo = from + 1 + text.length;
+        break;
+      }
+      case "heading":
+        insert = `### ${selected || "Heading"}`;
+        selectFrom = from + 4;
+        selectTo = from + insert.length;
+        break;
+      case "link": {
+        const label = selected || "link text";
+        insert = `[${label}](url)`;
+        selectFrom = from + label.length + 3;
+        selectTo = selectFrom + 3;
+        break;
+      }
+      case "image": {
+        const alt = selected || "alt text";
+        insert = `![${alt}](url)`;
+        selectFrom = from + alt.length + 4;
+        selectTo = selectFrom + 3;
+        break;
+      }
+      case "olist":
+        insert = selected ? selected.split("\n").map((l, i) => `${i + 1}. ${l}`).join("\n") : "1. ";
+        selectFrom = from + insert.length; selectTo = selectFrom;
+        break;
+      case "ulist":
+        insert = selected ? selected.split("\n").map((l) => `- ${l}`).join("\n") : "- ";
+        selectFrom = from + insert.length; selectTo = selectFrom;
+        break;
+      case "tasklist":
+        insert = selected ? selected.split("\n").map((l) => `- [ ] ${l}`).join("\n") : "- [ ] ";
+        selectFrom = from + insert.length; selectTo = selectFrom;
+        break;
+      case "blockquote":
+        insert = selected ? selected.split("\n").map((l) => `> ${l}`).join("\n") : "> ";
+        selectFrom = from + insert.length; selectTo = selectFrom;
+        break;
+      case "codeblock":
+        insert = "\n```\n" + (selected || "") + "\n```\n";
+        selectFrom = from + 5; selectTo = from + 5 + (selected ? selected.length : 0);
+        break;
+      case "table":
+        insert = "\n| Column 1 | Column 2 | Column 3 |\n| -------- | -------- | -------- |\n| Cell     | Cell     | Cell     |\n";
+        selectFrom = from + insert.length; selectTo = selectFrom;
+        break;
+      case "hr":
+        insert = "\n---\n";
+        selectFrom = from + insert.length; selectTo = selectFrom;
+        break;
+      default:
+        return;
     }
-    setCursor({
-      start: e.target.selectionStart,
-      end: e.target.selectionEnd,
+
+    view.dispatch({
+      changes: { from, to, insert },
+      selection: { anchor: selected ? from + insert.length : selectFrom, head: selected ? from + insert.length : selectTo },
     });
-  };
+    view.focus();
+  }, []);
 
-  const handleUndo = () => {
-    const newIndex = currentHistoryIndex - 1;
-    if (newIndex >= 0) {
-        setBodyTxt(history[newIndex]); // Directly set the text without fallback
-        setCurrentHistoryIndex(newIndex);
-    }
-  };
+  // Keep ref in sync for keymap closures
+  insertMarkdownRef.current = insertMarkdown;
+  const saveFnRef = useRef(null);
 
-  const handleRedo = () => {
-      const newIndex = currentHistoryIndex + 1;
-      if (newIndex < history.length) {
-          setBodyTxt(history[newIndex]); // Directly set the text without fallback
-          setCurrentHistoryIndex(newIndex);
+  // Create CodeMirror extensions with GitHub-like keyboard shortcuts
+  const createExtensions = useCallback((isDark) => {
+    const updateListener = EditorView.updateListener.of((update) => {
+      if (update.docChanged) {
+        setBodyTxt(update.state.doc.toString());
       }
+    });
+
+    // GitHub-style keyboard shortcuts
+    const markdownKeymap = keymap.of([
+      { key: "Mod-b", run: () => { insertMarkdownRef.current("bold"); return true; } },
+      { key: "Mod-i", run: () => { insertMarkdownRef.current("italic"); return true; } },
+      { key: "Mod-k", run: () => { insertMarkdownRef.current("link"); return true; } },
+      { key: "Mod-e", run: () => { insertMarkdownRef.current("backticks"); return true; } },
+      { key: "Mod-Shift-k", run: () => { insertMarkdownRef.current("codeblock"); return true; } },
+      { key: "Mod-Shift-.", run: () => { insertMarkdownRef.current("blockquote"); return true; } },
+      { key: "Mod-Shift-7", run: () => { insertMarkdownRef.current("olist"); return true; } },
+      { key: "Mod-Shift-8", run: () => { insertMarkdownRef.current("ulist"); return true; } },
+      { key: "Mod-s", run: () => { if (saveFnRef.current) saveFnRef.current(); return true; } },
+    ]);
+
+    // Helper: store image blob and insert markdown reference
+    const insertImage = async (file, view) => {
+      const id = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      await noteDB.saveImage(id, file, file.name);
+      const mdImage = `![${file.name || "image"}](noteapp-img:${id})`;
+      const { from, to } = view.state.selection.main;
+      view.dispatch({
+        changes: { from, to, insert: mdImage },
+        selection: { anchor: from + mdImage.length },
+      });
     };
 
-  const handleTitleChange = (e) => {
-      setTitle(e.target.value);
-    };
+    // Paste handler: images, HTML-to-Markdown, or plain text
+    const pasteHandler = EditorView.domEventHandlers({
+      paste(event, view) {
+        const clipboard = event.clipboardData;
+        if (!clipboard) return false;
 
-  const handleKeyEvent = (event) => {
-    const keyBindings = {
-      '"': "doublequote",
-      '(': "brackets",
-      '{': "curlybrackets",
-      '[': "squarebrackets",
-      '<': "anglebrackets",
-      '`': "backticks",
-      'Tab': "tab",
-      'KeyB': "bold",
-      'KeyI': "italic",
-      'KeyL': "link"
-    };
-    // Check if the key pressed is bound to a command
-    const command = event.ctrlKey ? keyBindings[event.code] : keyBindings[event.key];
-  
-    if (command) {
-        processInput(command);
-        event.preventDefault();  // Prevent the default action of the key press
-      }
-    };
-
-    // Listen for keydown events for undo/redo
-    useEffect(() => {
-      const handleKeyDown = (event) => {
-        if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
-            event.preventDefault();
-            handleUndo();
-        } else if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
-            event.preventDefault();
-            handleRedo();
-        } else if (event.key === "Enter") {
-            const textarea = event.target;
-            const cursorPosition = textarea.selectionStart;
-            const textUpToCursor = textarea.value.substring(0, cursorPosition);
-            const lines = textUpToCursor.split("\n");
-            const currentLine = lines[lines.length - 1];
-    
-            // Unordered list autocomplete
-            if (currentLine.trim().match(/^[-*]\s+/)) {
-                event.preventDefault();
-                const newLineContent = "\n" + currentLine.match(/^[-*]\s+/)[0];
-                insertTextAtCursor(textarea, newLineContent);
-            }
-            // Ordered list autocomplete
-            else if (currentLine.trim().match(/^\d+\.\s+/)) {
-                event.preventDefault();
-                const number = parseInt(currentLine.match(/^(\d+)\./)[1], 10);
-                const newLineContent = "\n" + `${number + 1}. `;
-                insertTextAtCursor(textarea, newLineContent);
-            }
+        // Check for pasted images (files or clipboard items)
+        const imageFile = Array.from(clipboard.files).find((f) => f.type.startsWith("image/"));
+        if (imageFile) {
+          event.preventDefault();
+          insertImage(imageFile, view);
+          return true;
         }
-      };
-    
-      // Helper function to insert text at the cursor position
-      function insertTextAtCursor(textarea, text) {
-          const [start, end] = [textarea.selectionStart, textarea.selectionEnd];
-          textarea.value = textarea.value.substring(0, start) + text + textarea.value.substring(end);
-          textarea.selectionStart = textarea.selectionEnd = start + text.length;
-      }
-    
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [history, currentHistoryIndex]); // Re-bind effect if history or index changes
-    
+        // Some browsers put images in items, not files
+        if (clipboard.items) {
+          for (const item of clipboard.items) {
+            if (item.type.startsWith("image/")) {
+              const file = item.getAsFile();
+              if (file) {
+                event.preventDefault();
+                insertImage(file, view);
+                return true;
+              }
+            }
+          }
+        }
 
-  const processInput = (eventcode) => {
-    const txtarea = document.querySelector("textarea");
-    const start = txtarea.selectionStart;
-    const finish = txtarea.selectionEnd;
-    const allText = bodytxt;
-    const selectedText = allText.substring(start, finish);
-    const keyCode = keyCodes[eventcode];
-    let newText;
-    let lines = []; 
-    let tabReplacement = '';
-  
-    if (eventcode === 'tab') {
-      // Handling tab insertion for multiple lines
-      tabReplacement = '\t';  // You can adjust this to '    ' (four spaces) if preferred
-      lines = allText.substring(start, finish).split('\n');
-      const indentedText = lines.map(line => `${tabReplacement}${line}`).join('\n');
-      newText = `${allText.substring(0, start)}${indentedText}${allText.substring(finish)}`;
-      setCursor({
-        start: start + tabReplacement.length,
-        end: start + indentedText.length - (lines.length > 1 ? 0 : tabReplacement.length)
-      });
-    } else if (['image', 'link'].includes(eventcode)) {
-      // Special handling for links and images
-      const pattern = eventcode === 'image' ? `![alt text](${selectedText})` : `[link](${selectedText})`;
-      newText = `${allText.substring(0, start)}${pattern}${allText.substring(finish)}`;
-    } else if (keyCode.regEx) {
-      // Apply regex pattern transformation
-      const transformedText = selectedText.split('\n').map(line => 
-        line ? `${keyCode.pattern} ${line}` : line
-      ).join('\n');
-      newText = `${allText.substring(0, start)}${transformedText}${allText.substring(finish)}`;
-    } else if (keyCode.pattern) {
-      // Encapsulate selected text with pattern
-      newText = `${allText.substring(0, start)}${keyCode.pattern}${selectedText}${keyCode.pattern}${allText.substring(finish)}`;
-    } else {
-      // Wrap selected text with open/close tags
-      newText = `${allText.substring(0, start)}${keyCode.open}${selectedText}${keyCode.close}${allText.substring(finish)}`;
-    }
-  
-    if (newText && newText !== bodytxt) {
-      setBodyTxt(newText);
-      const cursorOffset = keyCode.offsetEnd || keyCode.pattern.length || (keyCode.close ? keyCode.close.length : 0);
-      setCursor({
-        start: start + cursorOffset,
-        end: finish + cursorOffset + (lines.length - 1) * tabReplacement.length
-      });
-    }
-   };
-  
-    // Handle Text selection / cursor position
+        // HTML → Markdown conversion
+        const htmlContent = clipboard.getData("text/html");
+        const textContent = clipboard.getData("text/plain");
+        let pasteData;
+        if (htmlContent) {
+          html2md.keep(["pre", "code"]);
+          pasteData = html2md.turndown(htmlContent);
+        } else if (textContent && /<[a-z][\s\S]*>/i.test(textContent)) {
+          pasteData = html2md.turndown(textContent);
+        } else {
+          return false;
+        }
+        event.preventDefault();
+        const { from, to } = view.state.selection.main;
+        view.dispatch({
+          changes: { from, to, insert: pasteData },
+          selection: { anchor: from + pasteData.length },
+        });
+        return true;
+      },
+      drop(event, view) {
+        const files = event.dataTransfer ? Array.from(event.dataTransfer.files) : [];
+        const imageFile = files.find((f) => f.type.startsWith("image/"));
+        if (imageFile) {
+          event.preventDefault();
+          event.stopPropagation();
+          insertImage(imageFile, view);
+          return true;
+        }
+        return false;
+      },
+      dragover(event) {
+        // Must prevent default on dragover for drop to fire
+        if (event.dataTransfer && Array.from(event.dataTransfer.types).includes("Files")) {
+          event.preventDefault();
+          return true;
+        }
+        return false;
+      },
+    });
+
+    const exts = [
+      markdown({ base: markdownLanguage, codeLanguages: languages }),
+      history(),
+      closeBrackets(),
+      markdownKeymap,
+      pasteHandler,
+      keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
+      updateListener,
+      placeholder("Write your note in Markdown..."),
+      EditorView.lineWrapping,
+      EditorView.theme({
+        "&": { height: "100%", fontSize: "14px" },
+        ".cm-scroller": {
+          overflow: "auto",
+          fontFamily: "'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+          lineHeight: "1.6",
+        },
+        ".cm-content": { padding: "16px 20px", minHeight: "200px" },
+        ".cm-gutters": { display: "none" },
+        ".cm-activeLine": { backgroundColor: isDark ? "#1e293b" : "#f8fafc" },
+        ".cm-selectionBackground": { backgroundColor: isDark ? "#1e40af44" : "#bfdbfe66" },
+        "&.cm-focused .cm-selectionBackground": { backgroundColor: isDark ? "#1e40af66" : "#93c5fd66" },
+        ".cm-cursor": { borderLeftColor: isDark ? "#60a5fa" : "#2563eb" },
+      }),
+    ];
+    if (isDark) exts.push(oneDark);
+    return exts;
+  }, []);
+
+  // Track latest doc content for dark mode switch
+  const docRef = useRef(initialBody);
+
+  // Initialize / recreate editor when darkMode changes
   useEffect(() => {
-      textAreaRef.current.selectionStart = cusor.start;
-      textAreaRef.current.selectionEnd = cusor.end;
-      textAreaRef.current.focus();
-    }, [bodytxt]);
+    if (!editorRef.current) return;
+    // Read current content before destroying
+    if (viewRef.current) {
+      docRef.current = viewRef.current.state.doc.toString();
+      viewRef.current.destroy();
+      viewRef.current = null;
+    }
+    const state = EditorState.create({ doc: docRef.current, extensions: createExtensions(darkMode) });
+    viewRef.current = new EditorView({ state, parent: editorRef.current });
+    return () => {
+      if (viewRef.current) {
+        docRef.current = viewRef.current.state.doc.toString();
+        viewRef.current.destroy();
+        viewRef.current = null;
+      }
+    };
+  }, [darkMode, createExtensions, initialBody]);
 
-    // Paste Event
-  const handlePaste = (e) => {
-    e.preventDefault(); // Prevent the default paste behavior
-  
-    const clipboard = e.clipboardData || window.clipboardData; // Fallback for IE
-    if (!clipboard) {
+  // Resolve noteapp-img: references in preview panels
+  const previewRef = useRef(null);
+  const splitPreviewRef = useRef(null);
+  useEffect(() => {
+    const resolve = async (container) => {
+      if (!container) return;
+      const images = container.querySelectorAll('img[src^="noteapp-img:"]');
+      for (const img of images) {
+        const id = img.getAttribute("src").replace("noteapp-img:", "");
+        const url = await noteDB.getImageURL(id);
+        if (url) img.src = url;
+      }
+    };
+    if (showPreview && previewRef.current) resolve(previewRef.current);
+    if (splitscreen && splitPreviewRef.current) resolve(splitPreviewRef.current);
+  }, [bodytxt, showPreview, splitscreen]);
+
+  const handleCancelBtn = () => {
+    if (isDirty && !window.confirm("You have unsaved changes. Discard them?")) {
       return;
     }
-  
-    // Retrieve text and HTML content from the clipboard
-    const text = clipboard.getData("text/plain");
-    const html = clipboard.getData("text/html");
-  
-    // Determine the type of content to paste
-    let pasteData;
-    if (html) {
-      html2md.keep(["pre", "code"]);
-      pasteData = html2md.turndown(html);
-    } else if (/<[a-z][\s\S]*>/i.test(text)) { // Check if the text includes HTML tags
-      pasteData = html2md.turndown(marked(text));
-    } else {
-      pasteData = text;
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    setIsDirty(false);
+    if (note.action === "updatenote") {
+      props.handleNoteListItemClick(null, { noteid: note.noteid, title: note.notetitle, body: note.notebody });
+      return;
     }
-  
-    // Insert the processed text into the document
-    if (document.queryCommandSupported("insertText")) {
-      document.execCommand("insertText", false, pasteData);
-    } else {
-      const selection = document.getSelection();
-      if (!selection.rangeCount) return; // No active selection
-      const range = selection.getRangeAt(0);
-      range.deleteContents(); // Clear the selected content
-      const textNode = document.createTextNode(pasteData);
-      range.insertNode(textNode);
-      range.selectNodeContents(textNode); // Select the newly inserted text
-      range.collapse(false); // Collapse the range to the end point to continue typing
-    }
+    props.handleClickHomeBtn();
   };
-  
-    // Handle Cancel Button
-  const handleCancelBtn = () => {
-      if (note.action === "updatenote") {
-        return document.getElementById(note.noteid).click();
-      }
-      if (document.querySelectorAll(".note-list-item").length > 0) {
-        return document.querySelectorAll(".note-list-item")[0].click();
-      }
-      return props.handleClickHomeBtn();
-    };
 
-    //  Handle Save Noye Button Click
   const handleSaveBtn = (e) => {
-      note.notetitle = title;
-      note.notebody = bodytxt;
-      props.handleSaveNote(e, note);
-      props.handleSortNotes("4");
-    };
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    note.notetitle = title;
+    note.notebody = bodytxt;
+    note.tags = tags;
+    props.handleSaveNote(e, note);
+    props.handleSortNotes("4");
+    setIsDirty(false);
+    setLastSaved(new Date());
+  };
+
+  // Keep save ref in sync
+  saveFnRef.current = handleSaveBtn;
 
   return (
-    <div className="right-row">
-      <div></div>
-      <div style={styles.main_editor}>
-        <div className="title-header">
+    <div className="editor-container" role="main">
+      <div className={`editor-panel ${splitscreen ? "editor-panel-half" : "editor-panel-full"}`}>
+        {/* Title */}
+        <input
+          name="notetitle"
+          type="text"
+          id="notetitle"
+          data-action={note.action}
+          value={title}
+          placeholder="Title"
+          autoComplete="off"
+          ref={titleRef}
+          aria-label="Note title"
+          onChange={(e) => setTitle(e.target.value)}
+          className={`editor-title ${darkMode ? "editor-title-dark" : ""}`}
+        />
+
+        {/* Toolbar — GitHub style */}
+        <div className={`editor-toolbar ${darkMode ? "editor-toolbar-dark" : ""}`}>
+          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" aria-label="Select image file" onChange={handleImageUpload} />
+          {toolbarItems.map((item, idx) =>
+            item.divider ? (
+              <div key={idx} className={`toolbar-divider ${darkMode ? "toolbar-divider-dark" : ""}`} />
+            ) : (
+              <button
+                key={item.command}
+                onClick={() => item.command === "uploadImage" ? imageInputRef.current.click() : insertMarkdown(item.command)}
+                className={`toolbar-btn ${darkMode ? "toolbar-btn-dark" : ""}`}
+                title={item.tooltip}
+                aria-label={item.tooltip}
+              >
+                <item.icon size={item.size} />
+              </button>
+            )
+          )}
+
+          <div className="toolbar-spacer" />
+
+          <div className="toolbar-right">
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className={`toolbar-btn ${darkMode ? "toolbar-btn-dark" : ""} ${showPreview ? "toolbar-btn-active" : ""}`}
+              title={showPreview ? "Write" : "Preview"}
+            >
+              {showPreview ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+            <button
+              onClick={() => setSplitscreen(!splitscreen)}
+              className={`toolbar-btn ${darkMode ? "toolbar-btn-dark" : ""} ${splitscreen ? "toolbar-btn-active" : ""}`}
+              title={splitscreen ? "Close Preview" : "Side-by-side"}
+            >
+              {splitscreen ? <Maximize2 size={15} /> : <Columns2 size={15} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Editor / Preview */}
+        <div className={`editor-codemirror ${darkMode ? "editor-codemirror-dark" : ""}`}>
+          {showPreview ? (
+            <div className="editor-preview-inline" ref={previewRef}>
+              <div
+                className="markdown-body"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(bodytxt || "")) }}
+              />
+            </div>
+          ) : (
+            <div ref={editorRef} style={{ height: "100%" }} />
+          )}
+        </div>
+
+        {/* Tags + Bottom bar */}
+        <div className={`editor-tags ${darkMode ? "editor-tags-dark" : ""}`}>
+          {tags.map((tag) => (
+            <span key={tag} className="tag">
+              {tag}
+              <button onClick={() => { setTags(tags.filter(t => t !== tag)); setIsDirty(true); }} aria-label={`Remove tag ${tag}`}>&times;</button>
+            </span>
+          ))}
           <input
-            name="notetitle"
             type="text"
-            id="notetitle"
-            data-action={note.action}
-            value={title}
-            placeholder="Title"
-            autoComplete="off"
-            ref={titleRef}
-            onChange={(e) => handleTitleChange(e)}
-            style={
-              toggleState.theme === "vs-light"
-                ? { ...styles.light }
-                : { ...styles.dark }
-            }
+            className="tag-input"
+            placeholder="Add tag..."
+            value={tagInput}
+            aria-label="Add tag"
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.key === "Enter" || e.key === ",") && tagInput.trim()) {
+                e.preventDefault();
+                const newTag = tagInput.trim().toLowerCase();
+                if (!tags.includes(newTag)) {
+                  setTags([...tags, newTag]);
+                  setIsDirty(true);
+                }
+                setTagInput("");
+              }
+              if (e.key === "Backspace" && !tagInput && tags.length > 0) {
+                setTags(tags.slice(0, -1));
+                setIsDirty(true);
+              }
+            }}
           />
         </div>
-          <div className="md-editor-tools" id="mdtools" style={toggleState.theme === "vs-light" ? styles.mdtools_light : styles.mdtools_dark}>
-              {toolbarItems.map((item) => (
-                <span key={item.command} tooltip={item.tooltip}>
-                  <i className={`fas ${item.icon} md_btn`} onClick={() => processInput(item.command)} style={toggleState.buttonstyle}></i>
-                </span>
-              ))}
-              {/* Font size adjuster and other controls */}
-              <span className="input-div">
-                <i className="fas fa-angle-left fa-lg fnt_btn" onClick={() => setFontsize(fontsize - 1)}></i>
-                <InputNumber
-                  min={10}
-                  max={48}
-                  step={1}
-                  value={fontsize}
-                  onChange={setFontsize}
-                  style={toggleState.theme === "vs-light" ? styles.inputNum : styles.inputNum}
-                />
-                <i className="fas fa-angle-right fa-lg fnt_btn" onClick={() => setFontsize(fontsize + 1)}></i>
-              </span>
-
-              {/* Screen toggle and theme toggle controls */}
-              <div style={styles.buttons}>
-                <span tooltip={screenSize.description}>
-                  <i className={screenSize.buttonClass} onClick={toggleScreen} style={toggleState.buttonstyle}></i>
-                </span>
-                <span tooltip={toggleState.description}>
-                  <i className={toggleState.themeclass} onClick={toggleTheme} style={toggleState.buttonstyle}></i>
-                </span>
-              </div>
-            </div>
-        <div className="md-txtarea">
-          <div className="texteditor scrollbar">
-            <textarea
-              name="notebody"
-              onChange={(e) => handleBodyChange(e)}
-              onPaste={(e) => handlePaste(e)}
-              onKeyDown={(e) => handleKeyEvent(e)}
-              data-action={note.action}
-              value={bodytxt}
-              id="notebody"
-              ref={textAreaRef}
-              selectionend={cusor.end}
-              selectionstart={cusor.start}
-              style={
-                toggleState.theme === "vs-light"
-                  ? { ...styles.textarea, ...styles.light }
-                  : { ...styles.textarea, ...styles.dark }
-              }
-            />
-          </div>
-
-          <div className="right-bottom-bar">
-            <div className="saveCancelBar">
-              <span tooltip="Save" flow="right">
-                <i
-                  className="far fa-save btn-save-cancel fa-2x"
-                  onClick={(e) => handleSaveBtn(e)}
-                  data-action={note.action}
-                ></i>
-              </span>
-              <span tooltip="Cancel" flow="left">
-                <i
-                  className="far fa-window-close btn-save-cancel fa-2x"
-                  onClick={(e) => handleCancelBtn()}
-                ></i>
-              </span>
-            </div>
-          </div>
+        <div className={`editor-bottom ${darkMode ? "editor-bottom-dark" : ""}`}>
+          <button onClick={(e) => handleSaveBtn(e)} data-action={note.action} className="btn-save">
+            <Save size={14} /> {isDirty ? "Save" : "Saved"}
+          </button>
+          <span className="editor-hint" role="status" aria-live="polite">
+            {wordCount} words · {charCount} chars
+            {lastSaved && ` · Saved ${lastSaved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
+            {isDirty && " · Unsaved changes"}
+          </span>
+          <button onClick={() => handleCancelBtn()} className="btn-cancel">
+            <X size={14} /> Cancel
+          </button>
         </div>
       </div>
+
+      {/* Split preview */}
       {splitscreen && (
-          <div style={styles.note_preview} ref={previewRef}>
-            <h2 style={styles.title} dangerouslySetInnerHTML={{ __html: marked(title || "") }}></h2>
-            <div style={styles.body} dangerouslySetInnerHTML={{ __html: marked(bodytxt || "") }}></div>
+        <div className="split-preview">
+          <div className="split-preview-inner" ref={splitPreviewRef}>
+            <h2
+              className="split-preview-title"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(title || "")) }}
+            ></h2>
+            <div
+              className="markdown-body"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(bodytxt || "")) }}
+            ></div>
           </div>
+        </div>
       )}
     </div>
   );

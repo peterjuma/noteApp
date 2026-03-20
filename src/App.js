@@ -1,4 +1,4 @@
-import React, { Component, Fragment } from "react";
+import { Component } from "react";
 import NavbarSidebar from "./NavbarSidebar";
 import NoteSort from "./NoteSort";
 import NavbarMain from "./NavbarMain";
@@ -7,10 +7,19 @@ import NoteMain from "./NoteMain";
 import readmePath from "./README.md";
 import NoteEditor from "./NoteEditor";
 import hljs from "highlight.js";
-import { openDB } from "idb/with-async-ittr.js";
 import { html2md, md2html } from "./useMarkDown";
-import { marked } from 'marked';
 import { saveAs } from "file-saver";
+import * as db from "./services/notesDB";
+import { Menu } from "lucide-react";
+
+// Slugify a note title for URL hash
+function slugify(title) {
+  return (title || "")
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
 
 class App extends Component {
   constructor(props) {
@@ -19,112 +28,103 @@ class App extends Component {
       noteid: "",
       notetitle: "",
       notebody: "",
-      activepage: "viewnote", // editnote // previewnote // viewnote
-      action: "", // addnote // updatenote
-      sortby: "4", //"0" - Title: A-Z, "1" - Title: Z-A, "2" - Created: Newest, "3" - Created: Oldest, "4" - Modified: Newest, "5" - Modified: Oldest
+      activepage: "viewnote",
+      action: "",
+      sortby: "4",
       allnotes: [],
       filteredNotes: [],
-      pinnedNotes: [], // Store pinned notes by noteid
+      pinnedNotes: [],
+      darkMode: localStorage.getItem("noteapp_dark_mode") === "true",
+      activeDb: db.getActiveWorkspace(),
+      workspaces: db.getWorkspaces(),
+      sidebarOpen: false,
     };
-    this.handleNoteListItemClick = this.handleNoteListItemClick.bind(this);
-    this.handleClickHomeBtn = this.handleClickHomeBtn.bind(this);
-    this.handleNoteListItemMouseOver = this.handleNoteListItemMouseOver.bind(
-      this
-    );
-    this.handleEditNoteBtn = this.handleEditNoteBtn.bind(this);
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDeleteNote = this.handleDeleteNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
     this.handleSearchNotes = this.handleSearchNotes.bind(this);
     this.debouncedSearch = this.debounce(this.handleSearchNotes, 250);
-    this.handleIndexedDB = this.handleIndexedDB.bind(this);
     this.handleCopyEvent = this.handleCopyEvent.bind(this);
     this.handleSortNotes = this.handleSortNotes.bind(this);
-    this.updateCodeSyntaxHighlighting;
-    this.addCopyButtons;
-    this.handleCopyCodeButtonClick;
     this.handleNoteEditor = this.handleNoteEditor.bind(this);
     this.handleNotesBackup = this.handleNotesBackup.bind(this);
     this.handleNotesUpload = this.handleNotesUpload.bind(this);
   }
   
   async componentDidMount() {
-    const getnotes = await this.handleIndexedDB("getall");
-    const pinnedNotes = await this.handleIndexedDB("getallpins");
+    const getnotes = await db.getAllNotes(this.state.activeDb);
+    const pinnedNotes = await db.getAllPins(this.state.activeDb);
     this.setState({
       allnotes: getnotes,
       pinnedNotes: pinnedNotes || [],
     }, () => {
-
-      // Display the home page if there are no notes
       if (this.state.allnotes.length === 0) {
         this.handleClickHomeBtn();
         return;
-      } 
-      // Sort notes by the default sort order
-      this.handleSortNotes(this.state.sortby); 
+      }
+      this.handleSortNotes(this.state.sortby);
+
+      // Navigate to note from URL hash on initial load
+      this.navigateFromHash();
     });
 
-    console.log("Current State:", this.state);
-  
+    // Listen for browser back/forward
+    window.addEventListener("hashchange", this.handleHashChange);
+
     this.updateCodeSyntaxHighlighting();
     this.handleCopyCodeButtonClick();
   }
+
+  componentWillUnmount() {
+    window.removeEventListener("hashchange", this.handleHashChange);
+  }
     
-  componentDidUpdate() {
-    this.updateCodeSyntaxHighlighting();
-    this.handleCopyCodeButtonClick();
+  componentDidUpdate(prevProps, prevState) {
+    if (
+      prevState.notebody !== this.state.notebody ||
+      prevState.activepage !== this.state.activepage
+    ) {
+      this.updateCodeSyntaxHighlighting();
+      this.handleCopyCodeButtonClick();
+    }
   }
 
   updateCodeSyntaxHighlighting = () => {
     document.querySelectorAll("pre code").forEach((block) => {
+      if (block.classList.contains("language-mermaid")) return;
       hljs.highlightElement(block);
     });
   };
 
 // Pin a note and persist
 handlePinNote = async (noteid) => {
+  if (this.state.pinnedNotes.includes(noteid)) return; // Already pinned
   if (this.state.pinnedNotes.length >= 10) {
       alert("You can only pin up to 10 notes.");
       return;
   }
-  await this.handleIndexedDB("addpin", { noteid });
+  await db.addPin(noteid, this.state.activeDb);
   this.setState((prevState) => ({
       pinnedNotes: [...prevState.pinnedNotes, noteid]
   }), () => {
-      this.handleSortNotes(this.state.sortby); // Re-sort notes after pinning
-      const element = document.getElementById(noteid);
-      if (element) {
-          element.click(); // Simulate a click on the newly pinned note
-      }
+      this.handleSortNotes(this.state.sortby);
   });
 };
 
 // Unpin a note and persist
 handleUnpinNote = async (noteid) => {
-  await this.handleIndexedDB("removepin", { noteid });
+  await db.removePin(noteid, this.state.activeDb);
   this.setState((prevState) => {
     const pinnedNotes = prevState.pinnedNotes.filter(id => id !== noteid);
     return { pinnedNotes };
   }, () => {
     this.handleSortNotes(this.state.sortby);
-    document.getElementById(noteid).click();
   });
 };
 
   handleCopyCodeButtonClick = () => {
     if (navigator && navigator.clipboard) {
       this.addCopyButtons(navigator.clipboard);
-    } else {
-      var script = document.createElement("script");
-      script.src =
-        "https://cdnjs.cloudflare.com/ajax/libs/clipboard-polyfill/2.7.0/clipboard-polyfill.promise.js";
-      script.integrity = "sha256-waClS2re9NUbXRsryKoof+F9qc1gjjIhc2eT7ZbIv94=";
-      script.crossOrigin = "anonymous";
-      script.onload = function () {
-        this.addCopyButtons(clipboard);
-      };
-      document.body.appendChild(script);
     }
   };
 
@@ -138,10 +138,11 @@ handleUnpinNote = async (noteid) => {
       var pre = codeBlock.parentNode;
       var prevElem = pre.previousElementSibling;
 
-      if (prevElem && prevElem.type === "button") {
+      if (prevElem && prevElem.classList && prevElem.classList.contains("copy-code-button")) {
         return;
       }
       var button = document.createElement("button");
+      button.setAttribute("aria-label", "Copy code to clipboard");
       button.className = "copy-code-button";
       button.setAttribute("id", "copy-code-button");
       button.type = "button";
@@ -158,7 +159,7 @@ handleUnpinNote = async (noteid) => {
               button.innerText = "Copy";
             }, 2000);
           },
-          function (error) {
+          function () {
             button.innerText = "Error";
           }
         );
@@ -173,45 +174,62 @@ handleUnpinNote = async (noteid) => {
     });
   };
 
-  // Indexed DB class
-  async handleIndexedDB(cmd = "", note = "") {
-    const dbVersion = 2; // Increment the version from your existing version
-    const db = await openDB("notesdb", dbVersion, {
-      upgrade(db) {
-        // Create the 'notes' store if it doesn't exist
-        if (!db.objectStoreNames.contains('notes')) {
-          const store = db.createObjectStore("notes", {
-            keyPath: "noteid",
-            autoIncrement: true,
-          });
-          store.createIndex("created_at", "created_at");
-          store.createIndex("noteid", "noteid");
-        }
-        
-        // Create the 'pinnedNotes' store if it doesn't exist
-        if (!db.objectStoreNames.contains('pinnedNotes')) {
-          db.createObjectStore("pinnedNotes", { keyPath: "noteid" });
-        }
-      },
+  // Workspace switching
+  handleSwitchWorkspace = async (dbName) => {
+    db.setActiveWorkspace(dbName);
+    const getnotes = await db.getAllNotes(dbName);
+    const pinnedNotes = await db.getAllPins(dbName);
+    this.setState({
+      activeDb: dbName,
+      allnotes: getnotes,
+      pinnedNotes: pinnedNotes || [],
+      noteid: "",
+      notetitle: "",
+      notebody: "",
+      filteredNotes: [],
+    }, () => {
+      if (this.state.allnotes.length === 0) {
+        this.handleClickHomeBtn();
+      } else {
+        this.handleSortNotes(this.state.sortby);
+      }
     });
-    
-    // Notes operations (existing code)
-    if (cmd === "addnote") await db.add("notes", note);
-    if (cmd === "getall") return await db.getAll("notes");
-    if (cmd === "getone") return await db.get("notes", note.noteid);
-    if (cmd === "update") await db.put("notes", note);
-    if (cmd === "delete") await db.delete("notes", note.noteid);
-  
-    // Pinned notes operations
-    if (cmd === "addpin") await db.put("pinnedNotes", { noteid: note.noteid });
-    if (cmd === "removepin") await db.delete("pinnedNotes", note.noteid);
-    if (cmd === "getallpins") {
-      const pins = await db.getAll("pinnedNotes");
-      return pins.map(pin => pin.noteid);
+  };
+
+  handleAddWorkspace = (name) => {
+    const workspace = db.addWorkspace(name);
+    if (workspace) {
+      this.setState({ workspaces: db.getWorkspaces() });
+      this.handleSwitchWorkspace(workspace.dbName);
     }
-  
-    db.close();
-  }
+  };
+
+  handleRenameWorkspace = (dbName, newName) => {
+    db.renameWorkspace(dbName, newName);
+    this.setState({ workspaces: db.getWorkspaces() });
+  };
+
+  handleDeleteWorkspace = (dbName) => {
+    if (dbName === this.state.activeDb) {
+      // Switch to default first
+      this.handleSwitchWorkspace("notesdb");
+    }
+    db.removeWorkspace(dbName);
+    this.setState({ workspaces: db.getWorkspaces() });
+  };
+
+  // Drag-to-reorder notes
+  handleReorderNotes = (draggedId, targetId) => {
+    this.setState((prevState) => {
+      const notes = [...prevState.allnotes];
+      const dragIdx = notes.findIndex((n) => n.noteid === draggedId);
+      const targetIdx = notes.findIndex((n) => n.noteid === targetId);
+      if (dragIdx === -1 || targetIdx === -1) return null;
+      const [dragged] = notes.splice(dragIdx, 1);
+      notes.splice(targetIdx, 0, dragged);
+      return { allnotes: notes, sortby: "manual" };
+    });
+  };
   
   // Handle Click List Item
   handleNoteListItemClick = (e, note) => {
@@ -221,44 +239,57 @@ handleUnpinNote = async (noteid) => {
         notebody: note.body,
         activepage: "viewnote",
         action: "",
-    }, () => {
-        // This callback ensures that the state update has completed.
-        const element = document.getElementById(note.noteid);
-        if (element) {
-            document.querySelectorAll(".note-list-item-clicked").forEach(el => {
-                el.classList.remove("note-list-item-clicked");
-            });
-            element.classList.add("note-list-item-clicked");
-        } else {
-            console.log("Note element not found, might be due to filtering or it is unpinned.");
-        }
+        sidebarOpen: false,
     });
-};
-
-    
-  // Handle Mouse Hover on List item
-  handleNoteListItemMouseOver = (e, note) => {
-    const elementId = note.noteid;  // Ensure the note ID exists and is correct
-    const element = document.getElementById(elementId);
-    if (element) {
-        document.querySelectorAll(".note-list-item-hover").forEach(el => {
-            el.classList.remove("note-list-item-hover");
-        });
-        element.classList.add("note-list-item-hover");
-    } else {
-        console.log("Note element with ID:", elementId, "not found.");
+    // Update URL hash with note slug (push to history for back/forward)
+    const slug = slugify(note.title);
+    if (slug) {
+      window.history.pushState(null, "", `#note/${slug}`);
     }
-};
+  };
 
-  handleNoteListItemMouseOut = () => {
-    var noteList = document.querySelectorAll(".note-list-item-hover");
-    noteList.length > 0
-      ? noteList.forEach((b) => b.classList.remove("note-list-item-hover"))
-      : "";
+  // Navigate to a note based on URL hash
+  navigateFromHash = () => {
+    const hash = window.location.hash;
+    if (!hash || !hash.startsWith("#note/")) return;
+    const parts = hash.slice(6).split("/"); // remove "#note/"
+    const noteSlug = parts[0];
+    const headingAnchor = parts[1] || null;
+    // Find note by matching slug against all note titles
+    const matchedNote = this.state.allnotes.find(
+      (n) => slugify(n.title) === noteSlug
+    );
+    if (matchedNote) {
+      this.setState({
+        noteid: matchedNote.noteid,
+        notetitle: matchedNote.title,
+        notebody: matchedNote.body,
+        activepage: "viewnote",
+        action: "",
+      }, () => {
+        // Scroll to heading if specified
+        if (headingAnchor) {
+          setTimeout(() => {
+            const el = document.getElementById(headingAnchor);
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 150);
+        }
+      });
+    }
+  };
+
+  handleHashChange = () => {
+    const hash = window.location.hash;
+    if (!hash || !hash.startsWith("#note/")) {
+      // Hash cleared or no note hash — go home
+      this.handleClickHomeBtn();
+      return;
+    }
+    this.navigateFromHash();
   };
 
   // Handle click home button
-  handleClickHomeBtn = (e) => {
+  handleClickHomeBtn = () => {
     fetch(readmePath)
       .then((response) => {
         return response.text();
@@ -275,6 +306,8 @@ handleUnpinNote = async (noteid) => {
           activepage: "viewnote",
           action: "homepage",
         });
+        // Clear URL hash when going home
+        window.history.replaceState(null, "", window.location.pathname);
       });
   };
 
@@ -353,8 +386,7 @@ handleUnpinNote = async (noteid) => {
       action: e.target.dataset.action,
     });
     if (e.target.dataset.action === "addnote") {
-      var noteList = document.querySelector(".note-list-item-clicked");
-      noteList && noteList.classList.remove("note-list-item-clicked");
+      this.setState({ noteid: "" });
     }
   };
 
@@ -365,21 +397,22 @@ handleUnpinNote = async (noteid) => {
   };
 
   handleDeleteNote(e, note) {
+    if (!window.confirm("Are you sure you want to delete this note?")) {
+      return;
+    }
     var index = this.state.allnotes.findIndex(
       (noteitem) => noteitem.noteid === note.noteid
     );
     this.setState((prevState) => {
-      var updatedNotes = prevState.allnotes.filter((noteitem) => {
-        if (noteitem.noteid !== note.noteid) {
-          return noteitem;
-        }
-      });
+      var updatedNotes = prevState.allnotes.filter(
+        (noteitem) => noteitem.noteid !== note.noteid
+      );
       return {
         allnotes: updatedNotes,
       };
     });
-    this.handleIndexedDB("delete", note);
-    if (this.state.allnotes.length - 1 == 0) {
+    db.deleteNote(note.noteid, this.state.activeDb);
+    if (this.state.allnotes.length - 1 === 0) {
       this.handleClickHomeBtn();
     } else {
       var nextnote = this.state.allnotes[index + 1]
@@ -390,54 +423,68 @@ handleUnpinNote = async (noteid) => {
   }
 
   handleSaveNote(e, note) {
-    const noteHTML = marked(note.notebody);
+    const noteHTML = md2html.render(note.notebody);
     const noteMarkdown = html2md.turndown(noteHTML);
     const notetitle = document.getElementById("notetitle").value;
-    this.setState((prevState) => {
-      const updatedNotes = prevState.allnotes.map((noteitem) => {
-        if (noteitem.noteid === note.noteid) {
-          noteitem.title = notetitle;
-          noteitem.body = noteMarkdown;
-          noteitem.activepage = "viewnote";
-        }
-        return noteitem;
-      });
-      return {
+
+    if (note.action === "addnote") {
+      const newNote = {
         noteid: note.noteid,
-        notetitle: notetitle,
-        notebody: noteMarkdown,
-        activepage: "viewnote",
-        action: note.action,
-        allnotes: updatedNotes,
+        title: notetitle,
+        body: noteMarkdown,
+        tags: note.tags || [],
+        created_at: Date.now(),
+        updated_at: Date.now(),
       };
-    });
-    // Update List View
-    if (note.action == "addnote") {
-      this.state.allnotes.push({
+      this.setState((prevState) => ({
         noteid: note.noteid,
         notetitle: notetitle,
         notebody: noteMarkdown,
         activepage: "viewnote",
-        created_at: Date.now(),
-        updated_at: Date.now(),
         action: note.action,
+        allnotes: [...prevState.allnotes, newNote],
+      }), () => {
+        this.handleSortNotes(this.state.sortby);
       });
-      // Update IndexedDB
-      this.handleIndexedDB("addnote", {
-        noteid: note.noteid,
-        title: notetitle,
-        body: noteMarkdown,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      });
+      db.addNote(newNote, this.state.activeDb);
     } else {
-      // if note.action == "editnote"
-      this.handleIndexedDB("update", {
+      // Update existing note
+      this.setState((prevState) => {
+        const updatedNotes = prevState.allnotes.map((noteitem) => {
+          if (noteitem.noteid === note.noteid) {
+            return {
+              ...noteitem,
+              title: notetitle,
+              body: noteMarkdown,
+              tags: note.tags || noteitem.tags || [],
+              updated_at: Date.now(),
+            };
+          }
+          return noteitem;
+        });
+        return {
+          noteid: note.noteid,
+          notetitle: notetitle,
+          notebody: noteMarkdown,
+          activepage: "viewnote",
+          action: note.action,
+          allnotes: updatedNotes,
+        };
+      }, () => {
+        this.handleSortNotes(this.state.sortby);
+      });
+      // Find the existing note to preserve created_at
+      const existingNote = this.state.allnotes.find(
+        (n) => n.noteid === note.noteid
+      );
+      db.updateNote({
         noteid: note.noteid,
         title: notetitle,
         body: noteMarkdown,
+        tags: note.tags || [],
+        created_at: existingNote ? existingNote.created_at : Date.now(),
         updated_at: Date.now(),
-      });
+      }, this.state.activeDb);
     }
   }
 
@@ -448,11 +495,10 @@ handleUnpinNote = async (noteid) => {
         .then(() => {
           // Success!
         })
-        .catch((err) => {
-          console.log("Something went wrong", err);
-        });
+        .catch(() => {
+            });
     }
-    if (typeof window.getSelection != "undefined") {
+    if (typeof window.getSelection !== "undefined") {
       var sel = window.getSelection();
       if (sel.rangeCount) {
         var container = document.createElement("div");
@@ -461,18 +507,15 @@ handleUnpinNote = async (noteid) => {
         }
         copiedContent = container.innerHTML;
       }
-    } else if (typeof document.selection != "undefined") {
-      if (document.selection.type == "Text") {
+    } else if (typeof document.selection !== "undefined") {
+      if (document.selection.type === "Text") {
         copiedContent = document.selection.createRange().htmlText;
       }
     }
     navigator.clipboard
       .writeText(html2md.turndown(copiedContent))
-      .then(() => {
-        // Success!
-      })
-      .catch((err) => {
-        console.log("Something went wrong", err);
+      .catch(() => {
+        // clipboard write failed
       });
   }
 
@@ -496,19 +539,23 @@ handleUnpinNote = async (noteid) => {
     const searchQuery = searchString.replace(/^(title:|body:)/, '').trim();
 
     if (!searchQuery) {
-        // If the search query is empty, reset to show all notes
         this.setState({ filteredNotes: [] });
         return;
     }
 
-    const field = searchString.startsWith('title:') ? 'title' : 
-                  searchString.startsWith('body:') ? 'body' : 'title';
+    // Search both title and body by default; use "title:" or "body:" prefix to restrict
+    const field = searchString.startsWith('title:') ? 'title' :
+                  searchString.startsWith('body:') ? 'body' : 'all';
 
-    const searchWords = searchQuery.split(/\s+/); // Split the search query into words
+    const searchWords = searchQuery.split(/\s+/);
 
     const filteredNotes = this.state.allnotes.filter(note => {
+        if (field === 'all') {
+          const combined = ((note.title || '') + ' ' + (note.body || '') + ' ' + (note.tags || []).join(' ')).toLowerCase();
+          return searchWords.every(word => combined.includes(word));
+        }
         const contentToSearch = (field === 'title' ? note.title : note.body || '').toLowerCase();
-        return searchWords.every(word => contentToSearch.includes(word)); // Check if all words are present
+        return searchWords.every(word => contentToSearch.includes(word));
     });
 
     this.setState({ filteredNotes });
@@ -527,8 +574,9 @@ handleUnpinNote = async (noteid) => {
   }
 
   handleNotesBackup() {
-    const zip = require("jszip")();
-    this.state.allnotes.map((note) => {
+    const JSZip = require("jszip");
+    const zip = new JSZip();
+    this.state.allnotes.forEach((note) => {
       const title = `${note.title.replace(/[^A-Z0-9]+/gi, "_") || "note"}.md`;
       zip.file(title, note.body);
     });
@@ -560,7 +608,7 @@ handleUnpinNote = async (noteid) => {
       };
   
       // Add note to IndexedDB
-      await this.handleIndexedDB("addnote", newNote);
+      await db.addNote(newNote, this.state.activeDb);
   
       // Add note to the state
       this.setState(prevState => ({
@@ -573,6 +621,49 @@ handleUnpinNote = async (noteid) => {
       this.handleNoteListItemClick(null, newNote);
     };
     reader.readAsText(file);
+  };
+
+  handleZipImport = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const JSZip = require("jszip");
+    try {
+      const zip = await JSZip.loadAsync(file);
+      const importedNotes = [];
+      const fileNames = Object.keys(zip.files).filter(
+        (name) => name.endsWith(".md") && !zip.files[name].dir
+      );
+
+      for (const name of fileNames) {
+        const content = await zip.files[name].async("text");
+        const title = name.replace(/\.md$/, "").replace(/^.*\//, ""); // Strip path and extension
+        const newNote = {
+          noteid: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+          title,
+          body: content,
+          created_at: Date.now(),
+          updated_at: Date.now(),
+        };
+        await db.addNote(newNote, this.state.activeDb);
+        importedNotes.push(newNote);
+      }
+
+      if (importedNotes.length > 0) {
+        this.setState(
+          (prevState) => ({
+            allnotes: [...prevState.allnotes, ...importedNotes],
+          }),
+          () => {
+            this.handleSortNotes("4");
+          }
+        );
+      }
+
+      alert(`Imported ${importedNotes.length} note${importedNotes.length !== 1 ? "s" : ""} from archive.`);
+    } catch {
+      alert("Failed to read ZIP archive. Please ensure it's a valid .zip file.");
+    }
+    event.target.value = "";
   };
   
 
@@ -609,6 +700,9 @@ handleUnpinNote = async (noteid) => {
               notetitle: this.state.notetitle,
               notebody: this.state.notebody,
               action: this.state.action,
+              created_at: (this.state.allnotes.find(n => n.noteid === this.state.noteid) || {}).created_at,
+              updated_at: (this.state.allnotes.find(n => n.noteid === this.state.noteid) || {}).updated_at,
+              tags: (this.state.allnotes.find(n => n.noteid === this.state.noteid) || {}).tags || [],
             }}
             handleCopyEvent={this.handleCopyEvent}
           />
@@ -624,8 +718,9 @@ handleUnpinNote = async (noteid) => {
             notetitle: this.state.notetitle,
             notebody: this.state.notebody,
             action: this.state.action,
+            tags: (this.state.allnotes.find(n => n.noteid === this.state.noteid) || {}).tags || [],
           }}
-          splitscreen={this.state.split}
+          darkMode={this.state.darkMode}
           handleEditNoteBtn={this.handleEditNoteBtn}
           handleSaveNote={this.handleSaveNote}
           handleClickHomeBtn={this.handleClickHomeBtn}
@@ -654,11 +749,11 @@ handleUnpinNote = async (noteid) => {
                     key={note.noteid}
                     note={note}
                     isPinned={true}
+                    isActive={note.noteid === this.state.noteid}
                     handlePinNote={this.handlePinNote}
                     handleUnpinNote={this.handleUnpinNote}
                     handleNoteListItemClick={this.handleNoteListItemClick}
-                    handleMouseOver={this.handleNoteListItemMouseOver}
-                    handleMouseOut={this.handleNoteListItemMouseOut}
+                    onReorder={this.handleReorderNotes}
                 />
             ))}
         </>
@@ -671,11 +766,11 @@ handleUnpinNote = async (noteid) => {
                     key={note.noteid}
                     note={note}
                     isPinned={false}
+                    isActive={note.noteid === this.state.noteid}
                     handlePinNote={this.handlePinNote}
                     handleUnpinNote={this.handleUnpinNote}
                     handleNoteListItemClick={this.handleNoteListItemClick}
-                    handleMouseOver={this.handleNoteListItemMouseOver}
-                    handleMouseOut={this.handleNoteListItemMouseOut}
+                    onReorder={this.handleReorderNotes}
                 />
             ))}
         </>
@@ -683,31 +778,97 @@ handleUnpinNote = async (noteid) => {
 
 
     return (
-      <div className="container">
-        <div className="left">
+      <div className={`app-container ${this.state.darkMode ? "dark" : ""}`}>
+        {/* Mobile sidebar overlay */}
+        <div
+          className={`sidebar-overlay ${this.state.sidebarOpen ? "active" : ""}`}
+          onClick={() => this.setState({ sidebarOpen: false })}
+        />
+        {/* Mobile sidebar toggle */}
+        <button
+          className="sidebar-toggle"
+          onClick={() => this.setState((s) => ({ sidebarOpen: !s.sidebarOpen }))}
+          title="Toggle sidebar"
+        >
+          <Menu size={20} />
+        </button>
+        <div className={`sidebar ${this.state.sidebarOpen ? "sidebar-open" : ""}`}>
           <NavbarSidebar
             handleClickHomeBtn={this.handleClickHomeBtn}
             handleEditNoteBtn={this.handleEditNoteBtn}
             handleSearchNotes={this.handleSearchNotes}
+            darkMode={this.state.darkMode}
+            onToggleDarkMode={() => this.setState((s) => {
+              const next = !s.darkMode;
+              localStorage.setItem("noteapp_dark_mode", next);
+              return { darkMode: next };
+            })}
           />
 
-          <h4 className="fixed-header">Pinned Notes ({totalPinned})</h4>
-          <div className="note-list-pin">
-          {pinnedNoteListItems}
-          </div>
+          <div className="sidebar-scroll">
+            <h4
+              className="section-header section-header-drop"
+              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; e.currentTarget.classList.add("section-header-dragover"); }}
+              onDragLeave={(e) => { e.currentTarget.classList.remove("section-header-dragover"); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove("section-header-dragover");
+                const draggedId = e.dataTransfer.getData("text/plain");
+                if (draggedId && !this.state.pinnedNotes.includes(draggedId)) {
+                  this.handlePinNote(draggedId);
+                }
+              }}
+            >
+              Pinned ({totalPinned}) {totalPinned === 0 && <span className="drop-hint">Drop here to pin</span>}
+            </h4>
+            {totalPinned > 0 && <ul>{pinnedNoteListItems}</ul>}
 
-          <h4 className="fixed-header">Other Notes ({totalUnpinned})</h4>
-          <div className="note-list-other">
-          {otherNoteListItems}
+            <h4
+              className="section-header section-header-drop"
+              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; e.currentTarget.classList.add("section-header-dragover"); }}
+              onDragLeave={(e) => { e.currentTarget.classList.remove("section-header-dragover"); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove("section-header-dragover");
+                const draggedId = e.dataTransfer.getData("text/plain");
+                if (draggedId && this.state.pinnedNotes.includes(draggedId)) {
+                  this.handleUnpinNote(draggedId);
+                }
+              }}
+            >
+              Notes ({totalUnpinned})
+            </h4>
+            {totalUnpinned > 0 ? (
+              <ul>{otherNoteListItems}</ul>
+            ) : filteredNotes.length === 0 && allnotes.length === 0 ? (
+              <div className="empty-state">
+                <p className="empty-state-icon">📝</p>
+                <p className="empty-state-text">No notes yet</p>
+                <p className="empty-state-hint">Click + to create your first note</p>
+              </div>
+            ) : filteredNotes.length === 0 && allnotes.length > 0 && totalPinned === 0 ? (
+              <div className="empty-state">
+                <p className="empty-state-text">No matching notes</p>
+                <p className="empty-state-hint">Try a different search term</p>
+              </div>
+            ) : null}
           </div>
 
           <NoteSort
             handleSortNotes={this.handleSortNotes}
             handleNotesBackup={this.handleNotesBackup}
             handleNotesUpload={this.handleNotesUpload}
+            handleZipImport={this.handleZipImport}
+            workspaces={this.state.workspaces}
+            activeDb={this.state.activeDb}
+            handleSwitchWorkspace={this.handleSwitchWorkspace}
+            handleAddWorkspace={this.handleAddWorkspace}
+            handleRenameWorkspace={this.handleRenameWorkspace}
+            handleDeleteWorkspace={this.handleDeleteWorkspace}
           />
         </div>
-        <div className="right">
+
+        <div className="main-content">
           {RightNavbar}
           {ActivePage}
         </div>

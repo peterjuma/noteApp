@@ -1,9 +1,9 @@
 import React from "react";
+import { Home, Plus, Search, Moon, Sun } from "lucide-react";
 
 function NavbarSidebar(props) {
-  // console.log(props.homeContent);
   var note = {
-    noteid: Math.random().toString(16).slice(2),
+    noteid: Date.now().toString(),
     notetitle: "",
     notebody: "",
     activepage: "",
@@ -12,43 +12,47 @@ function NavbarSidebar(props) {
   const searchRef = React.useRef();
 
   return (
-    <div>
-      <div className="nav-bar-left">
-        <div className="nav-left-icon">
-          <span tooltip="Home" flow="right">
-            <i
-              id="homeBtn"
-              onClick={(e) => props.handleClickHomeBtn(e)}
-              className="fa fa-home btn"
-              aria-hidden="true"
-            ></i>
-          </span>
-          <h4>Notes</h4>
-          <span tooltip="Add Note" flow="left">
-            <i
-              id="addNoteBtn"
-              data-action="addnote"
-              onClick={(e) => props.handleEditNoteBtn(e, note)}
-              className="fa fa-plus btn"
-              aria-hidden="true"
-            ></i>
-          </span>
+    <nav aria-label="Sidebar navigation">
+      <div className="sidebar-header">
+        <button
+          onClick={(e) => props.handleClickHomeBtn(e)}
+          className="icon-btn"
+          title="Home"
+          aria-label="Go to home page"
+        >
+          <Home size={18} />
+        </button>
+        <h4 className="sidebar-title">Notes</h4>
+        <div style={{ display: "flex", gap: "2px" }}>
+          <button
+            onClick={props.onToggleDarkMode}
+            className="icon-btn"
+            title={props.darkMode ? "Light Mode" : "Dark Mode"}
+            aria-label={props.darkMode ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {props.darkMode ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <button
+            data-action="addnote"
+            onClick={(e) => props.handleEditNoteBtn(e, note)}
+            className="icon-btn"
+            title="Add Note"
+          >
+            <Plus size={18} style={{ pointerEvents: "none" }} />
+          </button>
         </div>
       </div>
-      <div className="search-bar">
-        {/* search button */}
-        <span className="search-icon">
-          <i className="fa fa-search"></i>
-        </span>
+      <div className="sidebar-search">
+        <Search size={14} />
         <input
           type="search"
-          placeholder="Search Notes"
-          className="search-field"
+          placeholder="Search notes..."
           ref={searchRef}
+          aria-label="Search notes"
           onChange={(e) => props.handleSearchNotes(e)}
         />
       </div>
-    </div>
+    </nav>
   );
 }
 

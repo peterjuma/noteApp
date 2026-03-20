@@ -3,6 +3,10 @@
 node_modules/
 build
 .DS_Store
+craco.config.js
+tailwind.config.js
+postcss.config.js
+src/KeyCodes.js
 *.tgz
 my-app*
 template/src/__tests__/__snapshots__/

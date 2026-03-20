@@ -1,24 +1,142 @@
+import { useEffect, useRef } from "react";
+import DOMPurify from "dompurify";
 import { md2html } from "./useMarkDown";
+import mermaid from "mermaid";
+import * as noteDB from "./services/notesDB";
+
+mermaid.initialize({ startOnLoad: false, theme: "default" });
+
+// Allow id attributes through DOMPurify for anchor navigation
+DOMPurify.addHook("uponSanitizeAttribute", (node, data) => {
+  if (data.attrName === "id") {
+    data.forceKeepAttr = true;
+  }
+  // Allow noteapp-img: protocol in src
+  if (data.attrName === "src" && data.attrValue && data.attrValue.startsWith("noteapp-img:")) {
+    data.forceKeepAttr = true;
+  }
+});
+
 function NoteMain(props) {
-  // var jsonData = (JSON.stringify(props.notesData, null, 2)).replace(/\\n/g, '');
   var { notesData } = props;
+  const bodyRef = useRef(null);
+
+  // Handle anchor clicks and mermaid rendering
+  useEffect(() => {
+    if (!bodyRef.current) return;
+
+    // Mermaid diagrams — render sequentially (Mermaid can't handle concurrent renders)
+    const renderMermaidDiagrams = async () => {
+      const mermaidBlocks = bodyRef.current.querySelectorAll("code.language-mermaid");
+      for (let i = 0; i < mermaidBlocks.length; i++) {
+        const block = mermaidBlocks[i];
+        const pre = block.parentNode;
+        if (!pre || !pre.parentNode) continue;
+        const container = document.createElement("div");
+        container.className = "mermaid-diagram";
+        try {
+          const id = `mermaid-${i}-${Math.random().toString(36).slice(2, 8)}`;
+          const { svg } = await mermaid.render(id, block.textContent.trim());
+          container.innerHTML = DOMPurify.sanitize(svg, { ADD_TAGS: ["foreignObject"], ADD_ATTR: ["requiredExtensions"] });
+          pre.replaceWith(container);
+        } catch (err) {
+          // Leave the code block as-is on failure, but log for debugging
+          // eslint-disable-next-line no-console
+          console.warn("Mermaid render failed for block", i, err);
+        }
+      }
+    };
+    renderMermaidDiagrams();
+
+    // Resolve noteapp-img: references to blob URLs
+    const resolveImages = async () => {
+      if (!bodyRef.current) return;
+      const images = bodyRef.current.querySelectorAll('img[src^="noteapp-img:"]');
+      for (const img of images) {
+        const id = img.getAttribute("src").replace("noteapp-img:", "");
+        const url = await noteDB.getImageURL(id);
+        if (url) {
+          img.src = url;
+        } else {
+          img.alt = `[Image not found: ${id}]`;
+        }
+      }
+    };
+    resolveImages();
+
+    // Anchor navigation — intercept clicks on hash links
+    const handleClick = (e) => {
+      const link = e.target.closest("a");
+      if (!link) return;
+      const href = link.getAttribute("href");
+      if (!href || !href.startsWith("#")) return;
+      e.preventDefault();
+      const id = href.slice(1);
+      const target = document.getElementById(id);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Update URL: preserve #note/<slug> and append /<heading>
+        const currentHash = window.location.hash;
+        const notePrefix = currentHash.match(/^#note\/[^/]+/);
+        if (notePrefix) {
+          window.history.replaceState(null, "", `${notePrefix[0]}/${id}`);
+        } else {
+          window.history.replaceState(null, "", `#${id}`);
+        }
+      }
+    };
+    bodyRef.current.addEventListener("click", handleClick);
+    const ref = bodyRef.current;
+
+    // Scroll to hash on initial render
+    if (window.location.hash) {
+      const id = window.location.hash.slice(1);
+      const target = document.getElementById(id);
+      if (target) {
+        setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+      }
+    }
+
+    return () => ref.removeEventListener("click", handleClick);
+  }, [notesData.notebody]);
+
+  const formatDate = (ts) => {
+    if (!ts) return null;
+    return new Date(ts).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
+
   return (
-    <div className="main">
-      <div className="page-header">
-        <h2
-          id="notetitle-view"
+    <main className="note-view" role="main">
+      <div className="note-view-inner">
+        <h1
+          className="note-view-title"
           dangerouslySetInnerHTML={{
-            __html: md2html.render(notesData.notetitle),
+            __html: DOMPurify.sanitize(md2html.render(notesData.notetitle)),
           }}
-        ></h2>
+        ></h1>
+        {(notesData.created_at || notesData.updated_at) && (
+          <div className="note-meta">
+            {notesData.created_at && <span>Created {formatDate(notesData.created_at)}</span>}
+            {notesData.updated_at && <span>Modified {formatDate(notesData.updated_at)}</span>}
+          </div>
+        )}
+        {notesData.tags && notesData.tags.length > 0 && (
+          <div className="note-tags">
+            {notesData.tags.map((tag) => (
+              <span key={tag} className="tag" onClick={() => props.onTagClick && props.onTagClick(tag)}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+        <div
+          className="markdown-body"
+          ref={bodyRef}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(notesData.notebody)) }}
+          onCopy={(e) => props.handleCopyEvent(e)}
+        ></div>
       </div>
-      <div
-        className="markdown-body"
-        id="notebody-view"
-        dangerouslySetInnerHTML={{ __html: md2html.render(notesData.notebody) }}
-        onCopy={(e) => props.handleCopyEvent(e)}
-      ></div>
-    </div>
+    </main>
   );
 }
 
