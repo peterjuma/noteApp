@@ -367,7 +367,7 @@ a:hover { text-decoration: underline; }
   gap: 1px;
   flex-shrink: 0;
   flex-wrap: nowrap;
-  overflow-x: auto;
+  overflow: visible;
   min-height: 36px;
 }
 .editor-toolbar-dark {
@@ -408,6 +408,8 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 1px;
   flex-shrink: 0;
+  overflow: visible;
+}
 }
 
 /* CodeMirror area */
