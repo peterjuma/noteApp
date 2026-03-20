@@ -266,13 +266,14 @@ handleUnpinNote = async (noteid) => {
   };
 
   handleNavConfirmSave = () => {
-    // Trigger save via the DOM save button (which has the current editor state)
-    const saveBtn = document.querySelector("[data-action]");
-    if (saveBtn) saveBtn.click();
+    // Call the editor's save function directly
+    if (window.__noteEditorSave) {
+      window.__noteEditorSave();
+    }
     // Then navigate
     const note = this.state.pendingNav;
     if (note) {
-      setTimeout(() => this._navigateToNote(note), 100);
+      setTimeout(() => this._navigateToNote(note), 150);
     }
   };
 

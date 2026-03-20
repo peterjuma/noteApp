@@ -395,6 +395,14 @@ function NoteEditor(props) {
   // Keep save ref in sync
   saveFnRef.current = handleSaveBtn;
 
+  // Expose save function for parent (e.g., nav confirm dialog)
+  useEffect(() => {
+    window.__noteEditorSave = () => {
+      if (saveFnRef.current) saveFnRef.current(null);
+    };
+    return () => { delete window.__noteEditorSave; };
+  });
+
   return (
     <div className="editor-container" role="main">
       <div className={`editor-panel ${splitscreen ? "editor-panel-half" : "editor-panel-full"}`}>
