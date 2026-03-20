@@ -232,6 +232,13 @@ handleUnpinNote = async (noteid) => {
   
   // Handle Click List Item
   handleNoteListItemClick = (e, note) => {
+    // Guard: if editing, prompt to save or discard
+    if (this.state.activepage === "editnote") {
+      const choice = window.confirm(
+        "You have a note open in the editor. Click OK to save and switch, or Cancel to keep editing."
+      );
+      if (!choice) return;
+    }
     this.setState({
         noteid: note.noteid,
         notetitle: note.title,

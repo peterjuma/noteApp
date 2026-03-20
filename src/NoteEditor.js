@@ -359,6 +359,8 @@ function NoteEditor(props) {
     }
     const state = EditorState.create({ doc: docRef.current, extensions: createExtensions(darkMode) });
     viewRef.current = new EditorView({ state, parent: editorRef.current });
+    // Auto-focus the editor (especially for new notes)
+    setTimeout(() => viewRef.current && viewRef.current.focus(), 50);
     return () => {
       if (viewRef.current) {
         docRef.current = viewRef.current.state.doc.toString();
