@@ -25,6 +25,7 @@ function NoteEditor(props) {
   const [title, setTitle] = useState(initialTitle);
   const [splitscreen, setSplitscreen] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [splitRatio, setSplitRatio] = useState(50); // percentage for editor
   const [isDirty, setIsDirty] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [tags, setTags] = useState(note.tags || []);
@@ -447,7 +448,7 @@ function NoteEditor(props) {
 
   return (
     <div className="editor-container" role="main">
-      <div className={`editor-panel ${splitscreen ? "editor-panel-half" : "editor-panel-full"}`}>
+      <div className={`editor-panel ${splitscreen ? "" : "editor-panel-full"}`} style={splitscreen ? { width: `${splitRatio}%` } : undefined}>
         {/* Toolbar — top bar */}
         <div className={`editor-toolbar ${darkMode ? "editor-toolbar-dark" : ""}`}>
           <input ref={imageInputRef} type="file" accept="image/*" className="hidden" aria-label="Select image file" onChange={handleImageUpload} />
@@ -591,9 +592,38 @@ function NoteEditor(props) {
         </div>
       </div>
 
-      {/* Split preview */}
+      {/* Split resize handle + preview */}
       {splitscreen && (
-        <div className="split-preview">
+        <>
+          <div
+            className="split-resize-handle"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              const container = e.target.closest(".editor-container");
+              const startX = e.clientX;
+              const startRatio = splitRatio;
+              const containerWidth = container.offsetWidth;
+              const onMouseMove = (ev) => {
+                const delta = ev.clientX - startX;
+                const newRatio = Math.max(25, Math.min(75, startRatio + (delta / containerWidth) * 100));
+                setSplitRatio(newRatio);
+              };
+              const onMouseUp = () => {
+                document.removeEventListener("mousemove", onMouseMove);
+                document.removeEventListener("mouseup", onMouseUp);
+                document.body.style.cursor = "";
+                document.body.style.userSelect = "";
+              };
+              document.addEventListener("mousemove", onMouseMove);
+              document.addEventListener("mouseup", onMouseUp);
+              document.body.style.cursor = "col-resize";
+              document.body.style.userSelect = "none";
+            }}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize split preview"
+          />
+          <div className="split-preview" style={{ width: `${100 - splitRatio}%` }}>
           <div className="split-preview-inner" ref={splitPreviewRef}>
             <h2
               className="split-preview-title"
@@ -605,6 +635,7 @@ function NoteEditor(props) {
             ></div>
           </div>
         </div>
+        </>
       )}
     </div>
   );

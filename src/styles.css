@@ -518,13 +518,26 @@ a:hover { text-decoration: underline; }
 
 /* Split preview */
 .split-preview {
-  width: 50%;
-  border-left: 1px solid #e5e7eb;
+  border-left: none;
   overflow-y: auto;
   background: #fff;
   flex-shrink: 0;
 }
-.dark .split-preview { background: #111827; border-color: #374151; }
+.dark .split-preview { background: #111827; }
+
+/* Split resize handle */
+.split-resize-handle {
+  width: 4px;
+  cursor: col-resize;
+  background: #e5e7eb;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+.split-resize-handle:hover,
+.split-resize-handle:active { background: #2563eb; }
+.dark .split-resize-handle { background: #374151; }
+.dark .split-resize-handle:hover,
+.dark .split-resize-handle:active { background: #60a5fa; }
 .split-preview-inner {
   max-width: 48rem;
   margin: 0 auto;
