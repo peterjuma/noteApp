@@ -338,23 +338,24 @@ a:hover { text-decoration: underline; }
 
 .editor-title {
   width: 100%;
-  padding: 10px 24px;
-  font-size: 18px;
-  font-weight: 500;
+  padding: 14px 24px 12px;
+  font-size: 22px;
+  font-weight: 600;
   border: none;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 2px solid #e5e7eb;
   outline: none;
   background: #fff;
   color: #111827;
   flex-shrink: 0;
+  letter-spacing: -0.01em;
 }
-.editor-title::placeholder { color: #9ca3af; }
+.editor-title::placeholder { color: #d1d5db; font-weight: 400; }
 .editor-title-dark {
   background: #111827;
-  color: #e5e7eb;
+  color: #f3f4f6;
   border-color: #374151;
 }
-.editor-title-dark::placeholder { color: #6b7280; }
+.editor-title-dark::placeholder { color: #4b5563; }
 
 /* Editor Toolbar */
 .editor-toolbar {
@@ -367,6 +368,7 @@ a:hover { text-decoration: underline; }
   flex-shrink: 0;
   flex-wrap: nowrap;
   overflow-x: auto;
+  min-height: 36px;
 }
 .editor-toolbar-dark {
   background: #1f2937;

@@ -448,22 +448,7 @@ function NoteEditor(props) {
   return (
     <div className="editor-container" role="main">
       <div className={`editor-panel ${splitscreen ? "editor-panel-half" : "editor-panel-full"}`}>
-        {/* Title */}
-        <input
-          name="notetitle"
-          type="text"
-          id="notetitle"
-          data-action={note.action}
-          value={title}
-          placeholder="Title"
-          autoComplete="off"
-          ref={titleRef}
-          aria-label="Note title"
-          onChange={(e) => setTitle(e.target.value)}
-          className={`editor-title ${darkMode ? "editor-title-dark" : ""}`}
-        />
-
-        {/* Toolbar — GitHub style */}
+        {/* Toolbar — top bar */}
         <div className={`editor-toolbar ${darkMode ? "editor-toolbar-dark" : ""}`}>
           <input ref={imageInputRef} type="file" accept="image/*" className="hidden" aria-label="Select image file" onChange={handleImageUpload} />
           {toolbarItems.map((item, idx) =>
@@ -501,6 +486,21 @@ function NoteEditor(props) {
             </button>
           </div>
         </div>
+
+        {/* Title — below toolbar */}
+        <input
+          name="notetitle"
+          type="text"
+          id="notetitle"
+          data-action={note.action}
+          value={title}
+          placeholder="Untitled"
+          autoComplete="off"
+          ref={titleRef}
+          aria-label="Note title"
+          onChange={(e) => setTitle(e.target.value)}
+          className={`editor-title ${darkMode ? "editor-title-dark" : ""}`}
+        />
 
         {/* Editor / Preview */}
         <div className={`editor-codemirror ${darkMode ? "editor-codemirror-dark" : ""}`}>
