@@ -840,6 +840,8 @@ a:hover { text-decoration: underline; }
   font-size: 12px;
   color: #9ca3af;
   margin-bottom: 12px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .dark .note-meta { color: #6b7280; }
 
