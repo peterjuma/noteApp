@@ -310,7 +310,16 @@ handleUnpinNote = async (noteid) => {
       this.setState({ viewingArchive: false });
     } else {
       const archived = await db.getArchivedNotes();
-      this.setState({ viewingArchive: true, archivedNotes: archived });
+      this.setState({
+        viewingArchive: true,
+        archivedNotes: archived,
+        noteid: "",
+        notetitle: "",
+        notebody: "",
+        activepage: "viewnote",
+        action: "",
+      });
+      window.history.replaceState(null, "", window.location.pathname);
     }
   };
 
