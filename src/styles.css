@@ -988,10 +988,53 @@ a:hover { text-decoration: underline; }
   .sidebar-toggle { display: flex; }
   .sidebar-resize-handle { display: none; }
   .sidebar-overlay.active { display: block; }
-  .note-view-inner { padding: 20px 16px; }
+
+  /* Note view */
+  .note-view-inner { padding: 16px 12px; }
+  .note-view-title { font-size: 1.25rem; }
+  .note-meta { flex-direction: column; gap: 4px; }
   .view-toolbar { padding: 0 8px; }
-  .editor-title { padding: 10px 16px; }
-  .editor-bottom { padding: 6px 12px; }
+
+  /* Editor */
+  .editor-title { padding: 8px 12px; font-size: 16px; }
+  .editor-toolbar { padding: 3px 4px; gap: 0; overflow-x: auto; }
+  .toolbar-btn { padding: 4px; }
+  .toolbar-divider { margin: 0 2px; height: 14px; }
+  .editor-bottom { padding: 6px 8px; gap: 4px; }
+  .editor-hint { display: none; }
+  .btn-save, .btn-cancel { padding: 5px 10px; font-size: 12px; }
+
+  /* Hide split preview on mobile */
+  .split-preview { display: none !important; }
+  .editor-panel-half { width: 100% !important; }
+
+  /* Tags tighter */
+  .editor-tags { padding: 4px 8px; }
+  .tag { font-size: 11px; padding: 1px 8px; }
+
+  /* Workspace + sort bar tighter */
+  .workspace-bar { padding: 3px 8px; font-size: 10px; }
+  .sort-bar { padding: 3px 8px; }
+  .sort-bar-left { font-size: 11px; }
+  .sort-bar-right .icon-btn { padding: 3px; }
+
+  /* Drag handle hidden on mobile — use sort/pin instead */
+  .drag-handle { display: none; }
+
+  /* Note list tighter */
+  .note-item { padding: 8px 10px; }
+  .note-item-title { font-size: 13px; }
+  .pin-btn-unpinned { opacity: 0.5; }
+  .section-header { padding: 5px 10px; font-size: 10px; }
+}
+
+/* Extra small screens */
+@media (max-width: 400px) {
+  .sidebar { width: 260px; }
+  .editor-toolbar .toolbar-btn { padding: 3px; }
+  .editor-toolbar .toolbar-divider { display: none; }
+  .workspace-bar .workspace-label { display: none; }
+  .modal-dialog { width: 95vw; }
 }
 
 /* ===== Print Styles ===== */
