@@ -539,9 +539,8 @@ a:hover { text-decoration: underline; }
 .dark .split-resize-handle:hover,
 .dark .split-resize-handle:active { background: #60a5fa; }
 .split-preview-inner {
-  max-width: 48rem;
   margin: 0 auto;
-  padding: 24px 32px;
+  padding: 24px 24px;
 }
 .split-preview-title {
   font-size: 1.5rem;
@@ -550,6 +549,8 @@ a:hover { text-decoration: underline; }
   padding-bottom: 12px;
   margin-bottom: 20px;
   border-bottom: 1px solid #e5e7eb;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 .dark .split-preview-title { color: #f3f4f6; border-color: #374151; }
 
