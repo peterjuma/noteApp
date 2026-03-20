@@ -29,6 +29,7 @@ function NoteEditor(props) {
   const [lastSaved, setLastSaved] = useState(null);
   const [tags, setTags] = useState(note.tags || []);
   const [tagInput, setTagInput] = useState("");
+  const [noteAction, setNoteAction] = useState(note.action);
   const titleRef = useRef();
   const editorRef = useRef(null);
   const viewRef = useRef(null);
@@ -55,7 +56,10 @@ function NoteEditor(props) {
       noteToSave.notetitle = title;
       noteToSave.notebody = bodytxt;
       noteToSave.tags = tags;
+      noteToSave.action = noteAction;
       props.handleSaveNote(null, noteToSave);
+      // After first save, switch to update mode
+      if (noteAction === "addnote") setNoteAction("updatenote");
       setIsDirty(false);
       setLastSaved(new Date());
     }, 3000);
@@ -393,7 +397,7 @@ function NoteEditor(props) {
     }
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     setIsDirty(false);
-    if (note.action === "updatenote") {
+    if (noteAction === "updatenote" || note.action === "updatenote") {
       props.handleNoteListItemClick(null, { noteid: note.noteid, title: note.notetitle, body: note.notebody });
       return;
     }
@@ -405,7 +409,9 @@ function NoteEditor(props) {
     note.notetitle = title;
     note.notebody = bodytxt;
     note.tags = tags;
+    note.action = noteAction;
     props.handleSaveNote(e, note);
+    if (noteAction === "addnote") setNoteAction("updatenote");
     setIsDirty(false);
     setLastSaved(new Date());
   };

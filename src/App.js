@@ -433,9 +433,18 @@ handleUnpinNote = async (noteid) => {
   handleSaveNote(e, note) {
     const noteHTML = md2html.render(note.notebody);
     const noteMarkdown = html2md.turndown(noteHTML);
-    const notetitle = document.getElementById("notetitle").value;
+    const notetitle = document.getElementById("notetitle")
+      ? document.getElementById("notetitle").value
+      : note.notetitle;
 
     if (note.action === "addnote") {
+      // Check if this note already exists (e.g., from a previous autosave)
+      const alreadyExists = this.state.allnotes.some(n => n.noteid === note.noteid);
+      if (alreadyExists) {
+        // Treat as update instead
+        note.action = "updatenote";
+        return this.handleSaveNote(e, note);
+      }
       const newNote = {
         noteid: note.noteid,
         title: notetitle,
@@ -449,7 +458,7 @@ handleUnpinNote = async (noteid) => {
         notetitle: notetitle,
         notebody: noteMarkdown,
         activepage: "viewnote",
-        action: note.action,
+        action: "updatenote",
         allnotes: [...prevState.allnotes, newNote],
       }), () => {
         this.handleSortNotes(this.state.sortby);
