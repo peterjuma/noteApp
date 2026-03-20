@@ -631,11 +631,8 @@ handleUnpinNote = async (noteid) => {
     if (copiedContent) {
       return navigator.clipboard
         .writeText(copiedContent)
-        .then(() => {
-          // Success!
-        })
-        .catch(() => {
-            });
+        .then(() => {})
+        .catch(() => {});
     }
     if (typeof window.getSelection !== "undefined") {
       var sel = window.getSelection();
@@ -644,6 +641,8 @@ handleUnpinNote = async (noteid) => {
         for (var i = 0, len = sel.rangeCount; i < len; ++i) {
           container.appendChild(sel.getRangeAt(i).cloneContents());
         }
+        // Remove copy buttons from the cloned content
+        container.querySelectorAll(".copy-code-button").forEach(btn => btn.remove());
         copiedContent = container.innerHTML;
       }
     } else if (typeof document.selection !== "undefined") {
@@ -651,11 +650,12 @@ handleUnpinNote = async (noteid) => {
         copiedContent = document.selection.createRange().htmlText;
       }
     }
-    navigator.clipboard
-      .writeText(html2md.turndown(copiedContent))
-      .catch(() => {
-        // clipboard write failed
-      });
+    if (copiedContent) {
+      e.preventDefault();
+      navigator.clipboard
+        .writeText(html2md.turndown(copiedContent))
+        .catch(() => {});
+    }
   }
 
   debounce(func, wait, immediate) {
