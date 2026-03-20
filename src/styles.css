@@ -410,7 +410,6 @@ a:hover { text-decoration: underline; }
   flex-shrink: 0;
   overflow: visible;
 }
-}
 
 /* CodeMirror area */
 .editor-codemirror {
@@ -640,10 +639,11 @@ a:hover { text-decoration: underline; }
 .hidden { display: none; }
 
 /* ===== Tooltips ===== */
-.icon-btn[title], .toolbar-btn[title], .ws-nav-btn[title] {
+/* Only show custom tooltips on icon-btn and ws-nav-btn, not toolbar-btn (causes jump) */
+.icon-btn[title], .ws-nav-btn[title] {
   position: relative;
 }
-.icon-btn[title]:hover::after, .toolbar-btn[title]:hover::after, .ws-nav-btn[title]:hover::after {
+.icon-btn[title]:hover::after, .ws-nav-btn[title]:hover::after {
   content: attr(title);
   position: absolute;
   top: calc(100% + 6px);
@@ -660,7 +660,7 @@ a:hover { text-decoration: underline; }
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
-.dark .icon-btn[title]:hover::after, .dark .toolbar-btn[title]:hover::after, .dark .ws-nav-btn[title]:hover::after {
+.dark .icon-btn[title]:hover::after, .dark .ws-nav-btn[title]:hover::after {
   background: #e5e7eb;
   color: #111827;
 }
