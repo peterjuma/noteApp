@@ -633,6 +633,11 @@ a:hover { text-decoration: underline; }
   background: #e5e7eb;
   color: #111827;
 }
+/* Tooltip above (for bottom-positioned elements like sort bar) */
+.tooltip-up[title]:hover::after {
+  top: auto !important;
+  bottom: calc(100% + 6px) !important;
+}
 
 /* ===== Modal ===== */
 .modal-overlay {

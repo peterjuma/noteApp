@@ -44,10 +44,10 @@ function NoteSort(props) {
         <div className="workspace-bar">
           <span className="workspace-label">Workspace:</span>
           <span className="workspace-name">{currentName}</span>
-          <button onClick={() => setShowSwitchModal(true)} className="ws-nav-btn" title="Switch Workspace" aria-label="Switch workspace">
+          <button onClick={() => setShowSwitchModal(true)} className="ws-nav-btn tooltip-up" title="Switch Workspace" aria-label="Switch workspace">
             <ArrowLeftRight size={14} />
           </button>
-          <button onClick={openNewModal} className="ws-nav-btn" title="New Workspace" aria-label="Create new workspace">
+          <button onClick={openNewModal} className="ws-nav-btn tooltip-up" title="New Workspace" aria-label="Create new workspace">
             <Plus size={14} />
           </button>
         </div>
@@ -73,13 +73,13 @@ function NoteSort(props) {
           <div className="sort-bar-right">
             <input ref={fileInputRef} type="file" accept=".md" className="hidden" aria-label="Select markdown file" onChange={props.handleNotesUpload} />
             <input ref={zipInputRef} type="file" accept=".zip" className="hidden" aria-label="Select ZIP archive" onChange={props.handleZipImport} />
-            <button onClick={triggerFileInputClick} className="icon-btn" title="Upload Note" aria-label="Upload a markdown note">
+            <button onClick={triggerFileInputClick} className="icon-btn tooltip-up" title="Upload Note" aria-label="Upload a markdown note">
               <Upload size={14} />
             </button>
-            <button onClick={() => zipInputRef.current.click()} className="icon-btn" title="Import Archive" aria-label="Import notes from ZIP archive">
+            <button onClick={() => zipInputRef.current.click()} className="icon-btn tooltip-up" title="Import Archive" aria-label="Import notes from ZIP archive">
               <FolderUp size={14} />
             </button>
-            <button onClick={props.handleNotesBackup} className="icon-btn" title="Download Backup" aria-label="Download all notes as ZIP">
+            <button onClick={props.handleNotesBackup} className="icon-btn tooltip-up" title="Download Backup" aria-label="Download all notes as ZIP">
               <Download size={14} />
             </button>
           </div>
