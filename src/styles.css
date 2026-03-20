@@ -485,6 +485,28 @@ a:hover { text-decoration: underline; }
   color: #9ca3af;
   user-select: none;
 }
+.editor-autosave-btn {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #9ca3af;
+  border: 1px solid #d1d5db;
+  background: transparent;
+  transition: all 0.12s ease;
+}
+.editor-autosave-btn:hover { color: #374151; border-color: #9ca3af; }
+.editor-autosave-btn.active {
+  color: #059669;
+  border-color: #059669;
+  background: #ecfdf5;
+}
+.dark .editor-autosave-btn { color: #6b7280; border-color: #4b5563; }
+.dark .editor-autosave-btn:hover { color: #d1d5db; border-color: #6b7280; }
+.dark .editor-autosave-btn.active {
+  color: #34d399;
+  border-color: #34d399;
+  background: #064e3b33;
+}
 
 /* Split preview */
 .split-preview {

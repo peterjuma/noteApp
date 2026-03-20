@@ -30,10 +30,12 @@ function NoteEditor(props) {
   const [tags, setTags] = useState(note.tags || []);
   const [tagInput, setTagInput] = useState("");
   const [noteAction, setNoteAction] = useState(note.action);
+  const [autoSave, setAutoSave] = useState(localStorage.getItem("noteapp_autosave") === "true");
   const titleRef = useRef();
   const editorRef = useRef(null);
   const viewRef = useRef(null);
   const insertMarkdownRef = useRef(null);
+  const autosaveTimerRef = useRef(null);
 
   // Word/character count
   const wordCount = bodytxt.trim() ? bodytxt.trim().split(/\s+/).length : 0;
@@ -45,6 +47,34 @@ function NoteEditor(props) {
       setIsDirty(true);
     }
   }, [bodytxt, title, initialBody, initialTitle]);
+
+  // Autosave: debounced 3s, only when enabled and dirty
+  useEffect(() => {
+    if (!autoSave || !isDirty) return;
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(() => {
+      // Silent save — stays in editor, no view switch
+      const noteToSave = { ...note };
+      noteToSave.notetitle = title;
+      noteToSave.notebody = bodytxt;
+      noteToSave.tags = tags;
+      noteToSave.action = noteAction;
+      props.handleSaveNote(null, noteToSave);
+      if (noteAction === "addnote") setNoteAction("updatenote");
+      setIsDirty(false);
+      setLastSaved(new Date());
+    }, 3000);
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
+  }, [bodytxt, title, autoSave, isDirty]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Toggle autosave preference
+  const toggleAutoSave = () => {
+    const next = !autoSave;
+    setAutoSave(next);
+    localStorage.setItem("noteapp_autosave", next);
+  };
 
   // Warn before navigating away with unsaved changes (browser close/refresh)
   useEffect(() => {
@@ -525,8 +555,16 @@ function NoteEditor(props) {
           <span className="editor-hint" role="status" aria-live="polite">
             {wordCount} words · {charCount} chars
             {lastSaved && ` · Saved ${lastSaved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
-            {isDirty && " · Unsaved changes"}
+            {isDirty && !autoSave && " · Unsaved"}
           </span>
+          <button
+            onClick={toggleAutoSave}
+            className={`editor-autosave-btn ${autoSave ? "active" : ""}`}
+            title={autoSave ? "Autosave ON (click to disable)" : "Autosave OFF (click to enable)"}
+            aria-label="Toggle autosave"
+          >
+            {autoSave ? "Auto ✓" : "Auto"}
+          </button>
           <button onClick={() => handleCancelBtn()} className="btn-cancel">
             <X size={14} /> Cancel
           </button>

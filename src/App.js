@@ -552,6 +552,7 @@ handleUnpinNote = async (noteid) => {
   }
 
   handleSaveNote(e, note) {
+    const isSilent = !e; // Autosave passes null
     const noteHTML = md2html.render(note.notebody);
     const noteMarkdown = html2md.turndown(noteHTML);
     const notetitle = document.getElementById("notetitle")
@@ -578,11 +579,11 @@ handleUnpinNote = async (noteid) => {
         noteid: note.noteid,
         notetitle: notetitle,
         notebody: noteMarkdown,
-        activepage: "viewnote",
+        activepage: isSilent ? "editnote" : "viewnote",
         action: "updatenote",
         allnotes: [...prevState.allnotes, newNote],
       }), () => {
-        this.handleSortNotes(this.state.sortby);
+        if (!isSilent) this.handleSortNotes(this.state.sortby);
       });
       db.addNote(newNote, this.state.activeDb);
     } else {
@@ -604,12 +605,12 @@ handleUnpinNote = async (noteid) => {
           noteid: note.noteid,
           notetitle: notetitle,
           notebody: noteMarkdown,
-          activepage: "viewnote",
+          activepage: isSilent ? "editnote" : "viewnote",
           action: note.action,
           allnotes: updatedNotes,
         };
       }, () => {
-        this.handleSortNotes(this.state.sortby);
+        if (!isSilent) this.handleSortNotes(this.state.sortby);
       });
       // Find the existing note to preserve created_at
       const existingNote = this.state.allnotes.find(
