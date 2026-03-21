@@ -45,6 +45,7 @@ class App extends Component {
       pendingNav: null,
       pendingEdit: null,
       showNavConfirm: false,
+      editingNewNote: false,
       dialog: null,
       viewingArchive: false,
       archivedNotes: [],
@@ -269,9 +270,18 @@ handleUnpinNote = async (noteid) => {
   handleNavConfirmDiscard = () => {
     const nav = this.state.pendingNav;
     const edit = this.state.pendingEdit;
-    this.setState({ pendingNav: null, pendingEdit: null, showNavConfirm: false });
-    if (nav) this._navigateToNote(nav);
-    if (edit) this._openEditor(edit.note, edit.isNew, edit.action);
+    const discardNoteId = this.state.editingNewNote ? this.state.noteid : null;
+    this.setState((prevState) => {
+      const updates = { pendingNav: null, pendingEdit: null, showNavConfirm: false, editingNewNote: false };
+      if (discardNoteId) {
+        updates.allnotes = prevState.allnotes.filter(n => n.noteid !== discardNoteId);
+      }
+      return updates;
+    }, () => {
+      if (discardNoteId) db.deleteNote(discardNoteId, this.state.activeDb);
+      if (nav) this._navigateToNote(nav);
+      if (edit) this._openEditor(edit.note, edit.isNew, edit.action);
+    });
   };
 
   handleNavConfirmSave = () => {
@@ -288,7 +298,7 @@ handleUnpinNote = async (noteid) => {
   };
 
   handleNavConfirmCancel = () => {
-    this.setState({ pendingNav: null, showNavConfirm: false });
+    this.setState({ pendingNav: null, pendingEdit: null, showNavConfirm: false });
   };
 
   // Generic dialog helpers
@@ -582,6 +592,7 @@ handleUnpinNote = async (noteid) => {
       showNavConfirm: false,
       pendingNav: null,
       pendingEdit: null,
+      editingNewNote: isNew,
     });
     // Clear URL hash during editing
     window.history.replaceState(null, "", window.location.pathname);
