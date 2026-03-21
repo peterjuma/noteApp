@@ -12,15 +12,16 @@ function NavbarMain(props) {
 
   return (
     <nav className="view-toolbar" aria-label="Note actions">
-      <div className="toolbar-group">
+      <span className="toolbar-group">
         <button onClick={(e) => props.handleCopyEvent(e, note.notebody)} className="icon-btn" title="Copy" aria-label="Copy note as markdown">
           <Copy size={18} />
         </button>
         <button data-action="updatenote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="Edit" aria-label="Edit this note">
           <Pencil size={18} style={{ pointerEvents: "none" }} />
         </button>
-      </div>
-      <div className="toolbar-group">
+      </span>
+      <span className="toolbar-divider" />
+      <span className="toolbar-group">
         <button onClick={handlePrint} className="icon-btn" title="Print / Export PDF" aria-label="Print or export as PDF">
           <Printer size={18} />
         </button>
@@ -30,10 +31,13 @@ function NavbarMain(props) {
         <button onClick={() => props.handleMoveNote && props.handleMoveNote(note)} className="icon-btn" title="Move to..." aria-label="Move to another workspace">
           <FolderOutput size={18} />
         </button>
+      </span>
+      <span className="toolbar-divider" />
+      <span className="toolbar-group">
         <button onClick={(e) => props.handleDeleteNote(e, note)} className="icon-btn icon-btn-danger" title="Delete" aria-label="Delete this note">
           <Trash2 size={18} />
         </button>
-      </div>
+      </span>
     </nav>
   );
 }

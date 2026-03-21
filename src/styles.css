@@ -339,8 +339,8 @@ a:hover { text-decoration: underline; }
 .view-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
+  justify-content: space-evenly;
+  padding: 0 8px;
   border-bottom: 1px solid #e5e7eb;
   background: #fff;
   flex-shrink: 0;
