@@ -11,7 +11,7 @@ import hljs from "highlight.js";
 import { html2md, md2html } from "./useMarkDown";
 import { saveAs } from "file-saver";
 import * as db from "./services/notesDB";
-import { Menu, RotateCcw, Trash2 as TrashIcon } from "lucide-react";
+import { Menu, RotateCcw, Trash2 as TrashIcon, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 // Slugify a note title for URL hash
 function slugify(title) {
@@ -39,6 +39,7 @@ class App extends Component {
       activeDb: db.getActiveWorkspace(),
       workspaces: db.getWorkspaces(),
       sidebarOpen: false,
+      sidebarCollapsed: localStorage.getItem("noteapp_sidebar_collapsed") === "true",
       sidebarWidth: parseInt(localStorage.getItem("noteapp_sidebar_width")) || 260,
       pendingNav: null,
       showNavConfirm: false,
@@ -937,13 +938,22 @@ handleUnpinNote = async (noteid) => {
         >
           <Menu size={20} />
         </button>
-        <div className={`sidebar ${this.state.sidebarOpen ? "sidebar-open" : ""}`} style={{ width: this.state.sidebarWidth, minWidth: 180 }}>
+        <div
+          className={`sidebar ${this.state.sidebarOpen ? "sidebar-open" : ""} ${this.state.sidebarCollapsed ? "sidebar-collapsed" : ""}`}
+          style={this.state.sidebarCollapsed ? undefined : { width: this.state.sidebarWidth, minWidth: 180 }}
+        >
           <NavbarSidebar
             handleClickHomeBtn={this.handleClickHomeBtn}
             handleEditNoteBtn={this.handleEditNoteBtn}
             handleSearchNotes={this.handleSearchNotes}
             darkMode={this.state.darkMode}
             viewingArchive={this.state.viewingArchive}
+            sidebarCollapsed={this.state.sidebarCollapsed}
+            onToggleCollapse={() => this.setState((s) => {
+              const next = !s.sidebarCollapsed;
+              localStorage.setItem("noteapp_sidebar_collapsed", next);
+              return { sidebarCollapsed: next };
+            })}
             onToggleArchive={this.toggleArchiveView}
             onToggleDarkMode={() => this.setState((s) => {
               const next = !s.darkMode;

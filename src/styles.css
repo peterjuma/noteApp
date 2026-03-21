@@ -60,6 +60,23 @@ a:hover { text-decoration: underline; }
 .dark .sidebar-resize-handle { background: #374151; }
 .dark .sidebar-resize-handle:hover,
 .dark .sidebar-resize-handle:active { background: #60a5fa; }
+
+/* Collapsed sidebar */
+.sidebar-collapsed {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+}
+.sidebar-collapsed .sidebar-scroll,
+.sidebar-collapsed .sort-bar-container { display: none; }
+.sidebar-collapsed-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+}
+.sidebar-collapsed + .sidebar-resize-handle { display: none; }
 .sidebar-header {
   display: flex;
   align-items: center;
