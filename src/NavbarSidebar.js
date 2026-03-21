@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Plus, Search, Moon, Sun, Archive, ChevronsLeft, ChevronsRight, TableProperties } from "lucide-react";
+import { Home, Plus, Search, Moon, Sun, Archive, ChevronsLeft, ChevronsRight, TableProperties, StickyNote } from "lucide-react";
 
 function NavbarSidebar(props) {
   var note = {
@@ -65,8 +65,8 @@ function NavbarSidebar(props) {
         <button onClick={props.onToggleDarkMode} className="icon-btn" title={props.darkMode ? "Light Mode" : "Dark Mode"} aria-label="Toggle theme">
           {props.darkMode ? <Sun size={15} /> : <Moon size={15} />}
         </button>
-        <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title="Table Converter" aria-label="Open table converter">
-          <TableProperties size={15} />
+        <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title={props.showTableConverter ? "Back to Notes" : "Table Converter"} aria-label={props.showTableConverter ? "Back to notes" : "Open table converter"}>
+          {props.showTableConverter ? <StickyNote size={15} /> : <TableProperties size={15} />}
         </button>
         <div style={{ flex: 1 }} />
         <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="New Note" aria-label="Create new note" disabled={props.showTableConverter}>

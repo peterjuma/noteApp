@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { convert, detectFormat } from "./services/tableConverter";
-import { X, Copy, ArrowRight, Check } from "lucide-react";
+import { X, Copy, ArrowDown, Check } from "lucide-react";
 
 const FORMATS = [
   { id: "csv", label: "CSV" },
@@ -20,9 +20,9 @@ function TableConverter({ onClose, onInsert, darkMode, fullPage }) {
 
   const handleInputChange = (val) => {
     setInput(val);
-    const detected = detectFormat(val);
-    setFromFormat(detected);
     if (val.trim()) {
+      const detected = detectFormat(val);
+      setFromFormat(detected);
       const target = detected === "markdown" ? "csv" : "markdown";
       setToFormat(target);
       setOutput(convert(val, detected, target));
@@ -44,67 +44,71 @@ function TableConverter({ onClose, onInsert, darkMode, fullPage }) {
     });
   };
 
+  const formatLabel = FORMATS.find(f => f.id === fromFormat)?.label || fromFormat;
+
   const content = (
     <>
       <div className={fullPage ? "tc-header" : "modal-header"}>
         <h3>Table Converter</h3>
-        <button className="icon-btn" onClick={onClose} aria-label="Close"><X size={16} /></button>
+        {!fullPage && <button className="icon-btn" onClick={onClose} aria-label="Close"><X size={16} /></button>}
       </div>
 
-      <div className="tc-body">
-          {/* Input */}
-          <div className="tc-panel">
-            <div className="tc-panel-header">
-              <span className="tc-label">Input</span>
-              <select value={fromFormat} onChange={(e) => setFromFormat(e.target.value)} className="tc-select">
-                {FORMATS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-              </select>
-            </div>
-            <textarea
-              className="tc-textarea"
-              value={input}
-              onChange={(e) => handleInputChange(e.target.value)}
-              placeholder="Paste CSV, JSON, HTML, SQL, or Markdown table here..."
-              spellCheck={false}
-            />
+      <div className="tc-body-vertical">
+        {/* Input */}
+        <div className="tc-panel">
+          <div className="tc-panel-header">
+            <span className="tc-label">
+              Input
+              {input.trim() && <span className="tc-detected">Detected: {formatLabel}</span>}
+            </span>
+            <select value={fromFormat} onChange={(e) => setFromFormat(e.target.value)} className="tc-select">
+              {FORMATS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+            </select>
           </div>
-
-          {/* Arrow + Convert */}
-          <div className="tc-middle">
-            <button onClick={handleConvert} className="tc-convert-btn" title="Convert">
-              <ArrowRight size={20} />
-            </button>
-          </div>
-
-          {/* Output */}
-          <div className="tc-panel">
-            <div className="tc-panel-header">
-              <span className="tc-label">Output</span>
-              <select value={toFormat} onChange={(e) => { setToFormat(e.target.value); if (input.trim()) setOutput(convert(input, fromFormat, e.target.value)); }} className="tc-select">
-                {FORMATS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-              </select>
-            </div>
-            <textarea
-              className="tc-textarea"
-              value={output}
-              readOnly
-              placeholder="Converted output will appear here..."
-              spellCheck={false}
-            />
-          </div>
+          <textarea
+            className="tc-textarea"
+            value={input}
+            onChange={(e) => handleInputChange(e.target.value)}
+            placeholder="Paste CSV, JSON, HTML, SQL, or Markdown table here..."
+            spellCheck={false}
+          />
         </div>
 
-        <div className={fullPage ? "tc-footer" : "modal-footer"}>
-          <button className="btn-cancel" onClick={onClose}>Close</button>
-          <button className="btn-cancel" onClick={handleCopy} disabled={!output}>
-            {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
+        {/* Convert bar */}
+        <div className="tc-convert-bar">
+          <button onClick={handleConvert} className="tc-convert-btn" title="Convert">
+            <ArrowDown size={16} /> Convert
+          </button>
+          <span className="tc-arrow-label">to</span>
+          <select value={toFormat} onChange={(e) => { setToFormat(e.target.value); if (input.trim()) setOutput(convert(input, fromFormat, e.target.value)); }} className="tc-select">
+            {FORMATS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+          </select>
+          <div style={{ flex: 1 }} />
+          <button className="btn-cancel" onClick={handleCopy} disabled={!output} style={{ padding: "4px 12px", fontSize: "12px" }}>
+            {copied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
           </button>
           {onInsert && (
-            <button className="btn-save" onClick={() => { onInsert(toFormat === "markdown" ? output : convert(input, fromFormat, "markdown")); onClose(); }} disabled={!output}>
-              Insert Markdown
+            <button className="btn-save" onClick={() => { onInsert(toFormat === "markdown" ? output : convert(input, fromFormat, "markdown")); onClose(); }} disabled={!output} style={{ padding: "4px 12px", fontSize: "12px" }}>
+              Insert
             </button>
           )}
         </div>
+
+        {/* Output */}
+        <div className="tc-panel">
+          <textarea
+            className="tc-textarea"
+            value={output}
+            readOnly
+            placeholder="Converted output will appear here..."
+            spellCheck={false}
+          />
+        </div>
+      </div>
+
+      <div className={fullPage ? "tc-footer" : "modal-footer"}>
+        <button className="btn-cancel" onClick={onClose}>{fullPage ? "Back to Notes" : "Close"}</button>
+      </div>
     </>
   );
 

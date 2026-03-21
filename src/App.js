@@ -1050,7 +1050,7 @@ handleUnpinNote = async (noteid) => {
               return { sidebarCollapsed: next };
             })}
             onToggleArchive={this.toggleArchiveView}
-            onOpenTableConverter={() => this.setState({ showFullTableConverter: true, viewingArchive: false })}
+            onOpenTableConverter={() => this.setState((s) => ({ showFullTableConverter: !s.showFullTableConverter, viewingArchive: false }))}
             onToggleDarkMode={() => this.setState((s) => {
               const next = !s.darkMode;
               localStorage.setItem("noteapp_dark_mode", next);
