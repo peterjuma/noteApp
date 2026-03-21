@@ -20,7 +20,7 @@ function NavbarMain(props) {
           <Pencil size={15} style={{ pointerEvents: "none" }} />
         </button>
       </span>
-      <span className="toolbar-divider" />
+      <div style={{ flex: 1 }} />
       <span className="toolbar-group">
         <button onClick={handlePrint} className="icon-btn" title="Print / Export PDF" aria-label="Print or export as PDF">
           <Printer size={15} />
