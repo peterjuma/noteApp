@@ -1,8 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import DOMPurify from "dompurify";
 import { md2html } from "./useMarkDown";
 import mermaid from "mermaid";
 import * as noteDB from "./services/notesDB";
+import { suggestTags } from "./services/tagSuggester";
+import { Sparkles, Check, X } from "lucide-react";
 
 mermaid.initialize({ startOnLoad: false, theme: "default" });
 
@@ -20,6 +22,32 @@ DOMPurify.addHook("uponSanitizeAttribute", (node, data) => {
 function NoteMain(props) {
   var { notesData } = props;
   const bodyRef = useRef(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const handleSuggestTags = () => {
+    const suggested = suggestTags(notesData.notetitle, notesData.notebody, notesData.tags);
+    setSuggestions(suggested);
+    setShowSuggestions(true);
+  };
+
+  const handleAcceptTag = (tag) => {
+    if (props.onAddTag) props.onAddTag(notesData.noteid, tag);
+    setSuggestions(suggestions.filter(s => s !== tag));
+    if (suggestions.length <= 1) setShowSuggestions(false);
+  };
+
+  const handleAcceptAll = () => {
+    if (props.onAddTags) props.onAddTags(notesData.noteid, suggestions);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  // Reset suggestions when note changes
+  useEffect(() => {
+    setSuggestions([]);
+    setShowSuggestions(false);
+  }, [notesData.noteid]);
 
   // Handle anchor clicks and mermaid rendering
   useEffect(() => {
@@ -127,6 +155,31 @@ function NoteMain(props) {
                 {tag}
               </span>
             ))}
+          </div>
+        )}
+        {/* Tag suggestions */}
+        {notesData.action !== "homepage" && (
+          <div className="tag-suggest-area">
+            {!showSuggestions ? (
+              <button onClick={handleSuggestTags} className="tag-suggest-btn" title="Suggest tags using AI">
+                <Sparkles size={14} /> Suggest Tags
+              </button>
+            ) : suggestions.length > 0 ? (
+              <div className="tag-suggestions">
+                <span className="tag-suggest-label">Suggested:</span>
+                {suggestions.map((tag) => (
+                  <span key={tag} className="tag tag-suggested" onClick={() => handleAcceptTag(tag)}>
+                    {tag} <Check size={12} />
+                  </span>
+                ))}
+                <button onClick={handleAcceptAll} className="tag-suggest-accept">Accept All</button>
+                <button onClick={() => setShowSuggestions(false)} className="tag-suggest-dismiss">
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <span className="tag-suggest-label" style={{ fontSize: "12px", color: "#9ca3af" }}>No suggestions — note may need more content</span>
+            )}
           </div>
         )}
         <div

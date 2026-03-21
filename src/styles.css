@@ -925,6 +925,65 @@ a:hover { text-decoration: underline; }
 .dark .tag-input { color: #d1d5db; }
 .dark .tag-input::placeholder { color: #6b7280; }
 
+/* Tag suggestions */
+.tag-suggest-area {
+  margin-bottom: 12px;
+}
+.tag-suggest-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #7c3aed;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 9999px;
+  transition: all 0.15s ease;
+}
+.tag-suggest-btn:hover { background: #ede9fe; border-color: #c4b5fd; }
+.dark .tag-suggest-btn { color: #a78bfa; background: #2e1065aa; border-color: #4c1d95; }
+.dark .tag-suggest-btn:hover { background: #4c1d95; }
+.tag-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.tag-suggest-label {
+  font-size: 12px;
+  color: #7c3aed;
+  font-weight: 500;
+  margin-right: 2px;
+}
+.dark .tag-suggest-label { color: #a78bfa; }
+.tag-suggested {
+  cursor: pointer;
+  border: 1px dashed #c4b5fd !important;
+  background: #f5f3ff !important;
+  color: #7c3aed !important;
+}
+.tag-suggested:hover { background: #ede9fe !important; }
+.dark .tag-suggested { background: #2e1065aa !important; color: #a78bfa !important; border-color: #4c1d95 !important; }
+.tag-suggest-accept {
+  font-size: 11px;
+  padding: 2px 8px;
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 9999px;
+}
+.tag-suggest-accept:hover { background: #d1fae5; }
+.dark .tag-suggest-accept { color: #34d399; background: #064e3b33; border-color: #065f46; }
+.tag-suggest-dismiss {
+  padding: 2px;
+  color: #9ca3af;
+  border-radius: 4px;
+}
+.tag-suggest-dismiss:hover { color: #374151; background: #f3f4f6; }
+.dark .tag-suggest-dismiss:hover { color: #d1d5db; background: #374151; }
+
 /* ===== Archive Items ===== */
 .archive-item {
   flex-direction: column;

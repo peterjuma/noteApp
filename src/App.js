@@ -519,6 +519,36 @@ handleUnpinNote = async (noteid) => {
     }
   };
 
+  // Add a single suggested tag to a note
+  handleAddTag = async (noteid, tag) => {
+    this.setState((prevState) => {
+      const allnotes = prevState.allnotes.map(n => {
+        if (n.noteid === noteid) {
+          const tags = [...(n.tags || []), tag];
+          db.updateNote({ ...n, tags }, this.state.activeDb);
+          return { ...n, tags };
+        }
+        return n;
+      });
+      return { allnotes };
+    });
+  };
+
+  // Add multiple suggested tags to a note
+  handleAddTags = async (noteid, newTags) => {
+    this.setState((prevState) => {
+      const allnotes = prevState.allnotes.map(n => {
+        if (n.noteid === noteid) {
+          const tags = [...new Set([...(n.tags || []), ...newTags])];
+          db.updateNote({ ...n, tags }, this.state.activeDb);
+          return { ...n, tags };
+        }
+        return n;
+      });
+      return { allnotes };
+    });
+  };
+
   handleEditNoteBtn = (e, note) => {
     this.setState({
       noteid: note.noteid,
@@ -887,6 +917,8 @@ handleUnpinNote = async (noteid) => {
               tags: (this.state.allnotes.find(n => n.noteid === this.state.noteid) || {}).tags || [],
             }}
             handleCopyEvent={this.handleCopyEvent}
+            onAddTag={this.handleAddTag}
+            onAddTags={this.handleAddTags}
           />
         </>
       );
