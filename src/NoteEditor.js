@@ -11,6 +11,7 @@ import { searchKeymap } from "@codemirror/search";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import * as noteDB from "./services/notesDB";
 import { suggestTags } from "./services/tagSuggester";
+import TableConverter from "./TableConverter";
 import {
   Bold, Italic, Heading2, Link, ListOrdered, List, Quote, Paperclip, Image,
   Code, Braces, CheckSquare, Table, Strikethrough, Save, X,
@@ -34,6 +35,7 @@ function NoteEditor(props) {
   const [noteAction, setNoteAction] = useState(note.action);
   const [autoSave, setAutoSave] = useState(localStorage.getItem("noteapp_autosave") === "true");
   const [editorSuggestions, setEditorSuggestions] = useState([]);
+  const [showTableConverter, setShowTableConverter] = useState(false);
   const titleRef = useRef();
   const editorRef = useRef(null);
   const viewRef = useRef(null);
@@ -126,7 +128,7 @@ function NoteEditor(props) {
     { icon: ListOrdered, command: "olist", tooltip: "Numbered List", size: 15 },
     { icon: CheckSquare, command: "tasklist", tooltip: "Task List", size: 15 },
     { divider: true },
-    { icon: Table, command: "table", tooltip: "Table", size: 15 },
+    { icon: Table, command: "openTableConverter", tooltip: "Table Converter", size: 15 },
     { icon: Minus, command: "hr", tooltip: "Horizontal Rule", size: 15 },
     { icon: Strikethrough, command: "strike", tooltip: "Strikethrough", size: 15 },
   ];
@@ -461,7 +463,11 @@ function NoteEditor(props) {
             ) : (
               <button
                 key={item.command}
-                onClick={() => item.command === "uploadImage" ? imageInputRef.current.click() : insertMarkdown(item.command)}
+                onClick={() => {
+                  if (item.command === "uploadImage") imageInputRef.current.click();
+                  else if (item.command === "openTableConverter") setShowTableConverter(true);
+                  else insertMarkdown(item.command);
+                }}
                 className={`toolbar-btn ${darkMode ? "toolbar-btn-dark" : ""}`}
                 title={item.tooltip}
                 aria-label={item.tooltip}
@@ -681,6 +687,25 @@ function NoteEditor(props) {
           </div>
         </div>
         </>
+      )}
+
+      {/* Table Converter Modal */}
+      {showTableConverter && (
+        <TableConverter
+          darkMode={darkMode}
+          onClose={() => setShowTableConverter(false)}
+          onInsert={(md) => {
+            const view = viewRef.current;
+            if (view) {
+              const { from, to } = view.state.selection.main;
+              view.dispatch({
+                changes: { from, to, insert: "\n" + md + "\n" },
+                selection: { anchor: from + md.length + 2 },
+              });
+              view.focus();
+            }
+          }}
+        />
       )}
     </div>
   );
