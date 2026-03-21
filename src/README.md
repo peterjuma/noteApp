@@ -9,35 +9,60 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 ## Features
 
 ### Editor
-- **CodeMirror 6** — Modern code editor with markdown syntax highlighting
-- **GitHub-style shortcuts** — `Ctrl+B` bold, `Ctrl+I` italic, `Ctrl+K` link, `Ctrl+E` code, `Ctrl+S` save
-- **Paste-as-Markdown** — Copy content from any webpage; it's automatically converted to clean Markdown
-- **Image support** — Paste, drag-and-drop, or upload images; stored in browser storage
+- **CodeMirror 6** — Modern code editor with markdown syntax highlighting and OneDark theme
+- **Rich toolbar** — 16+ formatting buttons: headings, bold, italic, strikethrough, code, links, images, lists, tables, blockquotes, horizontal rules, undo/redo
+- **GitHub-style shortcuts** — `Ctrl+B` bold, `Ctrl+I` italic, `Ctrl+K` link, `Ctrl+E` code, `Ctrl+S` save, and more
+- **Paste-as-Markdown** — Rich HTML from webpages is automatically converted to clean Markdown
+- **Image support** — Paste, drag-and-drop, or upload images; stored as blobs in IndexedDB
 - **Auto-close brackets** — Quotes, brackets, and backticks auto-pair
-- **Autosave** — Changes saved automatically every 3 seconds
-- **Split preview** — Side-by-side editor and rendered preview
-- **Inline preview** — Toggle between writing and preview modes
-- **Dark mode editor** — Full OneDark theme for CodeMirror
-- **Word & character count** — Live count in the status bar
+- **Autosave** — Toggleable 3-second debounced autosave with status indicator
+- **Split preview** — Resizable side-by-side editor and rendered preview
+- **Inline preview** — Full rendered preview toggle
+- **Word & character count** — Live counters in the status bar
+- **Unsaved changes guard** — Save/Discard/Keep Editing dialog when navigating away
 
 ### Rendering
-- **GitHub Flavored Markdown** — Tables, task lists, strikethrough, emoji
-- **Mermaid diagrams** — Flowcharts, sequence diagrams, Gantt charts, mind maps, and more
-- **Syntax highlighting** — Code blocks with language-aware coloring (GitHub Dark in dark mode)
-- **Anchor navigation** — Click any heading link in a table of contents to scroll to that section
+- **GitHub Flavored Markdown** — Tables, task lists, strikethrough, emoji shortcodes
+- **Mermaid diagrams** — Flowcharts, sequence diagrams, Gantt charts, class diagrams, state diagrams, pie charts, mindmaps, timelines, and more
+- **Syntax highlighting** — Code blocks with language-aware coloring via highlight.js (GitHub Dark theme in dark mode)
+- **Anchor navigation** — Click any heading link to scroll smoothly; URL updates to reflect position
 - **Copy code blocks** — One-click copy button on every code block (excluded from text selection)
 
+### Tags & Intelligence
+- **Tags** — Add, remove, and display tags as badges on notes
+- **Tag search** — Filter notes by tag with `tag:` prefix
+- **Smart tag suggestions** — AI-powered tag extraction from note content using 30 topic categories and 400+ keywords covering GitHub support, dev engineering, and tech domains
+- **Tech pattern recognition** — Detects code languages from fenced blocks, CamelCase/snake_case splitting, heading word extraction, and frequency-based ranking
+
 ### Organization
-- **Pin notes** — Pin up to 10 important notes to the top (click or drag-to-pin)
+- **Pin notes** — Pin important notes to the top (max 10 per workspace); click or drag-to-pin
+- **Pinned section** — Only visible when pinned notes exist; drag notes between sections to pin/unpin
 - **Sort** — By title (A-Z, Z-A), created date, modified date, or manual drag-to-reorder
-- **Full-text search** — Searches title, body, and tags simultaneously. Use `title:query` or `body:query` to restrict search scope
-- **Tags** — Add tags to notes; type a tag + Enter to add, Backspace to remove
-- **Note metadata** — Created and modified timestamps shown on each note
+- **Full-text search** — Toggleable search bar searches title, body, and tags with `title:`, `body:`, `tag:` scope prefixes
+- **Note metadata** — Created and modified timestamps displayed on each note
+- **Drag & drop reorder** — Manual ordering with visual drag handles and drop zone feedback
+- **Keyboard navigation** — Arrow keys, Enter, Space to navigate and select notes in the list
 
 ### Workspaces
-- **Multiple databases** — Create separate workspaces (Work, Personal, Archive)
-- **Switch workspaces** — Each workspace has its own isolated set of notes and images
-- **Rename & delete** — Manage workspaces from the switcher modal
+- **Multiple databases** — Create isolated workspaces (Work, Personal, etc.) with separate IndexedDB stores
+- **Switch workspaces** — Modal workspace switcher showing all workspaces with active indicator
+- **Rename & delete** — Manage workspace names; deleting switches to Default automatically
+- **Move notes** — Move a note from one workspace to another via toolbar button
+
+### Archive
+- **Archive instead of delete** — Choose to archive notes rather than permanently delete them
+- **Archive view** — Toggle archive mode in the sidebar to browse archived notes
+- **Restore notes** — Restore archived notes back to their original workspace
+- **Permanent delete** — Remove archived notes forever
+- **Archive metadata** — Tracks source workspace and archive timestamp
+
+### Table Converter
+- **6 formats** — Convert between CSV, TSV, Markdown, HTML, SQL, and JSON
+- **Auto-detect** — Automatically identifies the input table format
+- **Full-page mode** — Dedicated table converter view toggled from the sidebar
+- **Editor modal** — Quick-convert tables inline while editing a note
+- **Format tabs** — Switch output format with tab buttons
+- **Smart parsing** — Quote-aware CSV, pipe-delimited Markdown, HTML entity decoding, SQL ASCII tables, JSON arrays of objects or arrays
 
 ### Import & Export
 - **Upload** — Import single `.md` files
@@ -47,15 +72,22 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 - **Print / PDF** — Clean print layout with page-break-aware formatting
 
 ### App
-- **Dark / Light mode** — App-wide theme toggle, persisted across sessions
+- **Dark / Light mode** — Full theme toggle persisted across sessions; GitHub Dark syntax colors, OneDark editor theme
 - **PWA installable** — Add to home screen on mobile or desktop
-- **Offline support** — Service worker caches the app for offline use
+- **Offline support** — Service worker with network-first navigation and cache-first static assets
 - **URL routing** — Each note has a shareable URL (`#note/my-note-title`)
 - **Deep linking** — Link directly to a heading within a note (`#note/my-note/section`)
 - **Browser navigation** — Back/forward buttons navigate between notes
-- **Responsive** — Sidebar collapses to a drawer on mobile screens
-- **Keyboard navigation** — Arrow keys, Enter, Space to navigate the note list
-- **Accessible** — ARIA landmarks, labels, roles, and live regions throughout
+- **Responsive** — Collapsible and resizable sidebar; drawer mode on mobile with overlay
+- **Accessible** — ARIA landmarks, labels, roles, live regions, and focus management throughout
+- **Error boundary** — Graceful error handling with recovery UI
+- **XSS protection** — All rendered HTML sanitized with DOMPurify
+
+### Toolbar & UI
+- **Sidebar toolbar** — Grouped icon buttons with subtle dividers: views (Archive, Table Converter), tools (Search, Upload, Import, Backup), actions (Dark Mode, New Note)
+- **Note view toolbar** — Copy and Edit text buttons on the left; Print, Download, Move, and Delete icons on the right
+- **Collapsed sidebar** — Compact vertical icon strip with full functionality
+- **Consistent visual rhythm** — Harmonized bar heights (44px primary, 36px secondary) and unified border styles
 
 ---
 
