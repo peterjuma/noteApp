@@ -579,7 +579,7 @@ function NoteEditor(props) {
               style={{ marginLeft: "4px" }}
               title="Suggest tags"
             >
-              <Sparkles size={12} />
+              <Sparkles size={12} /> Suggest Tags
             </button>
           )}
           {editorSuggestions.length > 0 && editorSuggestions.map((s) => (
