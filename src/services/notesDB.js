@@ -109,6 +109,18 @@ export async function getImageURL(id, dbName = "notesdb") {
   return URL.createObjectURL(img.blob);
 }
 
+// Move a note from one workspace to another
+export async function moveNote(noteid, fromDb, toDb) {
+  const fromConn = await getDB(fromDb);
+  const note = await fromConn.get("notes", noteid);
+  if (!note) return null;
+  note.updated_at = Date.now();
+  const toConn = await getDB(toDb);
+  await toConn.put("notes", note);
+  await fromConn.delete("notes", noteid);
+  return note;
+}
+
 // ===== Workspaces =====
 const WORKSPACES_KEY = "noteapp_workspaces";
 const ACTIVE_WORKSPACE_KEY = "noteapp_active_workspace";

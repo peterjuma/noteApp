@@ -352,6 +352,42 @@ handleUnpinNote = async (noteid) => {
     );
   };
 
+  // Move note to another workspace
+  handleMoveNote = (note) => {
+    const otherWorkspaces = this.state.workspaces.filter(w => w.dbName !== this.state.activeDb);
+    if (otherWorkspaces.length === 0) {
+      this.showAlert("No Other Workspaces", "Create another workspace first to move notes between them.");
+      return;
+    }
+    this.setState({
+      dialog: {
+        title: "Move Note",
+        message: `Move "${note.notetitle || note.title}" to:`,
+        cancelText: "Cancel",
+        onCancel: () => this.setState({ dialog: null }),
+        workspaceList: otherWorkspaces,
+        onSelectWorkspace: async (targetDb) => {
+          this.setState({ dialog: null });
+          const noteObj = this.state.allnotes.find(n => n.noteid === (note.noteid));
+          if (!noteObj) return;
+          await db.moveNote(noteObj.noteid, this.state.activeDb, targetDb);
+          // Remove from current list
+          this.setState((prevState) => ({
+            allnotes: prevState.allnotes.filter(n => n.noteid !== noteObj.noteid),
+          }), () => {
+            if (this.state.allnotes.length > 0) {
+              this.handleNoteListItemClick(null, this.state.allnotes[0]);
+            } else {
+              this.handleClickHomeBtn();
+            }
+          });
+          const targetName = (this.state.workspaces.find(w => w.dbName === targetDb) || {}).name || targetDb;
+          this.showAlert("Moved", `Note moved to ${targetName}.`);
+        },
+      },
+    });
+  };
+
   // Navigate to a note based on URL hash
   navigateFromHash = () => {
     const hash = window.location.hash;
@@ -833,6 +869,7 @@ handleUnpinNote = async (noteid) => {
           }}
           handleEditNoteBtn={this.handleEditNoteBtn}
           handleDeleteNote={this.handleDeleteNote}
+          handleMoveNote={this.handleMoveNote}
           handleCopyEvent={this.handleCopyEvent}
           handleDownloadNote={this.handleDownloadNote}
         />
@@ -1131,7 +1168,7 @@ handleUnpinNote = async (noteid) => {
           />
         )}
         {/* Generic dialog */}
-        {this.state.dialog && (
+        {this.state.dialog && !this.state.dialog.workspaceList && (
           <ConfirmDialog
             title={this.state.dialog.title}
             message={this.state.dialog.message}
@@ -1143,6 +1180,33 @@ handleUnpinNote = async (noteid) => {
             onSecondary={this.state.dialog.onSecondary}
             onCancel={this.state.dialog.onCancel || (() => this.setState({ dialog: null }))}
           />
+        )}
+        {/* Move note dialog */}
+        {this.state.dialog && this.state.dialog.workspaceList && (
+          <div className="modal-overlay" onClick={this.state.dialog.onCancel}>
+            <div className="modal-dialog" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>{this.state.dialog.title}</h3>
+              </div>
+              <div className="modal-body" style={{ padding: 0 }}>
+                <p style={{ padding: "12px 20px 8px", fontSize: "14px", color: "#6b7280" }}>{this.state.dialog.message}</p>
+                <ul className="ws-list">
+                  {this.state.dialog.workspaceList.map((w) => (
+                    <li
+                      key={w.dbName}
+                      className="ws-list-item"
+                      onClick={() => this.state.dialog.onSelectWorkspace(w.dbName)}
+                    >
+                      <span className="ws-list-name">{w.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="modal-footer">
+                <button className="btn-cancel" onClick={this.state.dialog.onCancel}>{this.state.dialog.cancelText || "Cancel"}</button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     );

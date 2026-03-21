@@ -1,4 +1,4 @@
-import { Copy, Pencil, Download, Trash2, Printer } from "lucide-react";
+import { Copy, Pencil, Download, Trash2, Printer, FolderOutput } from "lucide-react";
 
 function NavbarMain(props) {
   var isActive = props.display;
@@ -26,6 +26,9 @@ function NavbarMain(props) {
         </button>
         <button onClick={() => props.handleDownloadNote(note)} className="icon-btn" title="Download" aria-label="Download as markdown file">
           <Download size={18} />
+        </button>
+        <button onClick={() => props.handleMoveNote && props.handleMoveNote(note)} className="icon-btn" title="Move to..." aria-label="Move to another workspace">
+          <FolderOutput size={18} />
         </button>
         <button onClick={(e) => props.handleDeleteNote(e, note)} className="icon-btn icon-btn-danger" title="Delete" aria-label="Delete this note">
           <Trash2 size={18} />
