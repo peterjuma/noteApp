@@ -51,7 +51,7 @@ function NavbarSidebar(props) {
           {props.viewingArchive
             ? "Archive"
             : props.workspaceName && props.workspaceName !== "Default"
-              ? `${props.workspaceName}`
+              ? `${props.workspaceName} Notes`
               : "Notes"
           }
         </h4>
