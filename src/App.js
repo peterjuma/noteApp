@@ -550,16 +550,14 @@ handleUnpinNote = async (noteid) => {
   };
 
   handleEditNoteBtn = (e, note) => {
+    const isNew = e.target.dataset.action === "addnote";
     this.setState({
-      noteid: note.noteid,
-      notetitle: note.notetitle,
-      notebody: note.notebody,
+      noteid: isNew ? note.noteid : note.noteid,
+      notetitle: isNew ? "" : note.notetitle,
+      notebody: isNew ? "" : note.notebody,
       activepage: "editnote",
       action: e.target.dataset.action,
     });
-    if (e.target.dataset.action === "addnote") {
-      this.setState({ noteid: "" });
-    }
     // Clear URL hash during editing
     window.history.replaceState(null, "", window.location.pathname);
   };
