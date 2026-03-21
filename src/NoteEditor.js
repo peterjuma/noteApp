@@ -10,10 +10,11 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import { searchKeymap } from "@codemirror/search";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import * as noteDB from "./services/notesDB";
+import { suggestTags } from "./services/tagSuggester";
 import {
   Bold, Italic, Heading2, Link, ListOrdered, List, Quote, Paperclip, Image,
   Code, Braces, CheckSquare, Table, Strikethrough, Save, X,
-  Columns2, Maximize2, Eye, EyeOff, Minus,
+  Columns2, Maximize2, Eye, EyeOff, Minus, Sparkles, Check,
 } from "lucide-react";
 
 function NoteEditor(props) {
@@ -32,6 +33,7 @@ function NoteEditor(props) {
   const [tagInput, setTagInput] = useState("");
   const [noteAction, setNoteAction] = useState(note.action);
   const [autoSave, setAutoSave] = useState(localStorage.getItem("noteapp_autosave") === "true");
+  const [editorSuggestions, setEditorSuggestions] = useState([]);
   const titleRef = useRef();
   const editorRef = useRef(null);
   const viewRef = useRef(null);
@@ -51,7 +53,7 @@ function NoteEditor(props) {
 
   // Autosave: debounced 3s, only when enabled and dirty
   useEffect(() => {
-    if (!autoSave || !isDirty || !title.trim()) return;
+    if (!autoSave || !isDirty || !title.trim() || !bodytxt.trim()) return;
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     autosaveTimerRef.current = setTimeout(() => {
       // Silent save — stays in editor, no view switch
@@ -569,6 +571,48 @@ function NoteEditor(props) {
               }
             }}
           />
+          {/* Suggest tags — show when new note has title + body but no tags */}
+          {tags.length === 0 && title.trim() && bodytxt.trim() && editorSuggestions.length === 0 && (
+            <button
+              onClick={() => setEditorSuggestions(suggestTags(title, bodytxt, tags))}
+              className="tag-suggest-btn"
+              style={{ marginLeft: "4px" }}
+              title="Suggest tags"
+            >
+              <Sparkles size={12} />
+            </button>
+          )}
+          {editorSuggestions.length > 0 && editorSuggestions.map((s) => (
+            <span
+              key={s}
+              className="tag tag-suggested"
+              onClick={() => {
+                setTags([...tags, s]);
+                setEditorSuggestions(editorSuggestions.filter(t => t !== s));
+                setIsDirty(true);
+              }}
+            >
+              {s} <Check size={10} />
+            </span>
+          ))}
+          {editorSuggestions.length > 0 && (
+            <button
+              onClick={() => {
+                setTags([...new Set([...tags, ...editorSuggestions])]);
+                setEditorSuggestions([]);
+                setIsDirty(true);
+              }}
+              className="tag-suggest-accept"
+              style={{ marginLeft: "2px" }}
+            >
+              All
+            </button>
+          )}
+          {editorSuggestions.length > 0 && (
+            <button onClick={() => setEditorSuggestions([])} className="tag-suggest-dismiss">
+              <X size={12} />
+            </button>
+          )}
         </div>
         <div className={`editor-bottom ${darkMode ? "editor-bottom-dark" : ""}`}>
           <button onClick={(e) => handleSaveBtn(e)} data-action={note.action} className="btn-save">
