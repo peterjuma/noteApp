@@ -20,21 +20,74 @@ const STOP_WORDS = new Set([
   "true", "false", "null", "undefined", "return", "function", "const", "let", "var",
 ]);
 
-// Known tech/topic patterns
+// Known tech/topic patterns — optimized for GitHub support & dev engineering
 const TECH_PATTERNS = {
-  javascript: ["javascript", "js", "node", "nodejs", "npm", "react", "vue", "angular", "express", "webpack", "babel"],
-  typescript: ["typescript", "ts", "tsx"],
-  python: ["python", "py", "pip", "django", "flask", "pandas", "numpy"],
-  git: ["git", "github", "gitlab", "bitbucket", "commit", "branch", "merge", "rebase", "clone", "push", "pull"],
-  docker: ["docker", "dockerfile", "container", "compose", "kubernetes", "k8s"],
-  database: ["sql", "mysql", "postgresql", "postgres", "mongodb", "redis", "database", "query", "schema", "migration"],
-  devops: ["ci", "cd", "pipeline", "deploy", "deployment", "aws", "azure", "gcp", "terraform", "ansible"],
-  api: ["api", "rest", "graphql", "endpoint", "request", "response", "http", "https", "curl", "fetch"],
-  security: ["security", "auth", "authentication", "authorization", "ssl", "tls", "certificate", "token", "jwt", "oauth"],
-  css: ["css", "scss", "sass", "tailwind", "bootstrap", "flexbox", "grid", "responsive"],
-  html: ["html", "dom", "element", "tag", "attribute"],
-  linux: ["linux", "ubuntu", "centos", "bash", "shell", "terminal", "command", "chmod", "sudo"],
-  testing: ["test", "testing", "jest", "mocha", "cypress", "playwright", "unit", "integration", "e2e"],
+  // Languages & Runtimes
+  javascript: ["javascript", "js", "node", "nodejs", "npm", "yarn", "pnpm", "react", "vue", "angular", "express", "webpack", "babel", "eslint", "prettier", "vite", "nextjs", "nuxt", "svelte", "deno", "bun"],
+  typescript: ["typescript", "ts", "tsx", "tsc", "tsconfig"],
+  python: ["python", "py", "pip", "pipenv", "poetry", "django", "flask", "fastapi", "pandas", "numpy", "pytest", "virtualenv", "conda"],
+  ruby: ["ruby", "rails", "gem", "bundler", "rake", "rspec"],
+  java: ["java", "jvm", "maven", "gradle", "spring", "springboot", "tomcat", "jar"],
+  csharp: ["csharp", "dotnet", "nuget", "aspnet", "blazor", "entity"],
+  golang: ["golang", "goroutine", "gomod"],
+  rust: ["rust", "cargo", "rustc", "tokio"],
+  php: ["php", "composer", "laravel", "symfony", "wordpress"],
+  swift: ["swift", "xcode", "ios", "cocoapods", "swiftui"],
+
+  // GitHub & Version Control
+  git: ["git", "github", "gitlab", "bitbucket", "commit", "branch", "merge", "rebase", "clone", "push", "pull", "stash", "cherry", "bisect", "reflog", "submodule", "gitignore", "gitconfig"],
+  "github-actions": ["actions", "workflow", "yaml", "yml", "runner", "artifact", "matrix", "cron"],
+  "github-pages": ["pages", "jekyll", "static", "deploy"],
+  "github-api": ["octokit", "graphql", "webhook", "oauth", "app", "installation", "token"],
+  "pull-request": ["review", "approve", "merge", "conflict", "revert", "squash", "draft"],
+  issues: ["issue", "bug", "feature", "label", "milestone", "assignee", "template", "triage"],
+  repository: ["repo", "repository", "fork", "archive", "transfer", "visibility", "collaborator", "codeowner"],
+  "code-scanning": ["codeql", "dependabot", "advisory", "vulnerability", "sarif", "sast"],
+
+  // Infrastructure & DevOps
+  docker: ["docker", "dockerfile", "container", "compose", "image", "registry", "kubernetes", "k8s", "helm", "pod", "ingress"],
+  devops: ["ci", "cd", "pipeline", "deploy", "deployment", "release", "rollback", "canary", "bluegreen"],
+  aws: ["aws", "ec2", "s3", "lambda", "rds", "ecs", "fargate", "cloudfront", "iam", "sqs", "sns", "dynamodb", "lightsail", "route53"],
+  azure: ["azure", "devops", "blob", "cosmos", "webapp"],
+  gcp: ["gcp", "firebase", "cloudrun", "bigquery", "pubsub"],
+  terraform: ["terraform", "hcl", "tfstate", "provider", "module"],
+  nginx: ["nginx", "proxy", "upstream", "loadbalancer", "reverseproxy"],
+
+  // Databases
+  database: ["sql", "mysql", "postgresql", "postgres", "pgbouncer", "mongodb", "redis", "sqlite", "nosql", "orm", "prisma", "kysely", "knex", "sequelize", "migration", "schema", "index", "query"],
+
+  // APIs & Networking
+  api: ["api", "rest", "graphql", "grpc", "endpoint", "request", "response", "http", "https", "curl", "fetch", "axios", "webhook", "websocket", "cors", "rate", "throttle", "pagination"],
+
+  // Security & Auth
+  security: ["security", "auth", "authentication", "authorization", "ssl", "tls", "certificate", "token", "jwt", "oauth", "saml", "ldap", "mfa", "rbac", "encryption", "hash", "owasp", "xss", "csrf", "injection", "pentest"],
+
+  // Frontend & UI
+  css: ["css", "scss", "sass", "less", "tailwind", "bootstrap", "flexbox", "grid", "responsive", "animation", "media"],
+  html: ["html", "dom", "element", "semantic", "accessibility", "aria", "wcag"],
+  ui: ["component", "modal", "tooltip", "dropdown", "sidebar", "navbar", "layout", "theme", "darkmode"],
+
+  // Systems & CLI
+  linux: ["linux", "ubuntu", "centos", "debian", "rhel", "bash", "shell", "zsh", "terminal", "command", "chmod", "sudo", "cron", "systemd", "ssh", "scp", "rsync"],
+  macos: ["macos", "brew", "homebrew", "xcode", "keychain"],
+  windows: ["windows", "powershell", "wsl", "cmd", "registry"],
+
+  // Testing & Quality
+  testing: ["test", "testing", "jest", "vitest", "mocha", "chai", "cypress", "playwright", "selenium", "unit", "integration", "e2e", "coverage", "mock", "stub", "fixture", "snapshot"],
+  debugging: ["debug", "debugger", "breakpoint", "stacktrace", "error", "exception", "log", "trace", "profiler", "devtools"],
+
+  // Support & Troubleshooting
+  troubleshooting: ["troubleshoot", "fix", "resolve", "workaround", "issue", "problem", "solution", "error", "failure", "timeout", "crash", "hang", "freeze", "corrupt"],
+  support: ["ticket", "escalation", "customer", "response", "template", "macro", "sla", "priority", "severity", "zendesk", "jira", "servicedesk"],
+  documentation: ["docs", "documentation", "readme", "wiki", "guide", "tutorial", "howto", "faq", "runbook", "playbook", "sop"],
+
+  // Architecture & Patterns
+  architecture: ["architecture", "microservice", "monolith", "modular", "serverless", "event", "queue", "cache", "cdn", "proxy", "gateway"],
+  performance: ["performance", "optimization", "benchmark", "latency", "throughput", "memory", "cpu", "profiling", "caching", "lazy"],
+
+  // Data & Config
+  config: ["config", "configuration", "env", "environment", "variable", "secret", "dotenv", "yaml", "json", "toml", "ini"],
+  monitoring: ["monitoring", "logging", "metrics", "alerting", "sentry", "datadog", "grafana", "prometheus", "newrelic", "splunk"],
 };
 
 // Extract code block languages
