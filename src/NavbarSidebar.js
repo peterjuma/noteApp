@@ -39,9 +39,6 @@ function NavbarSidebar(props) {
   return (
     <nav aria-label="Sidebar navigation">
       <div className="sidebar-header">
-        <button onClick={props.onToggleCollapse} className="icon-btn" title="Collapse" aria-label="Collapse sidebar">
-          <ChevronsLeft size={16} />
-        </button>
         <button
           onClick={(e) => props.handleClickHomeBtn(e)}
           className="icon-btn"
@@ -75,6 +72,9 @@ function NavbarSidebar(props) {
             title="Add Note"
           >
             <Plus size={18} style={{ pointerEvents: "none" }} />
+          </button>
+          <button onClick={props.onToggleCollapse} className="icon-btn" title="Collapse" aria-label="Collapse sidebar">
+            <ChevronsLeft size={16} />
           </button>
         </div>
       </div>
