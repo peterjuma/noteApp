@@ -1,4 +1,4 @@
-import { Copy, Pencil, Download, Trash2, Printer, FolderOutput } from "lucide-react";
+import { Download, Trash2, Printer, FolderOutput } from "lucide-react";
 
 function NavbarMain(props) {
   var isActive = props.display;
@@ -13,11 +13,11 @@ function NavbarMain(props) {
   return (
     <nav className="view-toolbar" aria-label="Note actions">
       <span className="toolbar-group">
-        <button onClick={(e) => props.handleCopyEvent(e, note.notebody)} className="icon-btn" title="Copy" aria-label="Copy note as markdown">
-          <Copy size={15} />
+        <button onClick={(e) => props.handleCopyEvent(e, note.notebody)} className="view-toolbar-text-btn" title="Copy" aria-label="Copy note as markdown">
+          Copy
         </button>
-        <button data-action="updatenote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="Edit" aria-label="Edit this note">
-          <Pencil size={15} style={{ pointerEvents: "none" }} />
+        <button data-action="updatenote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="view-toolbar-text-btn" title="Edit" aria-label="Edit this note">
+          Edit
         </button>
       </span>
       <div style={{ flex: 1 }} />
