@@ -10,6 +10,7 @@ function NavbarSidebar(props) {
     action: "addnote",
   };
   const searchRef = React.useRef();
+  const [searchVisible, setSearchVisible] = React.useState(false);
 
   if (props.sidebarCollapsed) {
     return (
@@ -25,6 +26,9 @@ function NavbarSidebar(props) {
         </button>
         <button onClick={props.onToggleArchive} className={`icon-btn ${props.viewingArchive ? "icon-btn-active" : ""}`} title="Archive" aria-label="Archive">
           <Archive size={16} />
+        </button>
+        <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search" aria-label="Toggle search">
+          <Search size={16} />
         </button>
         <button onClick={props.onOpenTableConverter} className="icon-btn" title="Tables" aria-label="Table Converter">
           <TableProperties size={16} />
@@ -68,13 +72,16 @@ function NavbarSidebar(props) {
         <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title={props.showTableConverter ? "Back to Notes" : "Table Converter"} aria-label={props.showTableConverter ? "Back to notes" : "Open table converter"}>
           {props.showTableConverter ? <StickyNote size={15} /> : <TableProperties size={15} />}
         </button>
+        <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search" aria-label="Toggle search" disabled={props.showTableConverter}>
+          <Search size={15} />
+        </button>
         <div style={{ flex: 1 }} />
         <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="New Note" aria-label="Create new note" disabled={props.showTableConverter}>
           <Plus size={16} style={{ pointerEvents: "none" }} />
         </button>
       </div>
-      {/* Search — hidden when table converter is active */}
-      {!props.showTableConverter && (
+      {/* Search — toggled via toolbar icon, hidden when table converter is active */}
+      {!props.showTableConverter && searchVisible && (
       <div className="sidebar-search">
         <Search size={14} />
         <input
@@ -82,6 +89,7 @@ function NavbarSidebar(props) {
           placeholder="Search notes, tags..."
           ref={searchRef}
           aria-label="Search notes"
+          autoFocus
           onChange={(e) => props.handleSearchNotes(e)}
         />
       </div>

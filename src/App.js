@@ -1101,6 +1101,8 @@ handleUnpinNote = async (noteid) => {
             ) : (
               // Normal notes view
               <>
+            {totalPinned > 0 && (
+            <>
             <h4
               className="section-header section-header-drop"
               onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; e.currentTarget.classList.add("section-header-dragover"); }}
@@ -1114,9 +1116,11 @@ handleUnpinNote = async (noteid) => {
                 }
               }}
             >
-              Pinned ({totalPinned}) {totalPinned === 0 && <span className="drop-hint">Drop here to pin</span>}
+              Pinned ({totalPinned})
             </h4>
-            {totalPinned > 0 && <ul>{pinnedNoteListItems}</ul>}
+            <ul>{pinnedNoteListItems}</ul>
+            </>
+            )}
 
             <h4
               className="section-header section-header-drop"
