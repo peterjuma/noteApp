@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Plus, Search, Moon, Sun, Archive, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Home, Plus, Search, Moon, Sun, Archive, ChevronsLeft, ChevronsRight, TableProperties } from "lucide-react";
 
 function NavbarSidebar(props) {
   var note = {
@@ -20,17 +20,17 @@ function NavbarSidebar(props) {
         <button onClick={(e) => props.handleClickHomeBtn(e)} className="icon-btn" title="Home" aria-label="Home">
           <Home size={18} />
         </button>
-        <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="Add Note" aria-label="Add note">
+        <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="Add" aria-label="Add note">
           <Plus size={18} style={{ pointerEvents: "none" }} />
         </button>
         <button onClick={props.onToggleArchive} className={`icon-btn ${props.viewingArchive ? "icon-btn-active" : ""}`} title="Archive" aria-label="Archive">
           <Archive size={16} />
         </button>
+        <button onClick={props.onOpenTableConverter} className="icon-btn" title="Tables" aria-label="Table Converter">
+          <TableProperties size={16} />
+        </button>
         <button onClick={props.onToggleDarkMode} className="icon-btn" title={props.darkMode ? "Light" : "Dark"} aria-label="Toggle theme">
           {props.darkMode ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
-        <button onClick={() => searchRef.current && searchRef.current.focus()} className="icon-btn" title="Search" aria-label="Search">
-          <Search size={16} />
         </button>
       </nav>
     );
@@ -38,13 +38,9 @@ function NavbarSidebar(props) {
 
   return (
     <nav aria-label="Sidebar navigation">
+      {/* Top bar: Home + Title + Collapse */}
       <div className="sidebar-header">
-        <button
-          onClick={(e) => props.handleClickHomeBtn(e)}
-          className="icon-btn"
-          title="Home"
-          aria-label="Go to home page"
-        >
+        <button onClick={(e) => props.handleClickHomeBtn(e)} className="icon-btn" title="Home" aria-label="Go to home page">
           <Home size={18} />
         </button>
         <h4 className="sidebar-title">
@@ -55,36 +51,27 @@ function NavbarSidebar(props) {
               : "Notes"
           }
         </h4>
-        <div style={{ display: "flex", gap: "2px" }}>
-          <button
-            onClick={props.onToggleArchive}
-            className={`icon-btn ${props.viewingArchive ? "icon-btn-active" : ""}`}
-            title={props.viewingArchive ? "Back to Notes" : "View Archive"}
-            aria-label={props.viewingArchive ? "Back to notes" : "View archived notes"}
-          >
-            <Archive size={16} />
-          </button>
-          <button
-            onClick={props.onToggleDarkMode}
-            className="icon-btn"
-            title={props.darkMode ? "Light Mode" : "Dark Mode"}
-            aria-label={props.darkMode ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {props.darkMode ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-          <button
-            data-action="addnote"
-            onClick={(e) => props.handleEditNoteBtn(e, note)}
-            className="icon-btn"
-            title="Add Note"
-          >
-            <Plus size={18} style={{ pointerEvents: "none" }} />
-          </button>
-          <button onClick={props.onToggleCollapse} className="icon-btn" title="Collapse" aria-label="Collapse sidebar">
-            <ChevronsLeft size={16} />
-          </button>
-        </div>
+        <button onClick={props.onToggleCollapse} className="icon-btn" title="Collapse" aria-label="Collapse sidebar">
+          <ChevronsLeft size={16} />
+        </button>
       </div>
+      {/* Action bar: Archive, Dark, TableConverter, Add */}
+      <div className="sidebar-actions">
+        <button onClick={props.onToggleArchive} className={`icon-btn ${props.viewingArchive ? "icon-btn-active" : ""}`} title={props.viewingArchive ? "Back to Notes" : "Archive"} aria-label={props.viewingArchive ? "Back to notes" : "View archive"}>
+          <Archive size={15} />
+        </button>
+        <button onClick={props.onToggleDarkMode} className="icon-btn" title={props.darkMode ? "Light Mode" : "Dark Mode"} aria-label="Toggle theme">
+          {props.darkMode ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
+        <button onClick={props.onOpenTableConverter} className="icon-btn" title="Table Converter" aria-label="Open table converter">
+          <TableProperties size={15} />
+        </button>
+        <div style={{ flex: 1 }} />
+        <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="New Note" aria-label="Create new note">
+          <Plus size={16} style={{ pointerEvents: "none" }} />
+        </button>
+      </div>
+      {/* Search */}
       <div className="sidebar-search">
         <Search size={14} />
         <input

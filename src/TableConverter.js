@@ -11,7 +11,7 @@ const FORMATS = [
   { id: "json", label: "JSON" },
 ];
 
-function TableConverter({ onClose, onInsert, darkMode }) {
+function TableConverter({ onClose, onInsert, darkMode, fullPage }) {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [fromFormat, setFromFormat] = useState("csv");
@@ -44,15 +44,14 @@ function TableConverter({ onClose, onInsert, darkMode }) {
     });
   };
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-dialog table-converter-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Table Converter</h3>
-          <button className="icon-btn" onClick={onClose} aria-label="Close"><X size={16} /></button>
-        </div>
+  const content = (
+    <>
+      <div className={fullPage ? "tc-header" : "modal-header"}>
+        <h3>Table Converter</h3>
+        <button className="icon-btn" onClick={onClose} aria-label="Close"><X size={16} /></button>
+      </div>
 
-        <div className="tc-body">
+      <div className="tc-body">
           {/* Input */}
           <div className="tc-panel">
             <div className="tc-panel-header">
@@ -95,7 +94,7 @@ function TableConverter({ onClose, onInsert, darkMode }) {
           </div>
         </div>
 
-        <div className="modal-footer">
+        <div className={fullPage ? "tc-footer" : "modal-footer"}>
           <button className="btn-cancel" onClick={onClose}>Close</button>
           <button className="btn-cancel" onClick={handleCopy} disabled={!output}>
             {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
@@ -106,6 +105,17 @@ function TableConverter({ onClose, onInsert, darkMode }) {
             </button>
           )}
         </div>
+    </>
+  );
+
+  if (fullPage) {
+    return <div className="tc-fullpage">{content}</div>;
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-dialog table-converter-modal" onClick={(e) => e.stopPropagation()}>
+        {content}
       </div>
     </div>
   );

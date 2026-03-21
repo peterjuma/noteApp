@@ -7,6 +7,7 @@ import NoteMain from "./NoteMain";
 import readmePath from "./README.md";
 import NoteEditor from "./NoteEditor";
 import ConfirmDialog from "./ConfirmDialog";
+import TableConverter from "./TableConverter";
 import hljs from "highlight.js";
 import { html2md, md2html } from "./useMarkDown";
 import { saveAs } from "file-saver";
@@ -47,6 +48,7 @@ class App extends Component {
       dialog: null,
       viewingArchive: false,
       archivedNotes: [],
+      showFullTableConverter: false,
     };
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
@@ -1047,6 +1049,7 @@ handleUnpinNote = async (noteid) => {
               return { sidebarCollapsed: next };
             })}
             onToggleArchive={this.toggleArchiveView}
+            onOpenTableConverter={() => this.setState({ showFullTableConverter: true, viewingArchive: false })}
             onToggleDarkMode={() => this.setState((s) => {
               const next = !s.darkMode;
               localStorage.setItem("noteapp_dark_mode", next);
@@ -1203,8 +1206,20 @@ handleUnpinNote = async (noteid) => {
         />
 
         <div className="main-content">
-          {RightNavbar}
-          {ActivePage}
+          {this.state.showFullTableConverter ? (
+            <div className="full-table-converter">
+              <TableConverter
+                darkMode={this.state.darkMode}
+                fullPage
+                onClose={() => this.setState({ showFullTableConverter: false })}
+              />
+            </div>
+          ) : (
+            <>
+              {RightNavbar}
+              {ActivePage}
+            </>
+          )}
         </div>
 
         {/* Navigation confirm dialog */}
