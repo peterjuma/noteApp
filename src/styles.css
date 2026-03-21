@@ -344,8 +344,8 @@ a:hover { text-decoration: underline; }
   border-bottom: 1px solid #e5e7eb;
   background: #fff;
   flex-shrink: 0;
-  height: 44px;
-  min-height: 44px;
+  height: 36px;
+  min-height: 36px;
 }
 .dark .view-toolbar { background: #1f2937; border-color: #374151; }
 .toolbar-group {
