@@ -14,7 +14,7 @@ function NavbarSidebar(props) {
   if (props.sidebarCollapsed) {
     return (
       <nav aria-label="Sidebar navigation" className="sidebar-collapsed-nav">
-        <button onClick={props.onToggleCollapse} className="icon-btn" title="Expand sidebar" aria-label="Expand sidebar">
+        <button onClick={props.onToggleCollapse} className="icon-btn" title="Expand" aria-label="Expand sidebar">
           <ChevronsRight size={18} />
         </button>
         <button onClick={(e) => props.handleClickHomeBtn(e)} className="icon-btn" title="Home" aria-label="Home">
@@ -39,7 +39,7 @@ function NavbarSidebar(props) {
   return (
     <nav aria-label="Sidebar navigation">
       <div className="sidebar-header">
-        <button onClick={props.onToggleCollapse} className="icon-btn" title="Collapse sidebar" aria-label="Collapse sidebar">
+        <button onClick={props.onToggleCollapse} className="icon-btn" title="Collapse" aria-label="Collapse sidebar">
           <ChevronsLeft size={16} />
         </button>
         <button
