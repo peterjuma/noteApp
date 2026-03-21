@@ -927,6 +927,7 @@ handleUnpinNote = async (noteid) => {
       RightNavbar = <NavbarMain display={false} />;
       ActivePage = (
         <NoteEditor
+          key={this.state.noteid || "new-" + this.state.action}
           editNoteData={{
             noteid: this.state.noteid,
             notetitle: this.state.notetitle,

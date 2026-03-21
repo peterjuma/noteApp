@@ -289,25 +289,25 @@ function NoteEditor(props) {
           }
         }
 
-        // HTML → Markdown conversion
+        // HTML → Markdown conversion (only for rich HTML, not plain/markdown text)
         const htmlContent = clipboard.getData("text/html");
-        const textContent = clipboard.getData("text/plain");
-        let pasteData;
         if (htmlContent) {
-          html2md.keep(["pre", "code"]);
-          pasteData = html2md.turndown(htmlContent);
-        } else if (textContent && /<[a-z][\s\S]*>/i.test(textContent)) {
-          pasteData = html2md.turndown(textContent);
-        } else {
-          return false;
+          // Check if the HTML contains actual rich formatting tags (not just a text wrapper)
+          const hasRichHtml = /<(?:p|div|span|br|h[1-6]|ul|ol|li|table|tr|td|th|a|img|pre|code|blockquote|strong|em|b|i|hr)\b/i.test(htmlContent);
+          if (hasRichHtml) {
+            html2md.keep(["pre", "code"]);
+            const pasteData = html2md.turndown(htmlContent);
+            event.preventDefault();
+            const { from, to } = view.state.selection.main;
+            view.dispatch({
+              changes: { from, to, insert: pasteData },
+              selection: { anchor: from + pasteData.length },
+            });
+            return true;
+          }
         }
-        event.preventDefault();
-        const { from, to } = view.state.selection.main;
-        view.dispatch({
-          changes: { from, to, insert: pasteData },
-          selection: { anchor: from + pasteData.length },
-        });
-        return true;
+        // Plain text or markdown — let CodeMirror handle it normally
+        return false;
       },
       drop(event, view) {
         const files = event.dataTransfer ? Array.from(event.dataTransfer.files) : [];
