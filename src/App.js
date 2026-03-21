@@ -1060,6 +1060,9 @@ handleUnpinNote = async (noteid) => {
               localStorage.setItem("noteapp_dark_mode", next);
               return { darkMode: next };
             })}
+            handleNotesBackup={this.handleNotesBackup}
+            handleNotesUpload={this.handleNotesUpload}
+            handleZipImport={this.handleZipImport}
           />
 
           {!this.state.showFullTableConverter && (

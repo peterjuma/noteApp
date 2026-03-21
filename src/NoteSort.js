@@ -1,17 +1,11 @@
 import React from "react";
-import { Upload, Download, ArrowUpDown, ArrowLeftRight, Plus, X, Check, Trash2, PencilLine, FolderUp } from "lucide-react";
+import { ArrowUpDown, ArrowLeftRight, Plus, X, Check, Trash2, PencilLine } from "lucide-react";
 
 function NoteSort(props) {
-  const fileInputRef = React.useRef(null);
-  const zipInputRef = React.useRef(null);
   const [showNewModal, setShowNewModal] = React.useState(false);
   const [showSwitchModal, setShowSwitchModal] = React.useState(false);
   const [wsName, setWsName] = React.useState("");
   const inputRef = React.useRef(null);
-
-  const triggerFileInputClick = () => {
-    fileInputRef.current.click();
-  };
 
   const openNewModal = () => {
     setWsName("");
@@ -70,19 +64,7 @@ function NoteSort(props) {
               {props.sortby === "manual" && <option value="manual">Manual</option>}
             </select>
           </div>
-          <div className="sort-bar-right">
-            <input ref={fileInputRef} type="file" accept=".md" className="hidden" aria-label="Select markdown file" onChange={props.handleNotesUpload} />
-            <input ref={zipInputRef} type="file" accept=".zip" className="hidden" aria-label="Select ZIP archive" onChange={props.handleZipImport} />
-            <button onClick={triggerFileInputClick} className="icon-btn tooltip-up" title="Upload Note" aria-label="Upload a markdown note">
-              <Upload size={14} />
-            </button>
-            <button onClick={() => zipInputRef.current.click()} className="icon-btn tooltip-up" title="Import Archive" aria-label="Import notes from ZIP archive">
-              <FolderUp size={14} />
-            </button>
-            <button onClick={props.handleNotesBackup} className="icon-btn tooltip-up" title="Download Backup" aria-label="Download all notes as ZIP">
-              <Download size={14} />
-            </button>
-          </div>
+
         </div>
       </div>
 
