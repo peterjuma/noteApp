@@ -349,17 +349,6 @@ a:hover { text-decoration: underline; }
   min-height: 44px;
 }
 .dark .view-toolbar { background: #1f2937; border-color: #374151; }
-.view-toolbar-edit {
-  font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
-  padding: 4px 10px;
-  border-radius: 6px;
-  transition: all 0.15s ease;
-}
-.view-toolbar-edit:hover { color: #111827; background: #f3f4f6; }
-.dark .view-toolbar-edit { color: #9ca3af; }
-.dark .view-toolbar-edit:hover { color: #f3f4f6; background: #374151; }
 .toolbar-group {
   display: flex;
   align-items: center;
