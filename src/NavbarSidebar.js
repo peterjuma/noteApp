@@ -44,11 +44,13 @@ function NavbarSidebar(props) {
           <Home size={18} />
         </button>
         <h4 className="sidebar-title">
-          {props.viewingArchive
-            ? "Archive"
-            : props.workspaceName && props.workspaceName !== "Default"
-              ? `${props.workspaceName} Notes`
-              : "Notes"
+          {props.showTableConverter
+            ? "Table Converter"
+            : props.viewingArchive
+              ? "Archive"
+              : props.workspaceName && props.workspaceName !== "Default"
+                ? `${props.workspaceName} Notes`
+                : "Notes"
           }
         </h4>
         <button onClick={props.onToggleCollapse} className="icon-btn" title="Collapse" aria-label="Collapse sidebar">
@@ -57,21 +59,22 @@ function NavbarSidebar(props) {
       </div>
       {/* Action bar: Archive, Dark, TableConverter, Add */}
       <div className="sidebar-actions">
-        <button onClick={props.onToggleArchive} className={`icon-btn ${props.viewingArchive ? "icon-btn-active" : ""}`} title={props.viewingArchive ? "Back to Notes" : "Archive"} aria-label={props.viewingArchive ? "Back to notes" : "View archive"}>
+        <button onClick={props.onToggleArchive} className={`icon-btn ${props.viewingArchive ? "icon-btn-active" : ""}`} title={props.viewingArchive ? "Back to Notes" : "Archive"} aria-label={props.viewingArchive ? "Back to notes" : "View archive"} disabled={props.showTableConverter}>
           <Archive size={15} />
         </button>
         <button onClick={props.onToggleDarkMode} className="icon-btn" title={props.darkMode ? "Light Mode" : "Dark Mode"} aria-label="Toggle theme">
           {props.darkMode ? <Sun size={15} /> : <Moon size={15} />}
         </button>
-        <button onClick={props.onOpenTableConverter} className="icon-btn" title="Table Converter" aria-label="Open table converter">
+        <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title="Table Converter" aria-label="Open table converter">
           <TableProperties size={15} />
         </button>
         <div style={{ flex: 1 }} />
-        <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="New Note" aria-label="Create new note">
+        <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="New Note" aria-label="Create new note" disabled={props.showTableConverter}>
           <Plus size={16} style={{ pointerEvents: "none" }} />
         </button>
       </div>
-      {/* Search */}
+      {/* Search — hidden when table converter is active */}
+      {!props.showTableConverter && (
       <div className="sidebar-search">
         <Search size={14} />
         <input
@@ -82,6 +85,7 @@ function NavbarSidebar(props) {
           onChange={(e) => props.handleSearchNotes(e)}
         />
       </div>
+      )}
     </nav>
   );
 }

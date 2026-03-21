@@ -1041,6 +1041,7 @@ handleUnpinNote = async (noteid) => {
             handleSearchNotes={this.handleSearchNotes}
             darkMode={this.state.darkMode}
             viewingArchive={this.state.viewingArchive}
+            showTableConverter={this.state.showFullTableConverter}
             workspaceName={(this.state.workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default"}
             sidebarCollapsed={this.state.sidebarCollapsed}
             onToggleCollapse={() => this.setState((s) => {
@@ -1057,6 +1058,7 @@ handleUnpinNote = async (noteid) => {
             })}
           />
 
+          {!this.state.showFullTableConverter && (
           <div className="sidebar-scroll">
             {this.state.viewingArchive ? (
               // Archive view
@@ -1144,7 +1146,9 @@ handleUnpinNote = async (noteid) => {
               </>
             )}
           </div>
+          )}
 
+          {!this.state.showFullTableConverter && (
           <NoteSort
             handleSortNotes={this.handleSortNotes}
             sortby={this.state.sortby}
@@ -1159,6 +1163,7 @@ handleUnpinNote = async (noteid) => {
             handleDeleteWorkspace={this.handleDeleteWorkspace}
             showConfirm={this.showConfirm}
           />
+          )}
         </div>
 
         {/* Resize handle */}
