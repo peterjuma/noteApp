@@ -31,7 +31,7 @@ a:hover { text-decoration: underline; }
 /* ===== Sidebar ===== */
 .sidebar {
   width: 260px;
-  min-width: 180px;
+  min-width: 260px;
   max-width: 500px;
   flex-shrink: 0;
   display: flex;
@@ -93,11 +93,11 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
   justify-content: space-evenly;
-  padding: 0 4px;
+  padding: 2px 4px;
   border-bottom: 1px solid #e5e7eb;
   background: #f9fafb;
-  height: 36px;
   min-height: 36px;
+  overflow: hidden;
 }
 .dark .sidebar-actions { background: #111827; border-color: #374151; }
 .toolbar-group {
