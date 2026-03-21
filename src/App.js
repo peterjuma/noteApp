@@ -42,6 +42,7 @@ class App extends Component {
       sidebarCollapsed: localStorage.getItem("noteapp_sidebar_collapsed") === "true",
       sidebarWidth: parseInt(localStorage.getItem("noteapp_sidebar_width")) || 260,
       pendingNav: null,
+      pendingEdit: null,
       showNavConfirm: false,
       dialog: null,
       viewingArchive: false,
@@ -264,8 +265,11 @@ handleUnpinNote = async (noteid) => {
   };
 
   handleNavConfirmDiscard = () => {
-    const note = this.state.pendingNav;
-    if (note) this._navigateToNote(note);
+    const nav = this.state.pendingNav;
+    const edit = this.state.pendingEdit;
+    this.setState({ pendingNav: null, pendingEdit: null, showNavConfirm: false });
+    if (nav) this._navigateToNote(nav);
+    if (edit) this._openEditor(edit.note, edit.isNew, edit.action);
   };
 
   handleNavConfirmSave = () => {
@@ -273,11 +277,12 @@ handleUnpinNote = async (noteid) => {
     if (window.__noteEditorSave) {
       window.__noteEditorSave();
     }
-    // Then navigate
-    const note = this.state.pendingNav;
-    if (note) {
-      setTimeout(() => this._navigateToNote(note), 150);
-    }
+    const nav = this.state.pendingNav;
+    const edit = this.state.pendingEdit;
+    setTimeout(() => {
+      if (nav) this._navigateToNote(nav);
+      if (edit) this._openEditor(edit.note, edit.isNew, edit.action);
+    }, 150);
   };
 
   handleNavConfirmCancel = () => {
@@ -551,12 +556,30 @@ handleUnpinNote = async (noteid) => {
 
   handleEditNoteBtn = (e, note) => {
     const isNew = e.target.dataset.action === "addnote";
+
+    // Guard: if already editing, show save/discard dialog
+    if (this.state.activepage === "editnote") {
+      this.setState({
+        showNavConfirm: true,
+        pendingNav: null,
+        pendingEdit: { note, isNew, action: e.target.dataset.action },
+      });
+      return;
+    }
+
+    this._openEditor(note, isNew, e.target.dataset.action);
+  };
+
+  _openEditor = (note, isNew, action) => {
     this.setState({
-      noteid: isNew ? note.noteid : note.noteid,
+      noteid: note.noteid,
       notetitle: isNew ? "" : note.notetitle,
       notebody: isNew ? "" : note.notebody,
       activepage: "editnote",
-      action: e.target.dataset.action,
+      action: action,
+      showNavConfirm: false,
+      pendingNav: null,
+      pendingEdit: null,
     });
     // Clear URL hash during editing
     window.history.replaceState(null, "", window.location.pathname);
