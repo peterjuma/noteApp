@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowUpDown, ArrowLeftRight, Plus, X, Check, Trash2, PencilLine } from "lucide-react";
+import { ArrowLeftRight, Plus, X, Check, Trash2, PencilLine } from "lucide-react";
 
 function NoteSort(props) {
   const [showNewModal, setShowNewModal] = React.useState(false);
@@ -48,7 +48,7 @@ function NoteSort(props) {
         {/* Sort & actions */}
         <div className="sort-bar">
           <div className="sort-bar-left">
-            <ArrowUpDown size={13} />
+            <span className="sort-label">Sort:</span>
             <select
               id="sort-selection"
               value={props.sortby || "4"}

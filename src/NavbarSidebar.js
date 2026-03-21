@@ -71,33 +71,40 @@ function NavbarSidebar(props) {
           <ChevronsLeft size={16} />
         </button>
       </div>
-      {/* Action bar: Archive, Dark, TableConverter, Add */}
+      {/* Action bar */}
       <div className="sidebar-actions">
-        <button onClick={props.onToggleArchive} className={`icon-btn ${props.viewingArchive ? "icon-btn-active" : ""}`} title={props.viewingArchive ? "Back to Notes" : "Archive"} aria-label={props.viewingArchive ? "Back to notes" : "View archive"} disabled={props.showTableConverter}>
-          <Archive size={15} />
-        </button>
-        <button onClick={props.onToggleDarkMode} className="icon-btn" title={props.darkMode ? "Light Mode" : "Dark Mode"} aria-label="Toggle theme">
-          {props.darkMode ? <Sun size={15} /> : <Moon size={15} />}
-        </button>
-        <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title={props.showTableConverter ? "Back to Notes" : "Table Converter"} aria-label={props.showTableConverter ? "Back to notes" : "Open table converter"}>
-          {props.showTableConverter ? <StickyNote size={15} /> : <TableProperties size={15} />}
-        </button>
-        <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search" aria-label="Toggle search" disabled={props.showTableConverter}>
-          <Search size={15} />
-        </button>
-        <button onClick={() => fileInputRef.current.click()} className="icon-btn" title="Upload Note" aria-label="Upload a markdown note" disabled={props.showTableConverter}>
-          <Upload size={15} />
-        </button>
-        <button onClick={() => zipInputRef.current.click()} className="icon-btn" title="Import Archive" aria-label="Import notes from ZIP archive" disabled={props.showTableConverter}>
-          <FolderUp size={15} />
-        </button>
-        <button onClick={props.handleNotesBackup} className="icon-btn" title="Download Backup" aria-label="Download all notes as ZIP" disabled={props.showTableConverter}>
-          <Download size={15} />
-        </button>
-        <div style={{ flex: 1 }} />
-        <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="New Note" aria-label="Create new note" disabled={props.showTableConverter}>
-          <Plus size={16} style={{ pointerEvents: "none" }} />
-        </button>
+        <span className="toolbar-group">
+          <button onClick={props.onToggleArchive} className={`icon-btn ${props.viewingArchive ? "icon-btn-active" : ""}`} title={props.viewingArchive ? "Back to Notes" : "Archive"} aria-label={props.viewingArchive ? "Back to notes" : "View archive"} disabled={props.showTableConverter}>
+            <Archive size={15} />
+          </button>
+          <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title={props.showTableConverter ? "Back to Notes" : "Table Converter"} aria-label={props.showTableConverter ? "Back to notes" : "Open table converter"}>
+            {props.showTableConverter ? <StickyNote size={15} /> : <TableProperties size={15} />}
+          </button>
+        </span>
+        <span className="toolbar-divider" />
+        <span className="toolbar-group">
+          <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search" aria-label="Toggle search" disabled={props.showTableConverter}>
+            <Search size={15} />
+          </button>
+          <button onClick={() => fileInputRef.current.click()} className="icon-btn" title="Upload Note" aria-label="Upload a markdown note" disabled={props.showTableConverter}>
+            <Upload size={15} />
+          </button>
+          <button onClick={() => zipInputRef.current.click()} className="icon-btn" title="Import Archive" aria-label="Import notes from ZIP archive" disabled={props.showTableConverter}>
+            <FolderUp size={15} />
+          </button>
+          <button onClick={props.handleNotesBackup} className="icon-btn" title="Download Backup" aria-label="Download all notes as ZIP" disabled={props.showTableConverter}>
+            <Download size={15} />
+          </button>
+        </span>
+        <span className="toolbar-divider" />
+        <span className="toolbar-group">
+          <button onClick={props.onToggleDarkMode} className="icon-btn" title={props.darkMode ? "Light Mode" : "Dark Mode"} aria-label="Toggle theme">
+            {props.darkMode ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+          <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="New Note" aria-label="Create new note" disabled={props.showTableConverter}>
+            <Plus size={16} style={{ pointerEvents: "none" }} />
+          </button>
+        </span>
       </div>
       {/* Search — toggled via toolbar icon, hidden when table converter is active */}
       {!props.showTableConverter && searchVisible && (

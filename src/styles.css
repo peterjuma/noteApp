@@ -92,12 +92,24 @@ a:hover { text-decoration: underline; }
 .sidebar-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 3px 8px;
+  justify-content: space-evenly;
+  padding: 4px 4px;
   border-bottom: 1px solid #e5e7eb;
   background: #f9fafb;
 }
 .dark .sidebar-actions { background: #111827; border-color: #374151; }
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+.toolbar-divider {
+  width: 1px;
+  height: 16px;
+  background: #d1d5db;
+  flex-shrink: 0;
+}
+.dark .toolbar-divider { background: #374151; }
 
 .sidebar-title {
   font-size: 12px;
@@ -229,6 +241,7 @@ a:hover { text-decoration: underline; }
 .workspace-bar {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 5px 12px;
   font-size: 11px;
@@ -241,6 +254,17 @@ a:hover { text-decoration: underline; }
   font-weight: 500;
   color: #9ca3af;
   flex-shrink: 0;
+  display: inline-block;
+  width: 68px;
+  text-align: right;
+}
+.sort-label {
+  font-weight: 500;
+  color: #9ca3af;
+  flex-shrink: 0;
+  display: inline-block;
+  width: 68px;
+  text-align: right;
 }
 .workspace-name {
   font-weight: 600;
@@ -271,7 +295,7 @@ a:hover { text-decoration: underline; }
 .sort-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 4px 12px;
   background: #f9fafb;
 }
