@@ -948,6 +948,7 @@ handleUnpinNote = async (noteid) => {
             handleSearchNotes={this.handleSearchNotes}
             darkMode={this.state.darkMode}
             viewingArchive={this.state.viewingArchive}
+            workspaceName={(this.state.workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default"}
             sidebarCollapsed={this.state.sidebarCollapsed}
             onToggleCollapse={() => this.setState((s) => {
               const next = !s.sidebarCollapsed;

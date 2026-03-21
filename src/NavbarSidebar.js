@@ -47,7 +47,14 @@ function NavbarSidebar(props) {
         >
           <Home size={18} />
         </button>
-        <h4 className="sidebar-title">{props.viewingArchive ? "Archive" : "Notes"}</h4>
+        <h4 className="sidebar-title">
+          {props.viewingArchive
+            ? "Archive"
+            : props.workspaceName && props.workspaceName !== "Default"
+              ? `${props.workspaceName}`
+              : "Notes"
+          }
+        </h4>
         <div style={{ display: "flex", gap: "2px" }}>
           <button
             onClick={props.onToggleArchive}
