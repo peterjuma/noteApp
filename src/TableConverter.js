@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { convert, detectFormat } from "./services/tableConverter";
-import { X, Copy, ArrowDown, Check } from "lucide-react";
+import { X, Copy, Check } from "lucide-react";
 
 const FORMATS = [
   { id: "csv", label: "CSV" },
@@ -74,15 +74,19 @@ function TableConverter({ onClose, onInsert, darkMode, fullPage }) {
           />
         </div>
 
-        {/* Convert bar */}
+        {/* Format tabs + actions */}
         <div className="tc-convert-bar">
-          <button onClick={handleConvert} className="tc-convert-btn" title="Convert">
-            <ArrowDown size={16} /> Convert
-          </button>
-          <span className="tc-arrow-label">to</span>
-          <select value={toFormat} onChange={(e) => { setToFormat(e.target.value); if (input.trim()) setOutput(convert(input, fromFormat, e.target.value)); }} className="tc-select">
-            {FORMATS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-          </select>
+          <div className="tc-format-tabs">
+            {FORMATS.map(f => (
+              <button
+                key={f.id}
+                className={`tc-tab ${toFormat === f.id ? "tc-tab-active" : ""}`}
+                onClick={() => { setToFormat(f.id); if (input.trim()) setOutput(convert(input, fromFormat, f.id)); }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
           <div style={{ flex: 1 }} />
           <button className="btn-cancel" onClick={handleCopy} disabled={!output} style={{ padding: "4px 12px", fontSize: "12px" }}>
             {copied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}

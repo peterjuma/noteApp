@@ -1050,7 +1050,11 @@ handleUnpinNote = async (noteid) => {
               return { sidebarCollapsed: next };
             })}
             onToggleArchive={this.toggleArchiveView}
-            onOpenTableConverter={() => this.setState((s) => ({ showFullTableConverter: !s.showFullTableConverter, viewingArchive: false }))}
+            onOpenTableConverter={() => this.setState((s) => {
+              const next = !s.showFullTableConverter;
+              if (next) window.history.replaceState(null, "", window.location.pathname);
+              return { showFullTableConverter: next, viewingArchive: false };
+            })}
             onToggleDarkMode={() => this.setState((s) => {
               const next = !s.darkMode;
               localStorage.setItem("noteapp_dark_mode", next);
