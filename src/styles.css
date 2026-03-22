@@ -1687,9 +1687,7 @@ a:hover { text-decoration: underline; }
 
 /* ===== Slash Command Palette ===== */
 .slash-menu {
-  position: absolute;
-  bottom: 40px;
-  left: 20px;
+  position: fixed;
   width: 260px;
   max-height: 320px;
   overflow-y: auto;

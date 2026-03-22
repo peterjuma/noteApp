@@ -409,7 +409,14 @@ function NoteEditor(props) {
         const textBefore = line.text.slice(0, head - line.from);
         const slashMatch = textBefore.match(/^\/?(\w*)$/);
         if (slashMatch && textBefore.startsWith("/")) {
-          setSlashMenuRef.current({ pos: head, filter: slashMatch[1] || "" });
+          // Get cursor screen position for menu placement
+          const coords = update.view.coordsAtPos(head);
+          setSlashMenuRef.current({
+            pos: head,
+            filter: slashMatch[1] || "",
+            cursorTop: coords ? coords.bottom : 0,
+            cursorLeft: coords ? coords.left : 0,
+          });
         } else {
           setSlashMenuRef.current(null);
         }
@@ -793,7 +800,14 @@ function NoteEditor(props) {
                 const hasResults = filteredCmds.length > 0 || filteredSnippets.length > 0;
 
                 return hasResults ? (
-                  <div className={`slash-menu ${darkMode ? "slash-menu-dark" : ""}`} ref={slashMenuRef}>
+                  <div
+                    className={`slash-menu ${darkMode ? "slash-menu-dark" : ""}`}
+                    ref={slashMenuRef}
+                    style={{
+                      top: slashMenu.cursorTop ? slashMenu.cursorTop + 4 : undefined,
+                      left: slashMenu.cursorLeft ? slashMenu.cursorLeft : undefined,
+                    }}
+                  >
                     {filteredCmds.map((cmd) => (
                       <button
                         key={cmd.id}
