@@ -54,6 +54,7 @@ class App extends Component {
       showTableConverter: false,
       autoSave: localStorage.getItem("noteapp_autosave") === "true",
       tagSuggestEnabled: localStorage.getItem("noteapp_tag_suggest") !== "false",
+      vimMode: localStorage.getItem("noteapp_vim_mode") === "true",
     };
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
@@ -1031,6 +1032,7 @@ handleUnpinNote = async (noteid) => {
             return { autoSave: next };
           })}
           tagSuggestEnabled={this.state.tagSuggestEnabled}
+          vimMode={this.state.vimMode}
           showConfirm={this.showConfirm}
           handleEditNoteBtn={this.handleEditNoteBtn}
           handleSaveNote={this.handleSaveNote}
@@ -1272,6 +1274,12 @@ handleUnpinNote = async (noteid) => {
                 const next = !s.tagSuggestEnabled;
                 localStorage.setItem("noteapp_tag_suggest", next);
                 return { tagSuggestEnabled: next };
+              })}
+              vimMode={this.state.vimMode}
+              onToggleVimMode={() => this.setState((s) => {
+                const next = !s.vimMode;
+                localStorage.setItem("noteapp_vim_mode", next);
+                return { vimMode: next };
               })}
               workspaces={this.state.workspaces}
               activeDb={this.state.activeDb}

@@ -1759,6 +1759,40 @@ a:hover { text-decoration: underline; }
 .dark .settings-snippet-textarea { border-color: #4b5563; color: #d1d5db; }
 .settings-snippet-textarea:focus { border-color: #2563eb; }
 
+/* ===== Variable Prompt Dialog ===== */
+.var-prompt-dialog { max-width: 400px; }
+.var-prompt-field { margin-bottom: 12px; }
+.var-prompt-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 4px;
+  text-transform: capitalize;
+}
+.dark .var-prompt-label { color: #d1d5db; }
+.var-prompt-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  background: transparent;
+  color: #374151;
+}
+.dark .var-prompt-input { border-color: #4b5563; color: #d1d5db; }
+.var-prompt-input:focus { border-color: #2563eb; }
+
+/* ===== Footnotes ===== */
+.markdown-body .footnotes { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; font-size: 0.875em; }
+.dark .markdown-body .footnotes { border-color: #30363d; }
+.markdown-body .footnotes ol { padding-left: 1.5rem; }
+.markdown-body .footnotes li { margin-bottom: 0.5rem; }
+.markdown-body sup a.footnote-ref { font-size: 0.75em; color: #2563eb; text-decoration: none; }
+.dark .markdown-body sup a.footnote-ref { color: #60a5fa; }
+.markdown-body a.footnote-backref { text-decoration: none; margin-left: 4px; }
+
 /* ===== Copy HTML Feedback ===== */
 .copy-feedback { color: #059669 !important; }
 .view-toolbar-text-btn { position: relative; }

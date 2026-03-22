@@ -9,6 +9,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { oneDark } from "@codemirror/theme-one-dark";
 import { searchKeymap } from "@codemirror/search";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
+import { vim } from "@replit/codemirror-vim";
 import * as noteDB from "./services/notesDB";
 import { suggestTags } from "./services/tagSuggester";
 import { ensureDefaults as loadSnippets } from "./services/snippets";
@@ -70,6 +71,7 @@ function NoteEditor(props) {
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [langFilter, setLangFilter] = useState("");
   const [slashMenu, setSlashMenu] = useState(null); // { pos, filter }
+  const [varPrompt, setVarPrompt] = useState(null); // { variables: [{name, value}], template, from, to }
   const langPickerRef = useRef(null);
   const slashMenuRef = useRef(null);
   const titleRef = useRef();
@@ -355,6 +357,21 @@ function NoteEditor(props) {
     const slashStart = line.text.lastIndexOf("/");
     const from = slashStart >= 0 ? line.from + slashStart : slashMenu.pos;
     const to = view.state.selection.main.head;
+
+    // Check for {{variable}} placeholders in template content
+    const varMatches = [...new Set((cmd.insert.match(/\{\{(\w+)\}\}/g) || []).map(m => m.slice(2, -2)))];
+    if (varMatches.length > 0) {
+      // Show variable prompt dialog
+      setVarPrompt({
+        variables: varMatches.map(name => ({ name, value: "" })),
+        template: cmd.insert,
+        from,
+        to,
+      });
+      setSlashMenu(null);
+      return;
+    }
+
     view.dispatch({
       changes: { from, to, insert: cmd.insert },
       selection: { anchor: from + cmd.insert.length },
@@ -363,8 +380,25 @@ function NoteEditor(props) {
     view.focus();
   }, [slashMenu]);
 
+  // Insert template after variable prompt is filled
+  const handleVarPromptInsert = useCallback(() => {
+    if (!varPrompt) return;
+    const view = viewRef.current;
+    if (!view) return;
+    let text = varPrompt.template;
+    for (const v of varPrompt.variables) {
+      text = text.replaceAll(`{{${v.name}}}`, v.value || `{{${v.name}}}`);
+    }
+    view.dispatch({
+      changes: { from: varPrompt.from, to: varPrompt.to, insert: text },
+      selection: { anchor: varPrompt.from + text.length },
+    });
+    setVarPrompt(null);
+    view.focus();
+  }, [varPrompt]);
+
   // Create CodeMirror extensions with GitHub-like keyboard shortcuts
-  const createExtensions = useCallback((isDark) => {
+  const createExtensions = useCallback((isDark, useVim) => {
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         setBodyTxt(update.state.doc.toString());
@@ -514,6 +548,7 @@ function NoteEditor(props) {
       }),
     ];
     if (isDark) exts.push(oneDark);
+    if (useVim) exts.push(vim());
     return exts;
   }, []);
 
@@ -529,7 +564,8 @@ function NoteEditor(props) {
       viewRef.current.destroy();
       viewRef.current = null;
     }
-    const state = EditorState.create({ doc: docRef.current, extensions: createExtensions(darkMode) });
+    const vimMode = props.vimMode;
+    const state = EditorState.create({ doc: docRef.current, extensions: createExtensions(darkMode, vimMode) });
     viewRef.current = new EditorView({ state, parent: editorRef.current });
     // Auto-focus the editor (especially for new notes)
     setTimeout(() => viewRef.current && viewRef.current.focus(), 50);
@@ -540,7 +576,7 @@ function NoteEditor(props) {
         viewRef.current = null;
       }
     };
-  }, [darkMode, showPreview, createExtensions, initialBody]);
+  }, [darkMode, showPreview, createExtensions, initialBody, props.vimMode]);
 
   // Resolve noteapp-img: references in preview panels
   const previewRef = useRef(null);
@@ -953,6 +989,54 @@ function NoteEditor(props) {
             }
           }}
         />
+      )}
+
+      {/* Variable Prompt Dialog */}
+      {varPrompt && (
+        <div className="modal-overlay" onClick={() => setVarPrompt(null)}>
+          <div className={`modal-dialog var-prompt-dialog ${darkMode ? "var-prompt-dark" : ""}`} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Fill in template variables</h3>
+            </div>
+            <div className="modal-body">
+              {varPrompt.variables.map((v, i) => (
+                <div key={v.name} className="var-prompt-field">
+                  <label className="var-prompt-label">{v.name.replace(/_/g, " ")}</label>
+                  <input
+                    type="text"
+                    className="var-prompt-input"
+                    placeholder={v.name}
+                    value={v.value}
+                    autoFocus={i === 0}
+                    onChange={(e) => {
+                      setVarPrompt((prev) => ({
+                        ...prev,
+                        variables: prev.variables.map((pv, pi) =>
+                          pi === i ? { ...pv, value: e.target.value } : pv
+                        ),
+                      }));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        // Move to next field or insert
+                        if (i < varPrompt.variables.length - 1) {
+                          e.target.parentNode.nextSibling?.querySelector("input")?.focus();
+                        } else {
+                          handleVarPromptInsert();
+                        }
+                      }
+                      if (e.key === "Escape") setVarPrompt(null);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="modal-footer">
+              <button className="btn-cancel" onClick={() => setVarPrompt(null)}>Cancel</button>
+              <button className="btn-save" onClick={handleVarPromptInsert}>Insert</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

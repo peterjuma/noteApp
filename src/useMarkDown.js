@@ -3,6 +3,7 @@ import markdownitEmoji from "markdown-it-emoji";
 import markdownitTaskLists from "markdown-it-task-lists";
 import markdownitAnchor from "markdown-it-anchor";
 import markdownitKatex from "markdown-it-katex";
+import markdownitFootnote from "markdown-it-footnote";
 import MarkdownIt from "markdown-it";
 import TurndownService from "turndown";
 import * as turndownPluginGfm from "turndown-plugin-gfm";
@@ -90,6 +91,7 @@ const md2html = new MarkdownIt({
 md2html.use(markdownitEmoji);
 md2html.use(markdownitTaskLists);
 md2html.use(markdownitKatex);
+md2html.use(markdownitFootnote);
 md2html.use(markdownitAnchor, {
   permalink: false,
   slugify: (s) =>

@@ -13,6 +13,8 @@ function SettingsPanel({
   onToggleAutoSave,
   tagSuggestEnabled,
   onToggleTagSuggest,
+  vimMode,
+  onToggleVimMode,
   workspaces,
   activeDb,
   onSwitchWorkspace,
@@ -162,6 +164,23 @@ function SettingsPanel({
                 onClick={onToggleTagSuggest}
                 role="switch"
                 aria-checked={tagSuggestEnabled}
+              >
+                <span className="settings-switch-thumb" />
+              </button>
+            </label>
+
+            <label className="settings-toggle-row">
+              <div className="settings-toggle-info">
+                <span className="settings-toggle-label">
+                  ⌨️ Vim Keybindings
+                </span>
+                <span className="settings-toggle-hint">Enable Vim-style keyboard navigation in the editor</span>
+              </div>
+              <button
+                className={`settings-switch ${vimMode ? "settings-switch-on" : ""}`}
+                onClick={onToggleVimMode}
+                role="switch"
+                aria-checked={vimMode}
               >
                 <span className="settings-switch-thumb" />
               </button>
