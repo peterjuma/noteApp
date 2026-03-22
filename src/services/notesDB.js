@@ -237,3 +237,56 @@ export async function getArchiveCount() {
   const archiveDb = await getArchiveDB();
   return (await archiveDb.getAll("archived")).length;
 }
+
+// Purge all archived notes
+export async function purgeArchive() {
+  const archiveDb = await getArchiveDB();
+  const tx = archiveDb.transaction("archived", "readwrite");
+  await tx.store.clear();
+  await tx.done;
+}
+
+// Purge all notes in a specific workspace (keeps the workspace itself)
+export async function purgeWorkspace(dbName) {
+  const db = await getDB(dbName);
+  const tx = db.transaction(["notes", "pinnedNotes", "images"], "readwrite");
+  await tx.objectStore("notes").clear();
+  await tx.objectStore("pinnedNotes").clear();
+  await tx.objectStore("images").clear();
+  await tx.done;
+}
+
+// Delete a workspace entirely (remove DB + workspace entry)
+export async function deleteWorkspaceDB(dbName) {
+  if (dbName === "notesdb") return; // Can't delete default
+  // Close connection if it's the active one
+  if (dbInstance && currentDbName === dbName) {
+    dbInstance.close();
+    dbInstance = null;
+    currentDbName = null;
+  }
+  // Delete the IndexedDB
+  await new Promise((resolve, reject) => {
+    const req = indexedDB.deleteDatabase(dbName);
+    req.onsuccess = resolve;
+    req.onerror = reject;
+    req.onblocked = resolve; // Proceed even if blocked
+  });
+  // Remove from workspace list
+  removeWorkspace(dbName);
+}
+
+// Purge all workspaces (delete all non-default DBs, clear default)
+export async function purgeAllWorkspaces() {
+  const workspaces = getWorkspaces();
+  // Delete all non-default workspace DBs
+  for (const ws of workspaces) {
+    if (ws.dbName !== "notesdb") {
+      await deleteWorkspaceDB(ws.dbName);
+    }
+  }
+  // Clear the default workspace
+  await purgeWorkspace("notesdb");
+  // Reset workspace list to just default
+  localStorage.setItem(WORKSPACES_KEY, JSON.stringify([{ name: "Default", dbName: "notesdb" }]));
+}

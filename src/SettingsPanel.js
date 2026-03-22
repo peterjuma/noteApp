@@ -28,6 +28,9 @@ function SettingsPanel({
   onBackup,
   onUploadNote,
   onZipImport,
+  onPurgeArchive,
+  onPurgeWorkspace,
+  onPurgeAllWorkspaces,
   showConfirm,
   onClose,
 }) {
@@ -315,6 +318,23 @@ function SettingsPanel({
             </h3>
             <p className="settings-hint">Notes moved to archive can be restored or permanently deleted.</p>
 
+            {archivedNotes.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                <button
+                  className="settings-btn-sm"
+                  style={{ color: "#dc2626" }}
+                  onClick={() => showConfirm(
+                    "Purge Archive",
+                    `Permanently delete all ${archivedNotes.length} archived note${archivedNotes.length !== 1 ? "s" : ""}? This cannot be undone.`,
+                    onPurgeArchive,
+                    { confirmText: "Purge All", danger: true }
+                  )}
+                >
+                  <Trash2 size={12} /> Purge All Archived
+                </button>
+              </div>
+            )}
+
             {archivedNotes.length > 0 ? (
               <ul className="settings-archive-list">
                 {archivedNotes.map((note) => (
@@ -342,6 +362,52 @@ function SettingsPanel({
                 <p>No archived notes</p>
               </div>
             )}
+
+            {/* Danger Zone */}
+            <h3 className="settings-section-title settings-danger-title" style={{ marginTop: "32px" }}>
+              Danger Zone
+            </h3>
+            <div className="settings-danger-zone">
+              <div className="settings-danger-item">
+                <div className="settings-danger-info">
+                  <span className="settings-danger-label">Purge current workspace</span>
+                  <span className="settings-danger-desc">
+                    Delete all notes, pins, and images in "{workspaces.find(w => w.dbName === activeDb)?.name || "Default"}" workspace
+                  </span>
+                </div>
+                <button
+                  className="settings-danger-btn"
+                  onClick={() => showConfirm(
+                    "Purge Workspace",
+                    `This will permanently delete ALL notes, pins, and images in the "${workspaces.find(w => w.dbName === activeDb)?.name || "Default"}" workspace. This cannot be undone.`,
+                    () => onPurgeWorkspace(activeDb),
+                    { confirmText: "Purge Workspace", danger: true }
+                  )}
+                >
+                  Purge
+                </button>
+              </div>
+
+              <div className="settings-danger-item">
+                <div className="settings-danger-info">
+                  <span className="settings-danger-label">Delete all workspaces</span>
+                  <span className="settings-danger-desc">
+                    Remove all workspaces and their data. Resets to a single empty Default workspace.
+                  </span>
+                </div>
+                <button
+                  className="settings-danger-btn"
+                  onClick={() => showConfirm(
+                    "Delete All Workspaces",
+                    "This will permanently delete ALL notes across ALL workspaces, remove all non-default workspaces, and reset to an empty Default workspace. This cannot be undone.",
+                    onPurgeAllWorkspaces,
+                    { confirmText: "Delete Everything", danger: true }
+                  )}
+                >
+                  Delete All
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

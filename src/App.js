@@ -1307,6 +1307,34 @@ handleUnpinNote = async (noteid) => {
               onBackup={this.handleNotesBackup}
               onUploadNote={this.handleNotesUpload}
               onZipImport={this.handleZipImport}
+              onPurgeArchive={async () => {
+                await db.purgeArchive();
+                this.setState({ archivedNotes: [] });
+                this.showAlert("Archive Purged", "All archived notes have been permanently deleted.");
+              }}
+              onPurgeWorkspace={async (dbName) => {
+                await db.purgeWorkspace(dbName);
+                if (dbName === this.state.activeDb) {
+                  this.setState({ allnotes: [], pinnedNotes: [], filteredNotes: [] }, () => {
+                    this.handleClickHomeBtn();
+                  });
+                }
+                this.showAlert("Workspace Purged", "All notes, pins, and images have been deleted from this workspace.");
+              }}
+              onPurgeAllWorkspaces={async () => {
+                await db.purgeAllWorkspaces();
+                this.setState({
+                  allnotes: [],
+                  pinnedNotes: [],
+                  filteredNotes: [],
+                  workspaces: db.getWorkspaces(),
+                  activeDb: "notesdb",
+                  showSettings: false,
+                }, () => {
+                  this.handleClickHomeBtn();
+                });
+                this.showAlert("All Data Deleted", "All workspaces and notes have been permanently deleted.");
+              }}
               showConfirm={this.showConfirm}
               onClose={() => this.setState({ showSettings: false })}
             />
