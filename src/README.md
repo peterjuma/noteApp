@@ -1,262 +1,234 @@
 NoteApp
 
-NoteApp is a server-less, lightweight and easy-to-use note-taking web app that uses GitHub flavoured Markdown syntax for styling all forms of writing. NoteApp uses an in-browser database called [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) to store data. 
+A modern, serverless markdown note-taking app — built for speed, privacy, and power.
 
-Features 
-------------
-- Add / Edit / Delete Notes.
-- Copied HTML content automatically converted to Markdown on paste event.
-- Syntax highliting for code blocks.
-- Download Notes as Markdown files.
-- Markdown editing tools.
-- Filter/Search notes.
-- Auto close brackets and quotes.
-- Split screen for Markdown Live Preview
-- Emojis!! :fire: :heart_eyes: :star2: :sunglasses: :sparkles: 
+NoteApp runs entirely in your browser. Your notes are stored locally in [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) — no servers, no accounts, no tracking. Install it as a PWA and use it offline.
 
-Syntax guide
-------------
+---
 
-Here’s an overview of Markdown syntax that you can use on NoteApp.
+## Features
 
-### Headers
+### Editor
+- **CodeMirror 6** — Modern code editor with markdown syntax highlighting and OneDark theme
+- **Rich toolbar** — 16+ formatting buttons: headings, bold, italic, strikethrough, code, links, images, lists, tables, blockquotes, horizontal rules, undo/redo
+- **GitHub-style shortcuts** — `Ctrl+B` bold, `Ctrl+I` italic, `Ctrl+K` link, `Ctrl+E` code, `Ctrl+S` save, and more
+- **Paste-as-Markdown** — Rich HTML from webpages is automatically converted to clean Markdown
+- **Image support** — Paste, drag-and-drop, or upload images; stored as blobs in IndexedDB
+- **Auto-close brackets** — Quotes, brackets, and backticks auto-pair
+- **Autosave** — Toggleable 3-second debounced autosave with status indicator
+- **Split preview** — Resizable side-by-side editor and rendered preview
+- **Inline preview** — Full rendered preview toggle
+- **Word & character count** — Live counters in the status bar
+- **Unsaved changes guard** — Save/Discard/Keep Editing dialog when navigating away
 
-To create a heading, add number signs (#) in front of a word or phrase. The number of number signs you use should correspond to the heading level. For example, to create a heading level three (<h3>), use three number signs (e.g., ### My Header).
+### Rendering
+- **GitHub Flavored Markdown** — Tables, task lists, strikethrough, emoji shortcodes
+- **Mermaid diagrams** — Flowcharts, sequence diagrams, Gantt charts, class diagrams, state diagrams, pie charts, mindmaps, timelines, and more
+- **Syntax highlighting** — Code blocks with language-aware coloring via highlight.js (GitHub Dark theme in dark mode)
+- **Anchor navigation** — Click any heading link to scroll smoothly; URL updates to reflect position
+- **Copy code blocks** — One-click copy button on every code block (excluded from text selection)
 
-    # This is an <h1> tag
-    ## This is an <h2> tag
-    ###### This is an <h6> tag
+### Tags & Intelligence
+- **Tags** — Add, remove, and display tags as badges on notes
+- **Tag search** — Filter notes by tag with `tag:` prefix
+- **Smart tag suggestions** — AI-powered tag extraction from note content using 30 topic categories and 400+ keywords covering GitHub support, dev engineering, and tech domains
+- **Tech pattern recognition** — Detects code languages from fenced blocks, CamelCase/snake_case splitting, heading word extraction, and frequency-based ranking
 
-### Emphasis
+### Organization
+- **Pin notes** — Pin important notes to the top (max 10 per workspace); click or drag-to-pin
+- **Pinned section** — Only visible when pinned notes exist; drag notes between sections to pin/unpin
+- **Sort** — By title (A-Z, Z-A), created date, modified date, or manual drag-to-reorder
+- **Full-text search** — Toggleable search bar searches title, body, and tags with `title:`, `body:`, `tag:` scope prefixes
+- **Note metadata** — Created and modified timestamps displayed on each note
+- **Drag & drop reorder** — Manual ordering with visual drag handles and drop zone feedback
+- **Keyboard navigation** — Arrow keys, Enter, Space to navigate and select notes in the list
 
-You can add emphasis by making text bold or italic.
+### Workspaces
+- **Multiple databases** — Create isolated workspaces (Work, Personal, etc.) with separate IndexedDB stores
+- **Switch workspaces** — Modal workspace switcher showing all workspaces with active indicator
+- **Rename & delete** — Manage workspace names; deleting switches to Default automatically
+- **Move notes** — Move a note from one workspace to another via toolbar button
 
-    *This text will be italic*
-    _This will also be italic_
-    A*cat*meow
-    
-    **This text will be bold**
-    I just love __bold text__.
-    Love**is**bold
+### Archive
+- **Archive instead of delete** — Choose to archive notes rather than permanently delete them
+- **Archive view** — Toggle archive mode in the sidebar to browse archived notes
+- **Restore notes** — Restore archived notes back to their original workspace
+- **Permanent delete** — Remove archived notes forever
+- **Archive metadata** — Tracks source workspace and archive timestamp
+
+### Table Converter
+- **6 formats** — Convert between CSV, TSV, Markdown, HTML, SQL, and JSON
+- **Auto-detect** — Automatically identifies the input table format
+- **Full-page mode** — Dedicated table converter view toggled from the sidebar
+- **Editor modal** — Quick-convert tables inline while editing a note
+- **Format tabs** — Switch output format with tab buttons
+- **Smart parsing** — Quote-aware CSV, pipe-delimited Markdown, HTML entity decoding, SQL ASCII tables, JSON arrays of objects or arrays
+
+### Import & Export
+- **Upload** — Import single `.md` files
+- **ZIP import** — Bulk import from `.zip` archives
+- **ZIP backup** — Download all notes as a `.zip` archive
+- **Download** — Export individual notes as `.md` files
+- **Print / PDF** — Clean print layout with page-break-aware formatting
+
+### App
+- **Dark / Light mode** — Full theme toggle persisted across sessions; GitHub Dark syntax colors, OneDark editor theme
+- **PWA installable** — Add to home screen on mobile or desktop
+- **Offline support** — Service worker with network-first navigation and cache-first static assets
+- **URL routing** — Each note has a shareable URL (`#note/my-note-title`)
+- **Deep linking** — Link directly to a heading within a note (`#note/my-note/section`)
+- **Browser navigation** — Back/forward buttons navigate between notes
+- **Responsive** — Collapsible and resizable sidebar; drawer mode on mobile with overlay
+- **Accessible** — ARIA landmarks, labels, roles, live regions, and focus management throughout
+- **Error boundary** — Graceful error handling with recovery UI
+- **XSS protection** — All rendered HTML sanitized with DOMPurify
+
+### Toolbar & UI
+- **Sidebar toolbar** — Grouped icon buttons with subtle dividers: views (Archive, Table Converter), tools (Search, Upload, Import, Backup), actions (Dark Mode, New Note)
+- **Note view toolbar** — Copy and Edit text buttons on the left; Print, Download, Move, and Delete icons on the right
+- **Collapsed sidebar** — Compact vertical icon strip with full functionality
+- **Consistent visual rhythm** — Harmonized bar heights (44px primary, 36px secondary) and unified border styles
+
+---
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd + B` | Bold |
+| `Ctrl/Cmd + I` | Italic |
+| `Ctrl/Cmd + K` | Insert link |
+| `Ctrl/Cmd + E` | Inline code |
+| `Ctrl/Cmd + S` | Save note |
+| `Ctrl/Cmd + Shift + K` | Code block |
+| `Ctrl/Cmd + Shift + .` | Blockquote |
+| `Ctrl/Cmd + Shift + 7` | Ordered list |
+| `Ctrl/Cmd + Shift + 8` | Bullet list |
+| `Ctrl/Cmd + Z` | Undo |
+| `Ctrl/Cmd + Y` | Redo |
+| `Ctrl/Cmd + F` | Find in editor |
+| `Tab` | Indent |
+| `Arrow Up/Down` | Navigate note list |
+| `Enter / Space` | Open selected note |
+
+---
+
+## Search Syntax
+
+| Query | What It Searches |
+|-------|-----------------|
+| `react hooks` | Title + body + tags (default) |
+| `title:meeting` | Title only |
+| `body:TODO` | Body content only |
+| `tag:projectx` | Tags only |
+
+Multiple words are matched with AND logic — all words must appear in the searched content.
+
+---
+
+## Mermaid Diagrams
+
+Write diagrams in Markdown using fenced code blocks with the `mermaid` language:
+
+````
+```mermaid
+graph LR
+    A[Write Markdown] --> B[Render Preview]
+    B --> C[Share & Export]
+```
+````
+
+Supports: flowchart, sequence, class, state, ER, Gantt, pie, mindmap, timeline, quadrant, and more.
+
+---
+
+## Markdown Syntax
+
+### Text Formatting
+
+```
+**bold** _italic_ ~~strikethrough~~ `inline code`
+```
+
+### Headings
+
+```
+# Heading 1
+## Heading 2
+### Heading 3
+```
 
 ### Lists
 
-You can organize items into ordered and unordered lists.
+```
+- Bullet item
+- Another item
 
-#### Unordered Lists
+1. Numbered item
+2. Another item
 
-To create an unordered list, add dashes (-), asterisks (*), or plus signs (+) in front of line items.
+- [ ] Task to do
+- [x] Task done
+```
 
-     - Item 1
-     - Item 2
-        * Item 2a
-        * Item 2b
-        + Item 3a
-        + Item 3b
-        - Item 4a
-        - Item 4b
+### Links & Images
 
-#### Ordered Lists
-
-To create an ordered list, add line items with numbers followed by periods. The numbers don’t have to be in numerical order, but the list should start with the number one.
-
-    1. Item 1
-    1. Item 2
-    1. Item 3
-       1. Item 3a
-       1. Item 3b
-
-The rendered output will look like this:
-
-1. Item 1
-1. Item 2
-1. Item 3
-   1. Item 3a
-   1. Item 3b
-
-### Images
-
-Format: `![Alt Text](url)`
-
-    ![GitHub Logo](/images/logo.png)
-    Format: ![Alt Text](url)
-
-### Links
-
-Format: `[Link name](url)`
-
-    http://github.com - automatic!
-    [GitHub](http://github.com)
-
-
-To quickly turn a URL or email address into a link, enclose it in angle brackets.
-
-    <https://www.example.org>
-
-    <fake@example.com>
-
-The rendered output looks like this:
-
-<https://www.example.org>
-
-<fake@example.com>
+```
+[Link text](https://example.com)
+![Alt text](image-url)
+```
 
 ### Blockquotes
-To create a blockquote, add a > in front of a paragraph.
 
-    As Kanye West said:
-    
-    > We're living the future so
-    > the present is our past.
-
-The rendered output looks like this:
-
-As Kanye West said:
-
-> We're living the future so
-> the present is our past.
-
-Blockquotes can contain other Markdown formatted elements:
-
-    > #### The quarterly results look great!
-    >
-    > - Revenue was off the chart.
-    > - Profits were higher than ever.
-    >
-    >  *Everything* is going according to **plan**.
-
-The rendered output looks like this:
-
-> #### The quarterly results look great!
-> 
-> *   Revenue was off the chart.
-> *   Profits were higher than ever.
-> 
-> _Everything_ is going according to **plan**.
-
-
-### Task Lists
-
-    - [x] a single item in the list
-    - [x] list syntax required (any unordered or ordered list supported)
-    - [x] this is a complete item
-    - [ ] this is an incomplete item
-
-Would become:
-
-- [x] a single item in the list
-- [x] list syntax required (any unordered or ordered list supported)
-- [x] this is a complete item
-- [ ] this is an incomplete item
+```
+> This is a blockquote
+```
 
 ### Tables
 
-You can create tables by assembling a list of words and dividing them with hyphens `-` (for the first row), and then separating each column with a pipe `|`:
-
-    First Header | Second Header
-    ------------ | -------------
-    Content from cell 1 | Content from cell 2
-    Content in the first column | Content in the second column
-
-Would become:
-
-| First Header | Second Header |
-| --- | --- |
-| Content from cell 1 | Content from cell 2 |
-| Content in the first column | Content in the second column |
-
-Creating tables with hyphens and pipes can be tedious. To speed up the process, try using the [Markdown Tables Generator](https://www.tablesgenerator.com/markdown_tables). Build a table using the graphical interface, and then copy the generated Markdown-formatted text into your notes.
-
-### Automatic linking for URLs
-
-Any URL (like `http://www.github.com/`) will be automatically converted into a clickable link - [http://www.github.com/](http://www.github.com/)
-
-### Strikethrough
-
-Any word wrapped with two tildes (like `~~this~~`) will appear crossed out - (like ~~this~~).
-
-### Horizontal Rules
-
-To create a horizontal rule, use three or more asterisks (`***`), dashes (`---`), or underscores (`___`) on a line by themselves.
-
-    ***
-
-    ---
-
-    _________________
-
-### Inline code
-
-To denote a word or phrase as code, enclose it in backticks (`).
-
-    I think you should use an `<pre><code>` element here instead.
-
+```
+| Header 1 | Header 2 |
+| -------- | -------- |
+| Cell 1   | Cell 2   |
+```
 
 ### Code Blocks
 
-To create code blocks, indent every line of the block by at least four spaces or one tab.
-
-        {
-        "firstName": "John",
-        "lastName": "Smith",
-        "age": 25
-        }
-
-If you find that inconvenient, try using fenced code blocks. Depending on your Markdown processor or editor, you’ll use three backticks (```) or three tildes (~~~) on the lines before and after the code block. 
-
-    ```
-    {
-    "firstName": "John",
-    "lastName": "Smith",
-    "age": 25
-    }
-    ```
-
-### Syntax Highlighting
-
-NoteApp uses a Markdown processors that support syntax highlighting for fenced code blocks. This feature attempts to detects the language automatically and adds color highlighting for whatever language your code was written in. 
-
-```
-#!/bin/bash
-
-###### CONFIG
-ACCEPTED_HOSTS="/root/.hag_accepted.conf"
-BE_VERBOSE=false
-
-if [ "$UID" -ne 0 ]
-then
- echo "Superuser rights required"
- exit 2
-fi
-
-genApacheConf(){
- echo -e "# Host ${HOME_DIR}$1/$2 :"
+````
+```javascript
+function hello() {
+  console.log("Hello, world!");
 }
-
-echo '"quoted"' | tr -d \" > text.txt
 ```
+````
 
-### Markdown Live Preview
+### Horizontal Rule
 
-Live markdown previews for your favorite editor on a split screen.
+```
+---
+```
 
 ### Emoji
 
-NoteApp supports [emojis](https://www.webfx.com/tools/emoji-cheat-sheet/)! There are two ways to add emoji to Markdown files: copy and paste the emoji into your Markdown-formatted text, or type emoji shortcodes.
+Type emoji shortcodes: `:fire:` :fire: `:rocket:` :rocket: `:star:` :star: `:heart:` :heart:
 
-Emoji shortcuts begin and end with a colon and include the name of an emoji.
+---
 
-```
-Gone camping! :tent: Be back soon.
+## Tech Stack
 
-That is so funny! :joy:
-```
+| Layer | Technology |
+|-------|-----------|
+| Editor | CodeMirror 6 |
+| UI Icons | Lucide React |
+| Markdown | markdown-it + plugins (emoji, task lists, anchors) |
+| HTML→MD | Turndown + GFM plugin |
+| Diagrams | Mermaid |
+| Syntax | highlight.js |
+| Storage | IndexedDB (via idb) |
+| Sanitization | DOMPurify |
+| Build | Create React App |
+| Deploy | GitHub Pages + GitHub Actions |
 
-This will be rendered as:
+---
 
-> Gone camping! :tent: Be back soon.
-
-> That is so funny! :joy:
-
-
-You can use this [list of emoji shortcodes](https://gist.github.com/rxaviers/7360908)
+Built with :heart: — no servers, no accounts, your data stays yours.

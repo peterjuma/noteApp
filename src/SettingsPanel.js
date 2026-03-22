@@ -1,0 +1,546 @@
+import { useState, useRef, useEffect } from "react";
+import {
+  X, Plus, Check, Trash2, PencilLine, ArrowLeftRight,
+  Upload, Download, FolderUp, RotateCcw, Archive,
+  Moon, Sun, Save, Sparkles, Settings, FileText,
+} from "lucide-react";
+import * as snippetService from "./services/snippets";
+
+function SettingsPanel({
+  darkMode,
+  onToggleDarkMode,
+  autoSave,
+  onToggleAutoSave,
+  tagSuggestEnabled,
+  onToggleTagSuggest,
+  vimMode,
+  onToggleVimMode,
+  workspaces,
+  activeDb,
+  onSwitchWorkspace,
+  onAddWorkspace,
+  onRenameWorkspace,
+  onDeleteWorkspace,
+  archivedNotes,
+  onRestoreNote,
+  onPermanentDelete,
+  onLoadArchive,
+  onBackup,
+  onUploadNote,
+  onZipImport,
+  onPurgeArchive,
+  onPurgeWorkspace,
+  onPurgeAllWorkspaces,
+  showConfirm,
+  onClose,
+}) {
+  const [activeTab, setActiveTab] = useState("general");
+  const [wsName, setWsName] = useState("");
+  const [showNewWs, setShowNewWs] = useState(false);
+  const [editingWs, setEditingWs] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [snippets, setSnippets] = useState([]);
+  const [editingSnippet, setEditingSnippet] = useState(null); // null | "new" | snippet id
+  const [snippetName, setSnippetName] = useState("");
+  const [snippetContent, setSnippetContent] = useState("");
+  const [snippetCategory, setSnippetCategory] = useState("zendesk");
+  const wsInputRef = useRef(null);
+  const renameInputRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const zipInputRef = useRef(null);
+
+  // Load archive when switching to data tab
+  useEffect(() => {
+    if (activeTab === "data" && onLoadArchive) {
+      onLoadArchive();
+    }
+    if (activeTab === "templates") {
+      setSnippets(snippetService.ensureDefaults());
+    }
+  }, [activeTab, onLoadArchive]);
+
+  // Focus workspace name input
+  useEffect(() => {
+    if (showNewWs && wsInputRef.current) wsInputRef.current.focus();
+  }, [showNewWs]);
+
+  useEffect(() => {
+    if (editingWs && renameInputRef.current) renameInputRef.current.focus();
+  }, [editingWs]);
+
+  const handleCreateWorkspace = () => {
+    if (wsName.trim()) {
+      onAddWorkspace(wsName.trim());
+      setWsName("");
+      setShowNewWs(false);
+    }
+  };
+
+  const handleRename = (dbName) => {
+    if (editName.trim()) {
+      onRenameWorkspace(dbName, editName.trim());
+      setEditingWs(null);
+      setEditName("");
+    }
+  };
+
+  const tabs = [
+    { id: "general", label: "General", icon: Settings },
+    { id: "workspaces", label: "Workspaces", icon: ArrowLeftRight },
+    { id: "data", label: "Data & Archive", icon: Archive },
+    { id: "templates", label: "Templates", icon: FileText },
+  ];
+
+  return (
+    <div className="settings-fullpage">
+      <div className="settings-header">
+        <h2 className="settings-title">Settings</h2>
+        <button className="icon-btn" onClick={onClose} aria-label="Close settings">
+          <X size={18} />
+        </button>
+      </div>
+
+      <div className="settings-tabs">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            className={`settings-tab ${activeTab === tab.id ? "settings-tab-active" : ""}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            <tab.icon size={14} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="settings-body">
+        {/* ─── General Tab ─── */}
+        {activeTab === "general" && (
+          <div className="settings-section">
+            <h3 className="settings-section-title">Appearance</h3>
+            <label className="settings-toggle-row">
+              <div className="settings-toggle-info">
+                <span className="settings-toggle-label">
+                  {darkMode ? <Moon size={16} /> : <Sun size={16} />}
+                  Dark Mode
+                </span>
+              </div>
+              <button
+                className={`settings-switch ${darkMode ? "settings-switch-on" : ""}`}
+                onClick={onToggleDarkMode}
+                role="switch"
+                aria-checked={darkMode}
+              >
+                <span className="settings-switch-thumb" />
+              </button>
+            </label>
+
+            <h3 className="settings-section-title">Editor</h3>
+            <label className="settings-toggle-row">
+              <div className="settings-toggle-info">
+                <span className="settings-toggle-label">
+                  <Save size={16} />
+                  Auto-save
+                </span>
+                <span className="settings-toggle-hint">Automatically save after 3 seconds of inactivity</span>
+              </div>
+              <button
+                className={`settings-switch ${autoSave ? "settings-switch-on" : ""}`}
+                onClick={onToggleAutoSave}
+                role="switch"
+                aria-checked={autoSave}
+              >
+                <span className="settings-switch-thumb" />
+              </button>
+            </label>
+
+            <label className="settings-toggle-row">
+              <div className="settings-toggle-info">
+                <span className="settings-toggle-label">
+                  <Sparkles size={16} />
+                  Tag Suggestions
+                </span>
+                <span className="settings-toggle-hint">Show tag suggestion button on notes without tags</span>
+              </div>
+              <button
+                className={`settings-switch ${tagSuggestEnabled ? "settings-switch-on" : ""}`}
+                onClick={onToggleTagSuggest}
+                role="switch"
+                aria-checked={tagSuggestEnabled}
+              >
+                <span className="settings-switch-thumb" />
+              </button>
+            </label>
+
+            <label className="settings-toggle-row">
+              <div className="settings-toggle-info">
+                <span className="settings-toggle-label">
+                  ⌨️ Vim Keybindings
+                </span>
+                <span className="settings-toggle-hint">Enable Vim-style keyboard navigation in the editor</span>
+              </div>
+              <button
+                className={`settings-switch ${vimMode ? "settings-switch-on" : ""}`}
+                onClick={onToggleVimMode}
+                role="switch"
+                aria-checked={vimMode}
+              >
+                <span className="settings-switch-thumb" />
+              </button>
+            </label>
+          </div>
+        )}
+
+        {/* ─── Workspaces Tab ─── */}
+        {activeTab === "workspaces" && (
+          <div className="settings-section">
+            <div className="settings-section-header">
+              <h3 className="settings-section-title">Workspaces</h3>
+              <button className="settings-btn-sm" onClick={() => setShowNewWs(true)}>
+                <Plus size={14} /> New
+              </button>
+            </div>
+            <p className="settings-hint">Each workspace has its own separate database of notes.</p>
+
+            {showNewWs && (
+              <div className="settings-inline-form">
+                <input
+                  ref={wsInputRef}
+                  type="text"
+                  className="settings-input"
+                  value={wsName}
+                  onChange={(e) => setWsName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleCreateWorkspace();
+                    if (e.key === "Escape") setShowNewWs(false);
+                  }}
+                  placeholder="Workspace name..."
+                />
+                <button className="settings-btn-sm settings-btn-primary" onClick={handleCreateWorkspace} disabled={!wsName.trim()}>
+                  Create
+                </button>
+                <button className="settings-btn-sm" onClick={() => setShowNewWs(false)}>
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            <ul className="settings-ws-list">
+              {workspaces.map((w) => (
+                <li key={w.dbName} className={`settings-ws-item ${w.dbName === activeDb ? "settings-ws-item-active" : ""}`}>
+                  {editingWs === w.dbName ? (
+                    <div className="settings-inline-form" style={{ flex: 1 }}>
+                      <input
+                        ref={renameInputRef}
+                        type="text"
+                        className="settings-input"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleRename(w.dbName);
+                          if (e.key === "Escape") setEditingWs(null);
+                        }}
+                      />
+                      <button className="settings-btn-sm settings-btn-primary" onClick={() => handleRename(w.dbName)}>Save</button>
+                      <button className="settings-btn-sm" onClick={() => setEditingWs(null)}>Cancel</button>
+                    </div>
+                  ) : (
+                    <>
+                      <span
+                        className="settings-ws-name"
+                        onClick={() => { onSwitchWorkspace(w.dbName); }}
+                      >
+                        {w.name}
+                        {w.dbName === activeDb && <Check size={14} className="settings-ws-check" />}
+                      </span>
+                      <div className="settings-ws-actions">
+                        {w.dbName !== "notesdb" && (
+                          <>
+                            <button
+                              className="icon-btn"
+                              title="Rename"
+                              onClick={() => { setEditingWs(w.dbName); setEditName(w.name); }}
+                            >
+                              <PencilLine size={13} />
+                            </button>
+                            <button
+                              className="icon-btn icon-btn-danger"
+                              title="Delete"
+                              onClick={() => {
+                                showConfirm(
+                                  "Delete Workspace",
+                                  `Delete workspace "${w.name}"? All notes in this workspace will be lost.`,
+                                  () => onDeleteWorkspace(w.dbName),
+                                  { confirmText: "Delete", danger: true }
+                                );
+                              }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* ─── Data & Archive Tab ─── */}
+        {activeTab === "data" && (
+          <div className="settings-section">
+            <h3 className="settings-section-title">Import & Export</h3>
+            <div className="settings-actions-grid">
+              <button className="settings-action-card" onClick={() => fileInputRef.current.click()}>
+                <Upload size={20} />
+                <span className="settings-action-title">Upload Note</span>
+                <span className="settings-action-desc">Import a .md file</span>
+              </button>
+              <button className="settings-action-card" onClick={() => zipInputRef.current.click()}>
+                <FolderUp size={20} />
+                <span className="settings-action-title">Import Archive</span>
+                <span className="settings-action-desc">Import notes from .zip</span>
+              </button>
+              <button className="settings-action-card" onClick={onBackup}>
+                <Download size={20} />
+                <span className="settings-action-title">Download Backup</span>
+                <span className="settings-action-desc">Export all notes as .zip</span>
+              </button>
+            </div>
+            <input ref={fileInputRef} type="file" accept=".md" className="hidden" onChange={onUploadNote} />
+            <input ref={zipInputRef} type="file" accept=".zip" className="hidden" onChange={onZipImport} />
+
+            <h3 className="settings-section-title" style={{ marginTop: "24px" }}>
+              Archive
+              {archivedNotes.length > 0 && <span className="settings-badge">{archivedNotes.length}</span>}
+            </h3>
+            <p className="settings-hint">Notes moved to archive can be restored or permanently deleted.</p>
+
+            {archivedNotes.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                <button
+                  className="settings-btn-sm"
+                  style={{ color: "#dc2626" }}
+                  onClick={() => showConfirm(
+                    "Purge Archive",
+                    `Permanently delete all ${archivedNotes.length} archived note${archivedNotes.length !== 1 ? "s" : ""}? This cannot be undone.`,
+                    onPurgeArchive,
+                    { confirmText: "Purge All", danger: true }
+                  )}
+                >
+                  <Trash2 size={12} /> Purge All Archived
+                </button>
+              </div>
+            )}
+
+            {archivedNotes.length > 0 ? (
+              <ul className="settings-archive-list">
+                {archivedNotes.map((note) => (
+                  <li key={note.noteid} className="settings-archive-item">
+                    <div className="settings-archive-info">
+                      <span className="settings-archive-title">{note.title}</span>
+                      <span className="settings-archive-meta">
+                        {note.sourceWorkspace === "notesdb" ? "Default" : note.sourceWorkspace.replace("notesdb_", "")}
+                        {note.archivedAt && ` · ${new Date(note.archivedAt).toLocaleDateString()}`}
+                      </span>
+                    </div>
+                    <div className="settings-archive-actions">
+                      <button onClick={() => onRestoreNote(note.noteid)} className="icon-btn" title="Restore">
+                        <RotateCcw size={14} />
+                      </button>
+                      <button onClick={() => onPermanentDelete(note.noteid)} className="icon-btn icon-btn-danger" title="Delete forever">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="settings-empty">
+                <p>No archived notes</p>
+              </div>
+            )}
+
+            {/* Danger Zone */}
+            <h3 className="settings-section-title settings-danger-title" style={{ marginTop: "32px" }}>
+              Danger Zone
+            </h3>
+            <div className="settings-danger-zone">
+              <div className="settings-danger-item">
+                <div className="settings-danger-info">
+                  <span className="settings-danger-label">Purge current workspace</span>
+                  <span className="settings-danger-desc">
+                    Delete all notes, pins, and images in "{workspaces.find(w => w.dbName === activeDb)?.name || "Default"}" workspace
+                  </span>
+                </div>
+                <button
+                  className="settings-danger-btn"
+                  onClick={() => showConfirm(
+                    "Purge Workspace",
+                    `This will permanently delete ALL notes, pins, and images in the "${workspaces.find(w => w.dbName === activeDb)?.name || "Default"}" workspace. This cannot be undone.`,
+                    () => onPurgeWorkspace(activeDb),
+                    { confirmText: "Purge Workspace", danger: true }
+                  )}
+                >
+                  Purge
+                </button>
+              </div>
+
+              <div className="settings-danger-item">
+                <div className="settings-danger-info">
+                  <span className="settings-danger-label">Delete all workspaces</span>
+                  <span className="settings-danger-desc">
+                    Remove all workspaces and their data. Resets to a single empty Default workspace.
+                  </span>
+                </div>
+                <button
+                  className="settings-danger-btn"
+                  onClick={() => showConfirm(
+                    "Delete All Workspaces",
+                    "This will permanently delete ALL notes across ALL workspaces, remove all non-default workspaces, and reset to an empty Default workspace. This cannot be undone.",
+                    onPurgeAllWorkspaces,
+                    { confirmText: "Delete Everything", danger: true }
+                  )}
+                >
+                  Delete All
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Templates Tab ─── */}
+        {activeTab === "templates" && (
+          <div className="settings-section">
+            <div className="settings-section-header">
+              <h3 className="settings-section-title">Response Templates</h3>
+              <button
+                className="settings-btn-sm"
+                onClick={() => {
+                  setEditingSnippet("new");
+                  setSnippetName("");
+                  setSnippetContent("");
+                  setSnippetCategory("zendesk");
+                }}
+              >
+                <Plus size={14} /> New
+              </button>
+            </div>
+            <p className="settings-hint">
+              Templates appear in the editor's slash command menu. Type <code>/</code> then the template name to insert. Use {"{{"}variable{"}}"} for placeholders.
+            </p>
+
+            {/* New / Edit form */}
+            {editingSnippet && (
+              <div className="settings-snippet-form">
+                <div className="settings-inline-form">
+                  <input
+                    type="text"
+                    className="settings-input"
+                    placeholder="Template name..."
+                    value={snippetName}
+                    onChange={(e) => setSnippetName(e.target.value)}
+                    autoFocus
+                  />
+                  <select
+                    className="settings-input"
+                    style={{ maxWidth: 120 }}
+                    value={snippetCategory}
+                    onChange={(e) => setSnippetCategory(e.target.value)}
+                  >
+                    <option value="zendesk">Zendesk</option>
+                    <option value="general">General</option>
+                    <option value="code">Code</option>
+                  </select>
+                </div>
+                <textarea
+                  className="settings-snippet-textarea"
+                  placeholder="Template content... Use {{variable}} for placeholders."
+                  value={snippetContent}
+                  onChange={(e) => setSnippetContent(e.target.value)}
+                  rows={5}
+                />
+                <div className="settings-inline-form" style={{ justifyContent: "flex-end" }}>
+                  <button
+                    className="settings-btn-sm"
+                    onClick={() => setEditingSnippet(null)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="settings-btn-sm settings-btn-primary"
+                    disabled={!snippetName.trim() || !snippetContent.trim()}
+                    onClick={() => {
+                      if (editingSnippet === "new") {
+                        snippetService.addSnippet(snippetName, snippetContent, snippetCategory);
+                      } else {
+                        snippetService.updateSnippet(editingSnippet, {
+                          name: snippetName,
+                          content: snippetContent,
+                          category: snippetCategory,
+                        });
+                      }
+                      setSnippets(snippetService.getSnippets());
+                      setEditingSnippet(null);
+                    }}
+                  >
+                    {editingSnippet === "new" ? "Create" : "Save"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {snippets.length > 0 ? (
+              <ul className="settings-ws-list">
+                {snippets.map((s) => (
+                  <li key={s.id} className="settings-ws-item">
+                    <div className="settings-archive-info" style={{ flex: 1 }}>
+                      <span className="settings-archive-title">{s.name}</span>
+                      <span className="settings-archive-meta">{s.category} · {s.content.length} chars</span>
+                    </div>
+                    <div className="settings-ws-actions" style={{ opacity: 1 }}>
+                      <button
+                        className="icon-btn"
+                        title="Edit"
+                        onClick={() => {
+                          setEditingSnippet(s.id);
+                          setSnippetName(s.name);
+                          setSnippetContent(s.content);
+                          setSnippetCategory(s.category);
+                        }}
+                      >
+                        <PencilLine size={13} />
+                      </button>
+                      <button
+                        className="icon-btn icon-btn-danger"
+                        title="Delete"
+                        onClick={() => {
+                          snippetService.deleteSnippet(s.id);
+                          setSnippets(snippetService.getSnippets());
+                        }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="settings-empty">
+                <p>No templates yet</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="settings-footer">
+        <button className="btn-cancel" onClick={onClose}>Close</button>
+      </div>
+    </div>
+  );
+}
+
+export default SettingsPanel;

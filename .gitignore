@@ -3,6 +3,10 @@
 node_modules/
 build
 .DS_Store
+craco.config.js
+tailwind.config.js
+postcss.config.js
+src/KeyCodes.js
 *.tgz
 my-app*
 template/src/__tests__/__snapshots__/
@@ -55,4 +59,4 @@ packages/react-devtools-extensions/shared/build
 packages/react-devtools-extensions/.tempUserDataDir
 packages/react-devtools-inline/dist
 packages/react-devtools-shell/dist
-packages/react-devtools-scheduling-profiler/dist
+packages/react-devtools-scheduling-profiler/dist.commitmsg
