@@ -1,8 +1,9 @@
 import { openDB } from "idb/with-async-ittr.js";
 
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 let dbInstance = null;
 let currentDbName = null;
+const MAX_VERSIONS_PER_NOTE = 50;
 
 // Get or create a singleton DB connection
 async function getDB(dbName) {
@@ -24,6 +25,12 @@ async function getDB(dbName) {
       if (!db.objectStoreNames.contains("images")) {
         const imgStore = db.createObjectStore("images", { keyPath: "id" });
         imgStore.createIndex("created_at", "created_at");
+      }
+      // Version history store
+      if (!db.objectStoreNames.contains("versions")) {
+        const vStore = db.createObjectStore("versions", { keyPath: "versionId" });
+        vStore.createIndex("noteid", "noteid");
+        vStore.createIndex("timestamp", "timestamp");
       }
     },
   });
@@ -289,4 +296,80 @@ export async function purgeAllWorkspaces() {
   await purgeWorkspace("notesdb");
   // Reset workspace list to just default
   localStorage.setItem(WORKSPACES_KEY, JSON.stringify([{ name: "Default", dbName: "notesdb" }]));
+}
+
+// ===== Version History =====
+
+// Save a snapshot of a note (called on every save)
+export async function saveVersion(note, dbName = "notesdb") {
+  const db = await getDB(dbName);
+  const version = {
+    versionId: `${note.noteid}-${Date.now()}`,
+    noteid: note.noteid,
+    title: note.title,
+    body: note.body,
+    tags: note.tags || [],
+    timestamp: Date.now(),
+  };
+  await db.put("versions", version);
+
+  // Prune old versions beyond the limit
+  const tx = db.transaction("versions", "readwrite");
+  const index = tx.store.index("noteid");
+  const allVersions = await index.getAll(note.noteid);
+  if (allVersions.length > MAX_VERSIONS_PER_NOTE) {
+    // Sort oldest first, delete excess
+    allVersions.sort((a, b) => a.timestamp - b.timestamp);
+    const toDelete = allVersions.slice(0, allVersions.length - MAX_VERSIONS_PER_NOTE);
+    for (const v of toDelete) {
+      await tx.store.delete(v.versionId);
+    }
+  }
+  await tx.done;
+  return version;
+}
+
+// Get all versions for a note (newest first)
+export async function getVersions(noteid, dbName = "notesdb") {
+  const db = await getDB(dbName);
+  const index = db.transaction("versions").store.index("noteid");
+  const versions = await index.getAll(noteid);
+  return versions.sort((a, b) => b.timestamp - a.timestamp);
+}
+
+// Get a specific version
+export async function getVersion(versionId, dbName = "notesdb") {
+  const db = await getDB(dbName);
+  return db.get("versions", versionId);
+}
+
+// Restore a version (overwrites the current note content)
+export async function restoreVersion(versionId, dbName = "notesdb") {
+  const db = await getDB(dbName);
+  const version = await db.get("versions", versionId);
+  if (!version) return null;
+  const note = await db.get("notes", version.noteid);
+  if (!note) return null;
+  // Save current state as a version before restoring
+  await saveVersion(note, dbName);
+  // Overwrite note with version content
+  note.title = version.title;
+  note.body = version.body;
+  note.tags = version.tags;
+  note.updated_at = Date.now();
+  await db.put("notes", note);
+  return note;
+}
+
+// Delete all versions for a note
+export async function deleteVersions(noteid, dbName = "notesdb") {
+  const db = await getDB(dbName);
+  const tx = db.transaction("versions", "readwrite");
+  const index = tx.store.index("noteid");
+  let cursor = await index.openCursor(noteid);
+  while (cursor) {
+    await cursor.delete();
+    cursor = await cursor.continue();
+  }
+  await tx.done;
 }

@@ -1,0 +1,25 @@
+feat: version history with auto-snapshots and restore
+
+Storage:
+- Bumped DB_VERSION to 4, added 'versions' object store
+- Indexes on noteid and timestamp for efficient queries
+- Auto-prunes to 50 versions per note
+
+Auto-Snapshot:
+- Every save (manual or autosave) creates a version snapshot
+- Stores title, body, tags, and timestamp
+- Current state is saved before restoring an older version
+
+Version History UI:
+- Clock icon in note view toolbar opens version history modal
+- Left panel: chronological version list with relative timestamps
+- Right panel: full markdown preview of selected version
+- Diff summary between consecutive versions (chars added/removed)
+- Restore button overwrites current note with selected version
+- Current state auto-saved before restore (safety net)
+
+Functions added to notesDB.js:
+- saveVersion(), getVersions(), getVersion()
+- restoreVersion(), deleteVersions()
+
+New file: src/VersionHistory.js

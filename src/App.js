@@ -8,6 +8,7 @@ import readmePath from "./README.md";
 import NoteEditor from "./NoteEditor";
 import ConfirmDialog from "./ConfirmDialog";
 import SettingsPanel from "./SettingsPanel";
+import VersionHistory from "./VersionHistory";
 import TableConverter from "./TableConverter";
 import { html2md, md2html } from "./useMarkDown";
 import { saveAs } from "file-saver";
@@ -52,6 +53,7 @@ class App extends Component {
       archivedNotes: [],
       showSettings: false,
       showTableConverter: false,
+      showVersionHistory: false,
       autoSave: localStorage.getItem("noteapp_autosave") === "true",
       tagSuggestEnabled: localStorage.getItem("noteapp_tag_suggest") !== "false",
       vimMode: localStorage.getItem("noteapp_vim_mode") === "true",
@@ -729,6 +731,7 @@ handleUnpinNote = async (noteid) => {
         if (!isSilent) this.handleSortNotes(this.state.sortby);
       });
       db.addNote(newNote, this.state.activeDb);
+      db.saveVersion(newNote, this.state.activeDb);
     } else {
       // Update existing note
       this.setState((prevState) => {
@@ -766,7 +769,15 @@ handleUnpinNote = async (noteid) => {
         tags: note.tags || [],
         created_at: existingNote ? existingNote.created_at : Date.now(),
         updated_at: Date.now(),
-      }, this.state.activeDb);
+      }, this.state.activeDb).then(() => {
+        // Save version snapshot after update
+        db.saveVersion({
+          noteid: note.noteid,
+          title: notetitle,
+          body: noteMarkdown,
+          tags: note.tags || [],
+        }, this.state.activeDb);
+      });
     }
   }
 
@@ -990,6 +1001,7 @@ handleUnpinNote = async (noteid) => {
           handleMoveNote={this.handleMoveNote}
           handleCopyEvent={this.handleCopyEvent}
           handleDownloadNote={this.handleDownloadNote}
+          onShowHistory={() => this.setState({ showVersionHistory: true })}
         />
       );
       ActivePage = (
@@ -1414,6 +1426,27 @@ handleUnpinNote = async (noteid) => {
               </div>
             </div>
           </div>
+        )}
+        {/* Version History */}
+        {this.state.showVersionHistory && this.state.noteid && (
+          <VersionHistory
+            noteid={this.state.noteid}
+            currentTitle={this.state.notetitle}
+            darkMode={this.state.darkMode}
+            activeDb={this.state.activeDb}
+            onRestore={(restoredNote) => {
+              this.setState({
+                notetitle: restoredNote.title,
+                notebody: restoredNote.body,
+                showVersionHistory: false,
+                allnotes: this.state.allnotes.map((n) =>
+                  n.noteid === restoredNote.noteid ? restoredNote : n
+                ),
+              });
+              this.showAlert("Version Restored", "The note has been restored to the selected version.");
+            }}
+            onClose={() => this.setState({ showVersionHistory: false })}
+          />
         )}
       </div>
     );

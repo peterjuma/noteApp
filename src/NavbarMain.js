@@ -1,4 +1,4 @@
-import { Download, Trash2, Printer, FolderOutput, Copy, Check, FileDown } from "lucide-react";
+import { Download, Trash2, Printer, FolderOutput, Copy, Check, FileDown, Clock } from "lucide-react";
 import { useState } from "react";
 import DOMPurify from "dompurify";
 import { md2html } from "./useMarkDown";
@@ -47,6 +47,9 @@ function NavbarMain(props) {
         </button>
         <button onClick={() => props.handleMoveNote && props.handleMoveNote(note)} className="icon-btn" title="Move to..." aria-label="Move to another workspace">
           <FolderOutput size={15} />
+        </button>
+        <button onClick={() => props.onShowHistory && props.onShowHistory(note)} className="icon-btn" title="Version History" aria-label="Version history">
+          <Clock size={15} />
         </button>
       </span>
       <span className="toolbar-divider" />
