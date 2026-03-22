@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/noteApp/static/css/main.1fafbeb4.css",
-    "main.js": "/noteApp/static/js/main.2da55596.js",
+    "main.css": "/noteApp/static/css/main.1c9c1a8c.css",
+    "main.js": "/noteApp/static/js/main.596f6ae8.js",
     "static/js/2690.5d189dfd.chunk.js": "/noteApp/static/js/2690.5d189dfd.chunk.js",
     "static/js/607.b2534728.chunk.js": "/noteApp/static/js/607.b2534728.chunk.js",
     "static/js/4023.4a3a9cc1.chunk.js": "/noteApp/static/js/4023.4a3a9cc1.chunk.js",
@@ -193,6 +193,7 @@
     "static/media/KaTeX_Fraktur-Regular.woff": "/noteApp/static/media/KaTeX_Fraktur-Regular.6fdf0ac577be0ba82a4c.woff",
     "static/media/KaTeX_Caligraphic-Bold.ttf": "/noteApp/static/media/KaTeX_Caligraphic-Bold.7489a2fbfb9bfe704420.ttf",
     "static/media/KaTeX_Caligraphic-Regular.ttf": "/noteApp/static/media/KaTeX_Caligraphic-Regular.7e873d3833eb108a0758.ttf",
+    "static/media/README.md": "/noteApp/static/media/README.327e6d3289c5f5aef89f.md",
     "static/media/KaTeX_SansSerif-Regular.woff": "/noteApp/static/media/KaTeX_SansSerif-Regular.02271ec5cb9f5b4588ac.woff",
     "static/media/KaTeX_Size1-Regular.ttf": "/noteApp/static/media/KaTeX_Size1-Regular.6de7d4b539221a49e9e2.ttf",
     "static/media/KaTeX_SansSerif-Bold.woff2": "/noteApp/static/media/KaTeX_SansSerif-Bold.95591a929f0d32aa282a.woff2",
@@ -204,7 +205,6 @@
     "static/media/KaTeX_Size4-Regular.ttf": "/noteApp/static/media/KaTeX_Size4-Regular.4ad7c7e8bb8d10a34bb7.ttf",
     "static/media/KaTeX_SansSerif-Regular.woff2": "/noteApp/static/media/KaTeX_SansSerif-Regular.cd5e231e0cc53b2cb2c0.woff2",
     "static/media/KaTeX_Script-Regular.woff2": "/noteApp/static/media/KaTeX_Script-Regular.c81d1b2a4b75d3eded60.woff2",
-    "static/media/README.md": "/noteApp/static/media/README.88a4ddb6370b8de3ba52.md",
     "static/media/KaTeX_Caligraphic-Bold.woff": "/noteApp/static/media/KaTeX_Caligraphic-Bold.d757c535a2e5902f1325.woff",
     "static/media/KaTeX_Caligraphic-Regular.woff": "/noteApp/static/media/KaTeX_Caligraphic-Regular.db074fa22cf224af93d7.woff",
     "static/media/KaTeX_Size3-Regular.ttf": "/noteApp/static/media/KaTeX_Size3-Regular.8d6b6822586eea3d3b20.ttf",
@@ -219,8 +219,8 @@
     "static/media/KaTeX_Size3-Regular.woff": "/noteApp/static/media/KaTeX_Size3-Regular.7947224e8a9914fa332b.woff",
     "static/media/KaTeX_Size3-Regular.woff2": "/noteApp/static/media/KaTeX_Size3-Regular.e1951519f6f0596f7356.woff2",
     "index.html": "/noteApp/index.html",
-    "main.1fafbeb4.css.map": "/noteApp/static/css/main.1fafbeb4.css.map",
-    "main.2da55596.js.map": "/noteApp/static/js/main.2da55596.js.map",
+    "main.1c9c1a8c.css.map": "/noteApp/static/css/main.1c9c1a8c.css.map",
+    "main.596f6ae8.js.map": "/noteApp/static/js/main.596f6ae8.js.map",
     "2690.5d189dfd.chunk.js.map": "/noteApp/static/js/2690.5d189dfd.chunk.js.map",
     "607.b2534728.chunk.js.map": "/noteApp/static/js/607.b2534728.chunk.js.map",
     "4023.4a3a9cc1.chunk.js.map": "/noteApp/static/js/4023.4a3a9cc1.chunk.js.map",
@@ -371,7 +371,7 @@
     "2996.13a0f321.chunk.js.map": "/noteApp/static/js/2996.13a0f321.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.1fafbeb4.css",
-    "static/js/main.2da55596.js"
+    "static/css/main.1c9c1a8c.css",
+    "static/js/main.596f6ae8.js"
   ]
 }
