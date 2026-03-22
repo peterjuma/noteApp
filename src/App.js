@@ -946,8 +946,16 @@ handleUnpinNote = async (noteid) => {
     // Read the file content
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const content = e.target.result;
-      const title = file.name.replace(".md", ""); // Use filename without extension as the title
+      let content = e.target.result;
+      // Use leading H1 heading as title if present, otherwise use filename
+      const h1Match = content.match(/^#\s+(.+)$/m);
+      let title;
+      if (h1Match && content.trimStart().startsWith(h1Match[0])) {
+        title = h1Match[1].trim();
+        content = content.trimStart().slice(h1Match[0].length).trimStart();
+      } else {
+        title = file.name.replace(".md", "");
+      }
   
       const newNote = {
         noteid: new Date().getTime().toString(), // Generate a unique note ID
@@ -986,8 +994,16 @@ handleUnpinNote = async (noteid) => {
       );
 
       for (const name of fileNames) {
-        const content = await zip.files[name].async("text");
-        const title = name.replace(/\.md$/, "").replace(/^.*\//, ""); // Strip path and extension
+        let content = await zip.files[name].async("text");
+        // Use leading H1 heading as title if present, otherwise use filename
+        const h1Match = content.match(/^#\s+(.+)$/m);
+        let title;
+        if (h1Match && content.trimStart().startsWith(h1Match[0])) {
+          title = h1Match[1].trim();
+          content = content.trimStart().slice(h1Match[0].length).trimStart();
+        } else {
+          title = name.replace(/\.md$/, "").replace(/^.*\//, "");
+        }
         const newNote = {
           noteid: Date.now().toString() + Math.random().toString(36).slice(2, 6),
           title,
