@@ -9,6 +9,82 @@ import TurndownService from "turndown";
 import * as turndownPluginGfm from "turndown-plugin-gfm";
 import hljs from "highlight.js";
 
+// ─── KQL (Kusto Query Language) ───
+hljs.registerLanguage("kql", function () {
+  const KEYWORDS = [
+    "let", "set", "declare", "pattern", "query_parameters", "restrict", "access",
+    "alias", "database", "materialize", "range", "toscalar",
+  ];
+  const OPERATORS = [
+    "where", "project", "extend", "summarize", "render", "join", "union",
+    "sort", "order", "top", "limit", "take", "count", "distinct", "sample",
+    "search", "reduce", "mv-expand", "mv-apply", "parse", "parse-where",
+    "evaluate", "invoke", "make-series", "lookup", "print", "as", "consume",
+    "find", "fork", "facet", "getschema", "serialize", "project-away",
+    "project-keep", "project-rename", "project-reorder", "externaldata",
+    "datatable", "partition", "scan", "narrow",
+  ];
+  const FUNCTIONS = [
+    "ago", "now", "datetime", "timespan", "time", "bin", "floor", "ceiling",
+    "startofday", "startofweek", "startofmonth", "startofyear", "endofday",
+    "endofweek", "endofmonth", "endofyear", "dayofweek", "dayofmonth",
+    "dayofyear", "hourofday", "weekofyear", "monthofyear", "getyear",
+    "getmonth", "format_datetime", "format_timespan", "todatetime", "totimespan",
+    "todecimal", "todouble", "tolong", "toint", "tostring", "tobool",
+    "strlen", "substring", "trim", "trim_start", "trim_end", "tolower",
+    "toupper", "strcat", "strcat_delim", "replace", "replace_string",
+    "replace_regex", "reverse", "split", "extract", "extract_all",
+    "parse_json", "parse_xml", "parse_url", "parse_urlquery", "parse_path",
+    "parse_ipv4", "parse_ipv6", "parse_csv", "parse_command_line",
+    "indexof", "countof", "has", "has_any", "has_all", "contains",
+    "startswith", "endswith", "matches", "isempty", "isnotempty",
+    "isnull", "isnotnull", "isnan", "isinf", "isfinite",
+    "sum", "avg", "min", "max", "count", "dcount", "dcountif", "countif",
+    "sumif", "avgif", "minif", "maxif", "percentile", "percentiles",
+    "stdev", "stdevif", "variance", "varianceif", "make_bag", "make_list",
+    "make_set", "arg_max", "arg_min", "any", "take_any",
+    "array_length", "array_concat", "array_slice", "array_index_of",
+    "pack", "pack_all", "pack_array", "bag_keys", "bag_merge",
+    "todynamic", "toreal", "toguid", "hash", "iff", "iif", "case",
+    "coalesce", "max_of", "min_of", "not", "binary_and", "binary_or",
+    "binary_xor", "binary_not", "base64_encode_tostring", "base64_decode_tostring",
+    "row_number", "prev", "next", "ingestion_time", "cursor_after",
+  ];
+  return {
+    name: "Kusto Query Language",
+    aliases: ["kusto"],
+    case_insensitive: true,
+    keywords: {
+      keyword: KEYWORDS.join(" "),
+      operator: OPERATORS.join(" "),
+      built_in: FUNCTIONS.join(" "),
+    },
+    contains: [
+      hljs.C_LINE_COMMENT_MODE,
+      hljs.C_BLOCK_COMMENT_MODE,
+      hljs.APOS_STRING_MODE,
+      hljs.QUOTE_STRING_MODE,
+      {
+        className: "string",
+        begin: /h?"""/, end: /"""/,
+      },
+      {
+        className: "string",
+        begin: /@"/, end: /"/,
+      },
+      hljs.C_NUMBER_MODE,
+      {
+        className: "type",
+        begin: /\b(?:bool|datetime|decimal|dynamic|guid|int|long|real|string|timespan)\b/,
+      },
+      {
+        className: "operator",
+        begin: /[|!<>=~+\-*\/]/,
+      },
+    ],
+  };
+});
+
 // ─── Turndown (HTML → Markdown) ───
 const html2md = new TurndownService({
   headingStyle: "atx",

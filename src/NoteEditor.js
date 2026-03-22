@@ -26,7 +26,7 @@ import {
 const CODE_LANGUAGES = [
   "javascript", "typescript", "python", "java", "csharp", "go", "rust", "ruby",
   "php", "swift", "kotlin", "sql", "html", "css", "scss", "bash", "shell",
-  "json", "yaml", "xml", "markdown", "dockerfile", "graphql", "r",
+  "json", "yaml", "xml", "markdown", "dockerfile", "graphql", "kql", "r",
   "powershell", "lua", "perl", "scala", "haskell", "elixir", "clojure",
   "jsx", "tsx", "vue", "svelte", "toml", "ini", "nginx", "diff",
   "plaintext",
