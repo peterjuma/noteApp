@@ -1,21 +1,24 @@
-feat: lazy-loading, 66 component tests, bundle size reduction
+feat: 79 tests (13 App integration), React 18 defensive guards
 
-Lazy Loading (-143KB main bundle):
-- Mermaid: dynamic import in NoteMain, loads only when diagram blocks exist
-- SettingsPanel: React.lazy() + Suspense, loaded on Settings open
-- VersionHistory: React.lazy() + Suspense, loaded on history open
-- TableConverter: React.lazy() + Suspense, loaded on TC open
-- Main bundle reduced from 899KB to 756KB (-16%)
+App.js Integration Tests (13 tests):
+- Initial render: sidebar, sort dropdown
+- Navigation: home button, settings open, TC open
+- Editor: new note creation, editor rendering
+- Settings: dark mode toggle persistence, General content
+- Search: toggle shows input
+- Sidebar: collapse/expand, localStorage persistence
+- Navigation guards: confirm dialog on editor switch, Keep Editing
 
-Component Tests (27 new, 66 total):
-- NavbarSidebar.test.js: rendering, title states, button interactions (11 tests)
-- NavbarMain.test.js: toolbar buttons, callbacks, conditional rendering (8 tests)
-- ConfirmDialog.test.js: rendering, confirm/cancel/secondary actions (6 tests)
-- NoteSort.test.js: sort dropdown, selection change callback (3 tests)
+React 18 Compatibility Fixes:
+- Defensive fallbacks in render: allnotes, pinnedNotes, filteredNotes, workspaces
+- componentDidMount callback uses local variable instead of state
+- Prevents crashes during React 18 strict mode double-mount lifecycle
 
-Dev Dependencies:
-- Added @testing-library/dom (peer dep)
-- Added @babel/plugin-proposal-private-property-in-object (CRA warning fix)
+Test Infrastructure:
+- Full mock layer: notesDB, gistSync, NoteEditor, SettingsPanel, VersionHistory, TableConverter
+- Mock fetch for README loading
+- Mock clipboard API
+- 79 total tests across 9 suites, all passing
 
-Note: App.js class-to-function migration deferred — requires comprehensive
-integration test coverage first to prevent regressions in 1500-line component.
+Note: App.js class-to-functional migration deferred to separate session.
+Requires the integration test coverage now in place to be safe.

@@ -79,7 +79,7 @@ class App extends Component {
       allnotes: getnotes,
       pinnedNotes: pinnedNotes || [],
     }, () => {
-      if (this.state.allnotes.length === 0) {
+      if (!getnotes || getnotes.length === 0) {
         this.handleClickHomeBtn();
         return;
       }
@@ -995,12 +995,10 @@ handleUnpinNote = async (noteid) => {
   
 
   render() {
-    // Separate pinned and unpinned notes
-    // const pinnedNotes = this.state.allnotes.filter(note => this.state.pinnedNotes.includes(note.noteid));
-    // const unpinnedNotes = this.state.allnotes.filter(note => !this.state.pinnedNotes.includes(note.noteid));
-
-    const { allnotes, pinnedNotes, filteredNotes } = this.state;
-    
+    const allnotes = this.state.allnotes || [];
+    const pinnedNotes = this.state.pinnedNotes || [];
+    const filteredNotes = this.state.filteredNotes || [];
+    const workspaces = this.state.workspaces || [];
 
     let ActivePage, RightNavbar;
     if (this.state.activepage === "viewnote") {
@@ -1029,16 +1027,16 @@ handleUnpinNote = async (noteid) => {
               notetitle: this.state.notetitle,
               notebody: this.state.notebody,
               action: this.state.action,
-              created_at: (this.state.allnotes.find(n => n.noteid === this.state.noteid) || {}).created_at,
-              updated_at: (this.state.allnotes.find(n => n.noteid === this.state.noteid) || {}).updated_at,
-              tags: (this.state.allnotes.find(n => n.noteid === this.state.noteid) || {}).tags || [],
+              created_at: (allnotes.find(n => n.noteid === this.state.noteid) || {}).created_at,
+              updated_at: (allnotes.find(n => n.noteid === this.state.noteid) || {}).updated_at,
+              tags: (allnotes.find(n => n.noteid === this.state.noteid) || {}).tags || [],
             }}
             handleCopyEvent={this.handleCopyEvent}
             onAddTag={this.handleAddTag}
             onAddTags={this.handleAddTags}
             tagSuggestEnabled={this.state.tagSuggestEnabled}
             onWikiLink={(title) => {
-              const note = this.state.allnotes.find(n =>
+              const note = allnotes.find(n =>
                 (n.title || "").toLowerCase() === title.toLowerCase()
               );
               if (note) {
@@ -1061,7 +1059,7 @@ handleUnpinNote = async (noteid) => {
             notetitle: this.state.notetitle,
             notebody: this.state.notebody,
             action: this.state.action,
-            tags: (this.state.allnotes.find(n => n.noteid === this.state.noteid) || {}).tags || [],
+            tags: (allnotes.find(n => n.noteid === this.state.noteid) || {}).tags || [],
           }}
           darkMode={this.state.darkMode}
           autoSave={this.state.autoSave}
@@ -1155,7 +1153,7 @@ handleUnpinNote = async (noteid) => {
             darkMode={this.state.darkMode}
             showSettings={this.state.showSettings}
             showTableConverter={this.state.showTableConverter}
-            workspaceName={(this.state.workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default"}
+            workspaceName={(workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default"}
             sidebarCollapsed={this.state.sidebarCollapsed}
             onToggleCollapse={() => this.setState((s) => {
               const next = !s.sidebarCollapsed;
