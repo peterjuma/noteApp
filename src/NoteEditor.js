@@ -16,7 +16,18 @@ import {
   Bold, Italic, Heading2, Link, ListOrdered, List, Quote, Paperclip, Image,
   Code, Braces, CheckSquare, Table, Strikethrough, Save, X,
   Columns2, Maximize2, Eye, EyeOff, Minus, Sparkles, Check,
+  Indent, Outdent, ChevronDown,
 } from "lucide-react";
+
+// Popular languages for the code block picker
+const CODE_LANGUAGES = [
+  "javascript", "typescript", "python", "java", "csharp", "go", "rust", "ruby",
+  "php", "swift", "kotlin", "sql", "html", "css", "scss", "bash", "shell",
+  "json", "yaml", "xml", "markdown", "dockerfile", "graphql", "r",
+  "powershell", "lua", "perl", "scala", "haskell", "elixir", "clojure",
+  "jsx", "tsx", "vue", "svelte", "toml", "ini", "nginx", "diff",
+  "plaintext",
+];
 
 function NoteEditor(props) {
   const note = props.editNoteData;
@@ -36,6 +47,9 @@ function NoteEditor(props) {
   const [autoSave, setAutoSave] = useState(localStorage.getItem("noteapp_autosave") === "true");
   const [editorSuggestions, setEditorSuggestions] = useState([]);
   const [showTableConverter, setShowTableConverter] = useState(false);
+  const [showLangPicker, setShowLangPicker] = useState(false);
+  const [langFilter, setLangFilter] = useState("");
+  const langPickerRef = useRef(null);
   const titleRef = useRef();
   const editorRef = useRef(null);
   const viewRef = useRef(null);
@@ -118,8 +132,8 @@ function NoteEditor(props) {
     { icon: Italic, command: "italic", tooltip: "Italic (Ctrl+I)", size: 15 },
     { divider: true },
     { icon: Quote, command: "blockquote", tooltip: "Quote", size: 15 },
-    { icon: Code, command: "backticks", tooltip: "Code (Ctrl+E)", size: 15 },
-    { icon: Braces, command: "codeblock", tooltip: "Code Block", size: 15 },
+    { icon: Code, command: "backticks", tooltip: "Inline Code (Ctrl+E)", size: 15 },
+    { icon: Braces, command: "codeblockPicker", tooltip: "Code Block (with language)", size: 15 },
     { icon: Link, command: "link", tooltip: "Link (Ctrl+K)", size: 15 },
     { icon: Image, command: "image", tooltip: "Image Link", size: 15 },
     { icon: Paperclip, command: "uploadImage", tooltip: "Attach Image", size: 15 },
@@ -127,6 +141,8 @@ function NoteEditor(props) {
     { icon: List, command: "ulist", tooltip: "Bullet List", size: 15 },
     { icon: ListOrdered, command: "olist", tooltip: "Numbered List", size: 15 },
     { icon: CheckSquare, command: "tasklist", tooltip: "Task List", size: 15 },
+    { icon: Indent, command: "indent", tooltip: "Indent (Tab)", size: 15 },
+    { icon: Outdent, command: "outdent", tooltip: "Outdent (Shift+Tab)", size: 15 },
     { divider: true },
     { icon: Table, command: "openTableConverter", tooltip: "Table Converter", size: 15 },
     { icon: Minus, command: "hr", tooltip: "Horizontal Rule", size: 15 },
@@ -134,7 +150,7 @@ function NoteEditor(props) {
   ];
 
   // Markdown insertion logic
-  const insertMarkdown = useCallback((command) => {
+  const insertMarkdown = useCallback((command, extra) => {
     const view = viewRef.current;
     if (!view) return;
 
@@ -206,10 +222,14 @@ function NoteEditor(props) {
         insert = selected ? selected.split("\n").map((l) => `> ${l}`).join("\n") : "> ";
         selectFrom = from + insert.length; selectTo = selectFrom;
         break;
-      case "codeblock":
-        insert = "\n```\n" + (selected || "") + "\n```\n";
-        selectFrom = from + 5; selectTo = from + 5 + (selected ? selected.length : 0);
+      case "codeblock": {
+        const lang = typeof extra === "string" ? extra : "";
+        insert = "\n```" + lang + "\n" + (selected || "") + "\n```\n";
+        const offset = 4 + lang.length;
+        selectFrom = from + offset;
+        selectTo = from + offset + (selected ? selected.length : 0);
         break;
+      }
       case "table":
         insert = "\n| Column 1 | Column 2 | Column 3 |\n| -------- | -------- | -------- |\n| Cell     | Cell     | Cell     |\n";
         selectFrom = from + insert.length; selectTo = selectFrom;
@@ -228,6 +248,58 @@ function NoteEditor(props) {
     });
     view.focus();
   }, []);
+
+  // Insert code block with a specific language
+  const insertCodeBlock = useCallback(
+    (lang) => {
+      insertMarkdown("codeblock", lang || "");
+      setShowLangPicker(false);
+      setLangFilter("");
+    },
+    [insertMarkdown],
+  );
+
+  // Indent / outdent selected lines (list nesting)
+  const indentLines = useCallback((direction) => {
+    const view = viewRef.current;
+    if (!view) return;
+    const { from, to } = view.state.selection.main;
+    const doc = view.state.doc;
+    const startLine = doc.lineAt(from);
+    const endLine = doc.lineAt(to);
+    const changes = [];
+    for (let i = startLine.number; i <= endLine.number; i++) {
+      const line = doc.line(i);
+      if (direction === "indent") {
+        changes.push({ from: line.from, to: line.from, insert: "  " });
+      } else {
+        // Outdent: remove up to 2 leading spaces or 1 tab
+        const text = line.text;
+        if (text.startsWith("  ")) {
+          changes.push({ from: line.from, to: line.from + 2, insert: "" });
+        } else if (text.startsWith("\t")) {
+          changes.push({ from: line.from, to: line.from + 1, insert: "" });
+        }
+      }
+    }
+    if (changes.length > 0) {
+      view.dispatch({ changes });
+    }
+    view.focus();
+  }, []);
+
+  // Close language picker on outside click
+  useEffect(() => {
+    if (!showLangPicker) return;
+    const handleClickOutside = (e) => {
+      if (langPickerRef.current && !langPickerRef.current.contains(e.target)) {
+        setShowLangPicker(false);
+        setLangFilter("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showLangPicker]);
 
   // Keep ref in sync for keymap closures
   insertMarkdownRef.current = insertMarkdown;
@@ -299,8 +371,21 @@ function NoteEditor(props) {
           // Check if the HTML contains actual rich formatting tags (not just a text wrapper)
           const hasRichHtml = /<(?:p|div|span|br|h[1-6]|ul|ol|li|table|tr|td|th|a|img|pre|code|blockquote|strong|em|b|i|hr)\b/i.test(htmlContent);
           if (hasRichHtml) {
+            // Clean Zendesk quirks before conversion:
+            // Remove empty style attributes, data-* attributes, Zendesk wrapper divs
+            let cleanedHtml = htmlContent
+              .replace(/\s+style="[^"]*"/gi, "")
+              .replace(/\s+data-[a-z-]+="[^"]*"/gi, "")
+              .replace(/<\/?font[^>]*>/gi, "");
+
             html2md.keep(["pre", "code"]);
-            const pasteData = html2md.turndown(htmlContent);
+            let pasteData = html2md.turndown(cleanedHtml);
+
+            // Post-process: fix double-blank-lines in lists and normalize numbering
+            pasteData = pasteData
+              .replace(/(\n\s*[-*]\s.*)\n{3,}/g, "$1\n")  // collapse extra blanks in bullet lists
+              .replace(/(\n\s*\d+\.\s.*)\n{3,}/g, "$1\n"); // collapse extra blanks in ordered lists
+
             event.preventDefault();
             const { from, to } = view.state.selection.main;
             view.dispatch({
@@ -466,13 +551,17 @@ function NoteEditor(props) {
                 onClick={() => {
                   if (item.command === "uploadImage") imageInputRef.current.click();
                   else if (item.command === "openTableConverter") setShowTableConverter(true);
+                  else if (item.command === "codeblockPicker") setShowLangPicker(!showLangPicker);
+                  else if (item.command === "indent") indentLines("indent");
+                  else if (item.command === "outdent") indentLines("outdent");
                   else insertMarkdown(item.command);
                 }}
-                className={`toolbar-btn ${darkMode ? "toolbar-btn-dark" : ""}`}
+                className={`toolbar-btn ${darkMode ? "toolbar-btn-dark" : ""} ${item.command === "codeblockPicker" && showLangPicker ? "toolbar-btn-active" : ""}`}
                 title={item.tooltip}
                 aria-label={item.tooltip}
               >
                 <item.icon size={item.size} />
+                {item.command === "codeblockPicker" && <ChevronDown size={10} className="toolbar-chevron" />}
               </button>
             )
           )}
@@ -502,6 +591,51 @@ function NoteEditor(props) {
             </button>
           </div>
         </div>
+
+        {/* Language picker dropdown */}
+        {showLangPicker && (
+          <div className={`lang-picker ${darkMode ? "lang-picker-dark" : ""}`} ref={langPickerRef}>
+            <input
+              type="text"
+              className={`lang-picker-input ${darkMode ? "lang-picker-input-dark" : ""}`}
+              placeholder="Filter language..."
+              value={langFilter}
+              autoFocus
+              onChange={(e) => setLangFilter(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const filtered = CODE_LANGUAGES.filter((l) =>
+                    l.toLowerCase().includes(langFilter.toLowerCase()),
+                  );
+                  insertCodeBlock(filtered.length > 0 ? filtered[0] : langFilter.trim());
+                } else if (e.key === "Escape") {
+                  setShowLangPicker(false);
+                  setLangFilter("");
+                }
+              }}
+            />
+            <div className="lang-picker-list">
+              <button
+                className={`lang-picker-item ${darkMode ? "lang-picker-item-dark" : ""}`}
+                onClick={() => insertCodeBlock("")}
+              >
+                <span className="lang-picker-name">Plain text</span>
+                <span className="lang-picker-hint">no highlighting</span>
+              </button>
+              {CODE_LANGUAGES.filter((l) =>
+                l.toLowerCase().includes(langFilter.toLowerCase()),
+              ).map((lang) => (
+                <button
+                  key={lang}
+                  className={`lang-picker-item ${darkMode ? "lang-picker-item-dark" : ""}`}
+                  onClick={() => insertCodeBlock(lang)}
+                >
+                  <span className="lang-picker-name">{lang}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Title — hidden in preview mode */}
         {!showPreview && (

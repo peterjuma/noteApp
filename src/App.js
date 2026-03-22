@@ -8,7 +8,6 @@ import readmePath from "./README.md";
 import NoteEditor from "./NoteEditor";
 import ConfirmDialog from "./ConfirmDialog";
 import TableConverter from "./TableConverter";
-import hljs from "highlight.js";
 import { html2md, md2html } from "./useMarkDown";
 import { saveAs } from "file-saver";
 import * as db from "./services/notesDB";
@@ -82,7 +81,6 @@ class App extends Component {
     // Listen for browser back/forward
     window.addEventListener("hashchange", this.handleHashChange);
 
-    this.updateCodeSyntaxHighlighting();
     this.handleCopyCodeButtonClick();
   }
 
@@ -95,17 +93,9 @@ class App extends Component {
       prevState.notebody !== this.state.notebody ||
       prevState.activepage !== this.state.activepage
     ) {
-      this.updateCodeSyntaxHighlighting();
       this.handleCopyCodeButtonClick();
     }
   }
-
-  updateCodeSyntaxHighlighting = () => {
-    document.querySelectorAll("pre code").forEach((block) => {
-      if (block.classList.contains("language-mermaid")) return;
-      hljs.highlightElement(block);
-    });
-  };
 
 // Pin a note and persist
 handlePinNote = async (noteid) => {
@@ -147,12 +137,26 @@ handleUnpinNote = async (noteid) => {
     }
     codeBlockElems.forEach(function (codeBlock) {
       var pre = codeBlock.parentNode;
-      var prevElem = pre.previousElementSibling;
 
-      if (prevElem && prevElem.classList && prevElem.classList.contains("copy-code-button")) {
-        return;
+      // Skip mermaid blocks (will be replaced by diagram renderer)
+      if (codeBlock.classList.contains("language-mermaid")) return;
+
+      // Add language label if not already present
+      if (!pre.querySelector(".code-lang-label")) {
+        var langClass = Array.from(codeBlock.classList).find(function (c) {
+          return c.startsWith("language-");
+        });
+        if (langClass) {
+          var lang = langClass.replace("language-", "");
+          var label = document.createElement("span");
+          label.className = "code-lang-label";
+          label.textContent = lang;
+          pre.style.position = "relative";
+          pre.insertBefore(label, pre.firstChild);
+        }
       }
-      // Check if button already inside pre
+
+      // Check if copy button already exists
       if (pre.querySelector(".copy-code-button")) {
         return;
       }
@@ -177,9 +181,14 @@ handleUnpinNote = async (noteid) => {
         );
       });
 
-      // Insert inside the pre element and make pre relative
+      // Insert inside the pre element
       pre.style.position = "relative";
-      pre.insertBefore(button, pre.firstChild);
+      var langLabel = pre.querySelector(".code-lang-label");
+      if (langLabel) {
+        langLabel.insertAdjacentElement("afterend", button);
+      } else {
+        pre.insertBefore(button, pre.firstChild);
+      }
     });
   };
 
