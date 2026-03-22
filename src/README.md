@@ -101,6 +101,16 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 - **Download** — Export individual notes as `.md` files
 - **Print / PDF** — Clean print layout with page-break-aware formatting; use browser "Save as PDF"
 
+### GitHub Gist Sync
+- **Cross-device sync** — Sync notes to a private GitHub Gist for backup and multi-device access
+- **Auto-sync** — Background push after every save (10-second debounce)
+- **Bidirectional merge** — Pull + merge + push with newest-wins per-note conflict resolution
+- **Token-based auth** — GitHub Personal Access Token with `gist` scope only
+- **Per-workspace Gists** — Each workspace syncs to its own private Gist
+- **Link existing Gist** — Connect another device by pasting the Gist ID
+- **Sync status** — Last sync timestamp, success/error feedback, spinner animation
+- **Privacy** — Notes stored as JSON in your own GitHub account; no third-party servers
+
 ### App
 - **Dark / Light mode** — Full theme toggle with GitHub-style syntax highlighting in both modes
 - **PWA installable** — Add to home screen on mobile or desktop
