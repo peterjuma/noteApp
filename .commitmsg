@@ -1,29 +1,21 @@
-feat: React 18 upgrade, test suite, mobile responsive polish
+feat: lazy-loading, 66 component tests, bundle size reduction
 
-React 18 Upgrade:
-- Upgraded react and react-dom from 17.0.1 to 18
-- Migrated from ReactDOM.render to createRoot API
-- Build and all features verified working
+Lazy Loading (-143KB main bundle):
+- Mermaid: dynamic import in NoteMain, loads only when diagram blocks exist
+- SettingsPanel: React.lazy() + Suspense, loaded on Settings open
+- VersionHistory: React.lazy() + Suspense, loaded on history open
+- TableConverter: React.lazy() + Suspense, loaded on TC open
+- Main bundle reduced from 899KB to 756KB (-16%)
 
-Test Suite (39 tests, 4 suites):
-- snippets.test.js: CRUD, defaults, corruption handling (8 tests)
-- gistSync.test.js: token management, sync state, mergeNotes (11 tests)
-- tagSuggester.test.js: suggestions, dedup, language detection (5 tests)
-- useMarkDown.test.js: rendering, code blocks, footnotes, wiki links, Zendesk (12 tests)
-- Added setupTests.js with @testing-library/jest-dom
-- Fixed snippet ID collision (added random suffix)
+Component Tests (27 new, 66 total):
+- NavbarSidebar.test.js: rendering, title states, button interactions (11 tests)
+- NavbarMain.test.js: toolbar buttons, callbacks, conditional rendering (8 tests)
+- ConfirmDialog.test.js: rendering, confirm/cancel/secondary actions (6 tests)
+- NoteSort.test.js: sort dropdown, selection change callback (3 tests)
 
-Mobile Responsive Polish:
-- Settings panel: scrollable tabs, stacked action cards, responsive danger zone
-- Version history: stacked layout (list on top, preview below) on mobile
-- Slash menu: width-constrained to viewport
-- View toolbar: wraps on narrow screens
-- Touch targets: min 36px buttons, tap-highlight disabled
-- Editor toolbar: horizontal scroll on overflow
-- Tags: proper wrapping on small screens
-- Variable prompt and language picker: viewport-constrained
-- Table converter: responsive padding
-- Extra-small (400px): further compression of tabs, buttons, dividers
+Dev Dependencies:
+- Added @testing-library/dom (peer dep)
+- Added @babel/plugin-proposal-private-property-in-object (CRA warning fix)
 
-New devDeps: @testing-library/react, @testing-library/jest-dom, @testing-library/user-event
-New files: src/setupTests.js, src/__tests__/*.test.js
+Note: App.js class-to-function migration deferred — requires comprehensive
+integration test coverage first to prevent regressions in 1500-line component.

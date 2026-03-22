@@ -1,12 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import DOMPurify from "dompurify";
 import { md2html } from "./useMarkDown";
-import mermaid from "mermaid";
 import * as noteDB from "./services/notesDB";
 import { suggestTags } from "./services/tagSuggester";
 import { Sparkles, Check, X } from "lucide-react";
 
-mermaid.initialize({ startOnLoad: false, theme: "default" });
+// Lazy-load mermaid only when needed
+let mermaidModule = null;
+async function getMermaid() {
+  if (!mermaidModule) {
+    const m = await import("mermaid");
+    mermaidModule = m.default;
+    mermaidModule.initialize({ startOnLoad: false, theme: "default" });
+  }
+  return mermaidModule;
+}
 
 // PlantUML text encoder (deflate + custom base64 for plantuml.com server)
 function plantumlEncode(text) {
@@ -90,9 +98,11 @@ function NoteMain(props) {
   useEffect(() => {
     if (!bodyRef.current) return;
 
-    // Mermaid diagrams — render sequentially (Mermaid can't handle concurrent renders)
+    // Mermaid diagrams — lazy-load and render sequentially
     const renderMermaidDiagrams = async () => {
       const mermaidBlocks = bodyRef.current.querySelectorAll("code.language-mermaid");
+      if (mermaidBlocks.length === 0) return;
+      const mermaid = await getMermaid();
       for (let i = 0; i < mermaidBlocks.length; i++) {
         const block = mermaidBlocks[i];
         const pre = block.parentNode;
@@ -105,7 +115,6 @@ function NoteMain(props) {
           container.innerHTML = DOMPurify.sanitize(svg, { ADD_TAGS: ["foreignObject"], ADD_ATTR: ["requiredExtensions"] });
           pre.replaceWith(container);
         } catch (err) {
-          // Leave the code block as-is on failure, but log for debugging
           // eslint-disable-next-line no-console
           console.warn("Mermaid render failed for block", i, err);
         }

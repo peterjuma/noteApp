@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { Component, lazy, Suspense } from "react";
 import NavbarSidebar from "./NavbarSidebar";
 import NoteSort from "./NoteSort";
 import NavbarMain from "./NavbarMain";
@@ -7,13 +7,15 @@ import NoteMain from "./NoteMain";
 import readmePath from "./README.md";
 import NoteEditor from "./NoteEditor";
 import ConfirmDialog from "./ConfirmDialog";
-import SettingsPanel from "./SettingsPanel";
-import VersionHistory from "./VersionHistory";
-import TableConverter from "./TableConverter";
 import { html2md, md2html } from "./useMarkDown";
 import { saveAs } from "file-saver";
 import Fuse from "fuse.js";
 import * as db from "./services/notesDB";
+
+// Lazy-load heavy components (not needed on initial render)
+const SettingsPanel = lazy(() => import("./SettingsPanel"));
+const VersionHistory = lazy(() => import("./VersionHistory"));
+const TableConverter = lazy(() => import("./TableConverter"));
 import * as gistSync from "./services/gistSync";
 import { Menu } from "lucide-react";
 
@@ -1292,6 +1294,7 @@ handleUnpinNote = async (noteid) => {
         />
 
         <div className="main-content">
+          <Suspense fallback={<div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af" }}>Loading...</div>}>
           {this.state.showSettings ? (
             <SettingsPanel
               darkMode={this.state.darkMode}
@@ -1397,6 +1400,7 @@ handleUnpinNote = async (noteid) => {
               {ActivePage}
             </>
           )}
+          </Suspense>
         </div>
 
         {/* Navigation confirm dialog */}
@@ -1462,6 +1466,7 @@ handleUnpinNote = async (noteid) => {
         )}
         {/* Version History */}
         {this.state.showVersionHistory && this.state.noteid && (
+          <Suspense fallback={null}>
           <VersionHistory
             noteid={this.state.noteid}
             currentTitle={this.state.notetitle}
@@ -1480,6 +1485,7 @@ handleUnpinNote = async (noteid) => {
             }}
             onClose={() => this.setState({ showVersionHistory: false })}
           />
+          </Suspense>
         )}
       </div>
     );
