@@ -17,6 +17,8 @@ function SettingsPanel({
   onToggleTagSuggest,
   vimMode,
   onToggleVimMode,
+  profileName,
+  onChangeProfileName,
   workspaces,
   activeDb,
   onSwitchWorkspace,
@@ -203,6 +205,24 @@ function SettingsPanel({
                 <span className="settings-switch-thumb" />
               </button>
             </label>
+
+            <h3 className="settings-section-title">Device Profile</h3>
+            <div className="settings-toggle-row" style={{ cursor: "default" }}>
+              <div className="settings-toggle-info">
+                <span className="settings-toggle-label">
+                  Profile Name
+                </span>
+                <span className="settings-toggle-hint">Identifies this browser/device in backup filenames and sync</span>
+              </div>
+              <input
+                type="text"
+                className="settings-input"
+                style={{ maxWidth: 180, textAlign: "right" }}
+                value={profileName || ""}
+                onChange={(e) => onChangeProfileName(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ""))}
+                placeholder="e.g. mac-chrome"
+              />
+            </div>
           </div>
         )}
 

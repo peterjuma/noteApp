@@ -28,6 +28,25 @@ function slugify(title) {
     .replace(/(^-|-$)/g, "");
 }
 
+// Generate a default profile name from browser/OS info
+function generateProfileName() {
+  const ua = navigator.userAgent || "";
+  let browser = "browser";
+  if (ua.includes("Chrome") && !ua.includes("Edg")) browser = "chrome";
+  else if (ua.includes("Firefox")) browser = "firefox";
+  else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "safari";
+  else if (ua.includes("Edg")) browser = "edge";
+  let os = "desktop";
+  if (ua.includes("Mac")) os = "mac";
+  else if (ua.includes("Windows")) os = "win";
+  else if (ua.includes("Linux")) os = "linux";
+  else if (ua.includes("iPhone") || ua.includes("iPad")) os = "ios";
+  else if (ua.includes("Android")) os = "android";
+  const name = `${os}-${browser}`;
+  localStorage.setItem("noteapp_profile_name", name);
+  return name;
+}
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -60,6 +79,7 @@ class App extends Component {
       autoSave: localStorage.getItem("noteapp_autosave") === "true",
       tagSuggestEnabled: localStorage.getItem("noteapp_tag_suggest") !== "false",
       vimMode: localStorage.getItem("noteapp_vim_mode") === "true",
+      profileName: localStorage.getItem("noteapp_profile_name") || generateProfileName(),
     };
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
@@ -909,7 +929,10 @@ handleUnpinNote = async (noteid) => {
     });
 
     zip.generateAsync({ type: "blob" }).then((content) => {
-      saveAs(content, "notes_backup.zip");
+      const wsName = ((this.state.workspaces || []).find(w => w.dbName === this.state.activeDb) || {}).name || "default";
+      const profile = this.state.profileName || "backup";
+      const date = new Date().toISOString().slice(0, 10);
+      saveAs(content, `noteapp_${profile}_${wsName}_${date}.zip`);
     });
   }
 
@@ -1319,6 +1342,11 @@ handleUnpinNote = async (noteid) => {
                 localStorage.setItem("noteapp_vim_mode", next);
                 return { vimMode: next };
               })}
+              profileName={this.state.profileName}
+              onChangeProfileName={(name) => {
+                localStorage.setItem("noteapp_profile_name", name);
+                this.setState({ profileName: name });
+              }}
               workspaces={this.state.workspaces}
               activeDb={this.state.activeDb}
               onSwitchWorkspace={(dbName) => { this.handleSwitchWorkspace(dbName); }}

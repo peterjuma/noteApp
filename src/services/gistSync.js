@@ -117,6 +117,7 @@ function buildGistPayload(dbName, workspaceName, notes) {
     workspace: workspaceName,
     dbName,
     exportedAt: new Date().toISOString(),
+    exportedBy: localStorage.getItem("noteapp_profile_name") || "unknown",
     noteCount: notes.length,
     notes: notes.map((n) => ({
       noteid: n.noteid,
