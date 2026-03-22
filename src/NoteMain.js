@@ -157,8 +157,8 @@ function NoteMain(props) {
             ))}
           </div>
         )}
-        {/* Tag suggestions — only show for notes without tags */}
-        {notesData.action !== "homepage" && (!notesData.tags || notesData.tags.length === 0) && (
+        {/* Tag suggestions — only show for notes without tags when enabled */}
+        {props.tagSuggestEnabled !== false && notesData.action !== "homepage" && (!notesData.tags || notesData.tags.length === 0) && (
           <div className="tag-suggest-area">
             {!showSuggestions ? (
               <button onClick={handleSuggestTags} className="tag-suggest-btn" title="Suggest tags using AI">

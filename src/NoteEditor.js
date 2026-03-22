@@ -11,12 +11,14 @@ import { searchKeymap } from "@codemirror/search";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import * as noteDB from "./services/notesDB";
 import { suggestTags } from "./services/tagSuggester";
+import { ensureDefaults as loadSnippets } from "./services/snippets";
 import TableConverter from "./TableConverter";
 import {
   Bold, Italic, Heading2, Link, ListOrdered, List, Quote, Paperclip, Image,
   Code, Braces, CheckSquare, Table, Strikethrough, Save, X,
   Columns2, Maximize2, Eye, EyeOff, Minus, Sparkles, Check,
-  Indent, Outdent, ChevronDown,
+  Indent, Outdent, ChevronDown, Hash, Minus as MinusIcon, GitBranch, Sigma,
+  FileText,
 } from "lucide-react";
 
 // Popular languages for the code block picker
@@ -27,6 +29,24 @@ const CODE_LANGUAGES = [
   "powershell", "lua", "perl", "scala", "haskell", "elixir", "clojure",
   "jsx", "tsx", "vue", "svelte", "toml", "ini", "nginx", "diff",
   "plaintext",
+];
+
+// Slash command definitions
+const SLASH_COMMANDS = [
+  { id: "heading", label: "Heading", icon: Hash, insert: "### ", description: "Section heading" },
+  { id: "bold", label: "Bold", icon: Bold, insert: "**bold text**", description: "Bold text" },
+  { id: "italic", label: "Italic", icon: Italic, insert: "_italic text_", description: "Italic text" },
+  { id: "codeblock", label: "Code Block", icon: Braces, insert: "```\n\n```", description: "Fenced code block" },
+  { id: "quote", label: "Quote", icon: Quote, insert: "> ", description: "Block quote" },
+  { id: "ulist", label: "Bullet List", icon: List, insert: "- ", description: "Unordered list" },
+  { id: "olist", label: "Numbered List", icon: ListOrdered, insert: "1. ", description: "Ordered list" },
+  { id: "tasklist", label: "Task List", icon: CheckSquare, insert: "- [ ] ", description: "Checklist" },
+  { id: "table", label: "Table", icon: Table, insert: "| Column 1 | Column 2 |\n| -------- | -------- |\n| Cell     | Cell     |", description: "Markdown table" },
+  { id: "hr", label: "Divider", icon: MinusIcon, insert: "\n---\n", description: "Horizontal rule" },
+  { id: "link", label: "Link", icon: Link, insert: "[text](url)", description: "Hyperlink" },
+  { id: "image", label: "Image", icon: Image, insert: "![alt](url)", description: "Image" },
+  { id: "mermaid", label: "Diagram", icon: GitBranch, insert: "```mermaid\ngraph TD\n  A-->B\n```", description: "Mermaid diagram" },
+  { id: "math", label: "Math", icon: Sigma, insert: "$$\n\n$$", description: "KaTeX math block" },
 ];
 
 function NoteEditor(props) {
@@ -44,12 +64,14 @@ function NoteEditor(props) {
   const [tags, setTags] = useState(note.tags || []);
   const [tagInput, setTagInput] = useState("");
   const [noteAction, setNoteAction] = useState(note.action);
-  const [autoSave, setAutoSave] = useState(localStorage.getItem("noteapp_autosave") === "true");
+  const autoSave = props.autoSave;
   const [editorSuggestions, setEditorSuggestions] = useState([]);
   const [showTableConverter, setShowTableConverter] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [langFilter, setLangFilter] = useState("");
+  const [slashMenu, setSlashMenu] = useState(null); // { pos, filter }
   const langPickerRef = useRef(null);
+  const slashMenuRef = useRef(null);
   const titleRef = useRef();
   const editorRef = useRef(null);
   const viewRef = useRef(null);
@@ -90,9 +112,7 @@ function NoteEditor(props) {
 
   // Toggle autosave preference
   const toggleAutoSave = () => {
-    const next = !autoSave;
-    setAutoSave(next);
-    localStorage.setItem("noteapp_autosave", next);
+    if (props.onToggleAutoSave) props.onToggleAutoSave();
   };
 
   // Warn before navigating away with unsaved changes (browser close/refresh)
@@ -304,12 +324,61 @@ function NoteEditor(props) {
   // Keep ref in sync for keymap closures
   insertMarkdownRef.current = insertMarkdown;
   const saveFnRef = useRef(null);
+  const setSlashMenuRef = useRef(setSlashMenu);
+  setSlashMenuRef.current = setSlashMenu;
+
+  // Close slash menu on outside click or Escape
+  useEffect(() => {
+    if (!slashMenu) return;
+    const handleClickOutside = (e) => {
+      if (slashMenuRef.current && !slashMenuRef.current.contains(e.target)) {
+        setSlashMenu(null);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") setSlashMenu(null);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [slashMenu]);
+
+  // Handle slash command selection
+  const handleSlashCommand = useCallback((cmd) => {
+    const view = viewRef.current;
+    if (!view || !slashMenu) return;
+    // Replace the "/" and any filter text with the command's insert text
+    const line = view.state.doc.lineAt(slashMenu.pos);
+    const slashStart = line.text.lastIndexOf("/");
+    const from = slashStart >= 0 ? line.from + slashStart : slashMenu.pos;
+    const to = view.state.selection.main.head;
+    view.dispatch({
+      changes: { from, to, insert: cmd.insert },
+      selection: { anchor: from + cmd.insert.length },
+    });
+    setSlashMenu(null);
+    view.focus();
+  }, [slashMenu]);
 
   // Create CodeMirror extensions with GitHub-like keyboard shortcuts
   const createExtensions = useCallback((isDark) => {
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         setBodyTxt(update.state.doc.toString());
+
+        // Slash command detection
+        const { head } = update.state.selection.main;
+        const line = update.state.doc.lineAt(head);
+        const textBefore = line.text.slice(0, head - line.from);
+        const slashMatch = textBefore.match(/^\/?(\w*)$/);
+        if (slashMatch && textBefore.startsWith("/")) {
+          setSlashMenuRef.current({ pos: head, filter: slashMatch[1] || "" });
+        } else {
+          setSlashMenuRef.current(null);
+        }
       }
     });
 
@@ -665,18 +734,62 @@ function NoteEditor(props) {
               />
             </div>
           ) : (
-            <div
-              ref={editorRef}
-              style={{ height: "100%" }}
-              onClick={(e) => {
-                // If clicking empty space below content, focus editor at end
-                if (e.target === editorRef.current && viewRef.current) {
-                  const len = viewRef.current.state.doc.length;
-                  viewRef.current.dispatch({ selection: { anchor: len } });
-                  viewRef.current.focus();
-                }
-              }}
-            />
+            <div style={{ position: "relative", height: "100%" }}>
+              <div
+                ref={editorRef}
+                style={{ height: "100%" }}
+                onClick={(e) => {
+                  // If clicking empty space below content, focus editor at end
+                  if (e.target === editorRef.current && viewRef.current) {
+                    const len = viewRef.current.state.doc.length;
+                    viewRef.current.dispatch({ selection: { anchor: len } });
+                    viewRef.current.focus();
+                  }
+                }}
+              />
+              {/* Slash command palette */}
+              {slashMenu && (() => {
+                const snippets = loadSnippets();
+                const filter = slashMenu.filter ? slashMenu.filter.toLowerCase() : "";
+                const filteredCmds = SLASH_COMMANDS.filter((cmd) => !filter || cmd.label.toLowerCase().includes(filter));
+                const filteredSnippets = snippets.filter((s) => !filter || s.name.toLowerCase().includes(filter));
+                const hasResults = filteredCmds.length > 0 || filteredSnippets.length > 0;
+
+                return hasResults ? (
+                  <div className={`slash-menu ${darkMode ? "slash-menu-dark" : ""}`} ref={slashMenuRef}>
+                    {filteredCmds.map((cmd) => (
+                      <button
+                        key={cmd.id}
+                        className={`slash-menu-item ${darkMode ? "slash-menu-item-dark" : ""}`}
+                        onMouseDown={(e) => { e.preventDefault(); handleSlashCommand(cmd); }}
+                      >
+                        <cmd.icon size={16} className="slash-menu-icon" />
+                        <div className="slash-menu-text">
+                          <span className="slash-menu-label">{cmd.label}</span>
+                          <span className="slash-menu-desc">{cmd.description}</span>
+                        </div>
+                      </button>
+                    ))}
+                    {filteredSnippets.length > 0 && filteredCmds.length > 0 && (
+                      <div className={`slash-menu-divider ${darkMode ? "slash-menu-divider-dark" : ""}`}>Templates</div>
+                    )}
+                    {filteredSnippets.map((snippet) => (
+                      <button
+                        key={snippet.id}
+                        className={`slash-menu-item ${darkMode ? "slash-menu-item-dark" : ""}`}
+                        onMouseDown={(e) => { e.preventDefault(); handleSlashCommand({ insert: snippet.content }); }}
+                      >
+                        <FileText size={16} className="slash-menu-icon" />
+                        <div className="slash-menu-text">
+                          <span className="slash-menu-label">{snippet.name}</span>
+                          <span className="slash-menu-desc">{snippet.category}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
+            </div>
           )}
         </div>
 
@@ -712,7 +825,7 @@ function NoteEditor(props) {
             }}
           />
           {/* Suggest tags — show when new note has title + body but no tags */}
-          {tags.length === 0 && title.trim() && bodytxt.trim() && editorSuggestions.length === 0 && (
+          {props.tagSuggestEnabled !== false && tags.length === 0 && title.trim() && bodytxt.trim() && editorSuggestions.length === 0 && (
             <button
               onClick={() => setEditorSuggestions(suggestTags(title, bodytxt, tags))}
               className="tag-suggest-btn"

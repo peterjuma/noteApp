@@ -7,11 +7,13 @@ import NoteMain from "./NoteMain";
 import readmePath from "./README.md";
 import NoteEditor from "./NoteEditor";
 import ConfirmDialog from "./ConfirmDialog";
+import SettingsPanel from "./SettingsPanel";
 import TableConverter from "./TableConverter";
 import { html2md, md2html } from "./useMarkDown";
 import { saveAs } from "file-saver";
+import Fuse from "fuse.js";
 import * as db from "./services/notesDB";
-import { Menu, RotateCcw, Trash2 as TrashIcon, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Menu } from "lucide-react";
 
 // Slugify a note title for URL hash
 function slugify(title) {
@@ -48,7 +50,10 @@ class App extends Component {
       dialog: null,
       viewingArchive: false,
       archivedNotes: [],
-      showFullTableConverter: false,
+      showSettings: false,
+      showTableConverter: false,
+      autoSave: localStorage.getItem("noteapp_autosave") === "true",
+      tagSuggestEnabled: localStorage.getItem("noteapp_tag_suggest") !== "false",
     };
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
@@ -279,17 +284,25 @@ handleUnpinNote = async (noteid) => {
   handleNavConfirmDiscard = () => {
     const nav = this.state.pendingNav;
     const edit = this.state.pendingEdit;
+    const page = this.state.pendingPage;
     const discardNoteId = this.state.editingNewNote ? this.state.noteid : null;
     this.setState((prevState) => {
-      const updates = { pendingNav: null, pendingEdit: null, showNavConfirm: false, editingNewNote: false };
+      const updates = { pendingNav: null, pendingEdit: null, pendingPage: null, showNavConfirm: false, editingNewNote: false };
       if (discardNoteId) {
         updates.allnotes = prevState.allnotes.filter(n => n.noteid !== discardNoteId);
+      }
+      if (page) {
+        if (page === "settings") { updates.showSettings = true; updates.showTableConverter = false; }
+        if (page === "tableConverter") { updates.showTableConverter = true; updates.showSettings = false; }
+        updates.activepage = "viewnote";
+        updates.action = "";
       }
       return updates;
     }, () => {
       if (discardNoteId) db.deleteNote(discardNoteId, this.state.activeDb);
       if (nav) this._navigateToNote(nav);
       if (edit) this._openEditor(edit.note, edit.isNew, edit.action);
+      if (page) window.history.replaceState(null, "", window.location.pathname);
     });
   };
 
@@ -300,14 +313,21 @@ handleUnpinNote = async (noteid) => {
     }
     const nav = this.state.pendingNav;
     const edit = this.state.pendingEdit;
+    const page = this.state.pendingPage;
+    this.setState({ pendingNav: null, pendingEdit: null, pendingPage: null, showNavConfirm: false });
     setTimeout(() => {
       if (nav) this._navigateToNote(nav);
       if (edit) this._openEditor(edit.note, edit.isNew, edit.action);
+      if (page) {
+        if (page === "settings") this.setState({ showSettings: true, showTableConverter: false, activepage: "viewnote", action: "" });
+        if (page === "tableConverter") this.setState({ showTableConverter: true, showSettings: false, activepage: "viewnote", action: "" });
+        window.history.replaceState(null, "", window.location.pathname);
+      }
     }, 150);
   };
 
   handleNavConfirmCancel = () => {
-    this.setState({ pendingNav: null, pendingEdit: null, showNavConfirm: false });
+    this.setState({ pendingNav: null, pendingEdit: null, pendingPage: null, showNavConfirm: false });
   };
 
   // Generic dialog helpers
@@ -796,33 +816,45 @@ handleUnpinNote = async (noteid) => {
   }
 
   handleSearchNotes(e) {
-    const searchString = e.target.value.toLowerCase();
-    const searchQuery = searchString.replace(/^(title:|body:|tag:)/, '').trim();
+    const searchString = e.target.value.trim();
 
-    if (!searchQuery) {
+    if (!searchString) {
         this.setState({ filteredNotes: [] });
         return;
     }
 
-    // Search scope: title:, body:, tag:, or all (default)
-    const field = searchString.startsWith('title:') ? 'title' :
-                  searchString.startsWith('body:') ? 'body' :
-                  searchString.startsWith('tag:') ? 'tag' : 'all';
+    // Field prefix support: title:, body:, tag:
+    const fieldMatch = searchString.match(/^(title:|body:|tag:)(.*)/);
+    let keys, query;
+    if (fieldMatch) {
+      const field = fieldMatch[1].replace(":", "");
+      query = fieldMatch[2].trim();
+      if (!query) { this.setState({ filteredNotes: [] }); return; }
+      if (field === "tag") {
+        keys = [{ name: "tags", weight: 1 }];
+      } else if (field === "title") {
+        keys = [{ name: "title", weight: 1 }];
+      } else {
+        keys = [{ name: "body", weight: 1 }];
+      }
+    } else {
+      query = searchString;
+      keys = [
+        { name: "title", weight: 0.4 },
+        { name: "body", weight: 0.3 },
+        { name: "tags", weight: 0.3 },
+      ];
+    }
 
-    const searchWords = searchQuery.split(/\s+/);
-
-    const filteredNotes = this.state.allnotes.filter(note => {
-        if (field === 'tag') {
-          const tagStr = (note.tags || []).join(' ').toLowerCase();
-          return searchWords.every(word => tagStr.includes(word));
-        }
-        if (field === 'all') {
-          const combined = ((note.title || '') + ' ' + (note.body || '') + ' ' + (note.tags || []).join(' ')).toLowerCase();
-          return searchWords.every(word => combined.includes(word));
-        }
-        const contentToSearch = (field === 'title' ? note.title : note.body || '').toLowerCase();
-        return searchWords.every(word => contentToSearch.includes(word));
+    const fuse = new Fuse(this.state.allnotes, {
+      keys,
+      threshold: 0.35,
+      ignoreLocation: true,
+      minMatchCharLength: 2,
     });
+
+    const results = fuse.search(query);
+    const filteredNotes = results.map(r => r.item);
 
     this.setState({ filteredNotes });
     if (filteredNotes.length > 0) {
@@ -974,6 +1006,7 @@ handleUnpinNote = async (noteid) => {
             handleCopyEvent={this.handleCopyEvent}
             onAddTag={this.handleAddTag}
             onAddTags={this.handleAddTags}
+            tagSuggestEnabled={this.state.tagSuggestEnabled}
           />
         </>
       );
@@ -991,6 +1024,13 @@ handleUnpinNote = async (noteid) => {
             tags: (this.state.allnotes.find(n => n.noteid === this.state.noteid) || {}).tags || [],
           }}
           darkMode={this.state.darkMode}
+          autoSave={this.state.autoSave}
+          onToggleAutoSave={() => this.setState((s) => {
+            const next = !s.autoSave;
+            localStorage.setItem("noteapp_autosave", next);
+            return { autoSave: next };
+          })}
+          tagSuggestEnabled={this.state.tagSuggestEnabled}
           showConfirm={this.showConfirm}
           handleEditNoteBtn={this.handleEditNoteBtn}
           handleSaveNote={this.handleSaveNote}
@@ -1072,8 +1112,8 @@ handleUnpinNote = async (noteid) => {
             handleEditNoteBtn={this.handleEditNoteBtn}
             handleSearchNotes={this.handleSearchNotes}
             darkMode={this.state.darkMode}
-            viewingArchive={this.state.viewingArchive}
-            showTableConverter={this.state.showFullTableConverter}
+            showSettings={this.state.showSettings}
+            showTableConverter={this.state.showTableConverter}
             workspaceName={(this.state.workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default"}
             sidebarCollapsed={this.state.sidebarCollapsed}
             onToggleCollapse={() => this.setState((s) => {
@@ -1081,61 +1121,32 @@ handleUnpinNote = async (noteid) => {
               localStorage.setItem("noteapp_sidebar_collapsed", next);
               return { sidebarCollapsed: next };
             })}
-            onToggleArchive={this.toggleArchiveView}
-            onOpenTableConverter={() => this.setState((s) => {
-              const next = !s.showFullTableConverter;
-              if (next) window.history.replaceState(null, "", window.location.pathname);
-              return { showFullTableConverter: next, viewingArchive: false };
-            })}
-            onToggleDarkMode={() => this.setState((s) => {
-              const next = !s.darkMode;
-              localStorage.setItem("noteapp_dark_mode", next);
-              return { darkMode: next };
-            })}
-            handleNotesBackup={this.handleNotesBackup}
-            handleNotesUpload={this.handleNotesUpload}
-            handleZipImport={this.handleZipImport}
+            onOpenSettings={() => {
+              if (this.state.activepage === "editnote") {
+                this.setState({ showNavConfirm: true, pendingPage: "settings" });
+                return;
+              }
+              this.setState((s) => {
+                const next = !s.showSettings;
+                if (next) window.history.replaceState(null, "", window.location.pathname);
+                return { showSettings: next, showTableConverter: false, viewingArchive: false };
+              });
+            }}
+            onOpenTableConverter={() => {
+              if (this.state.activepage === "editnote") {
+                this.setState({ showNavConfirm: true, pendingPage: "tableConverter" });
+                return;
+              }
+              this.setState((s) => {
+                const next = !s.showTableConverter;
+                if (next) window.history.replaceState(null, "", window.location.pathname);
+                return { showTableConverter: next, showSettings: false };
+              });
+            }}
           />
 
-          {!this.state.showFullTableConverter && (
+          {!this.state.showSettings && !this.state.showTableConverter && (
           <div className="sidebar-scroll">
-            {this.state.viewingArchive ? (
-              // Archive view
-              <>
-                <h4 className="section-header">Archived ({this.state.archivedNotes.length})</h4>
-                {this.state.archivedNotes.length > 0 ? (
-                  <ul>
-                    {this.state.archivedNotes.map((note) => (
-                      <li key={note.noteid} className="note-item archive-item">
-                        <div className="archive-item-info">
-                          <span className="note-item-title">{note.title}</span>
-                          <span className="archive-item-meta">
-                            {note.sourceWorkspace === "notesdb" ? "Default" : note.sourceWorkspace.replace("notesdb_", "")}
-                            {note.archivedAt && ` · ${new Date(note.archivedAt).toLocaleDateString()}`}
-                          </span>
-                        </div>
-                        <div className="archive-item-actions">
-                          <button onClick={() => this.handleRestoreNote(note.noteid)} className="icon-btn" title="Restore" aria-label="Restore note">
-                            <RotateCcw size={14} />
-                          </button>
-                          <button onClick={() => this.handlePermanentDelete(note.noteid)} className="icon-btn icon-btn-danger" title="Delete forever" aria-label="Delete permanently">
-                            <TrashIcon size={14} />
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="empty-state">
-                    <p className="empty-state-icon">📦</p>
-                    <p className="empty-state-text">No archived notes</p>
-                    <p className="empty-state-hint">Archived notes appear here when you choose Archive instead of Delete</p>
-                  </div>
-                )}
-              </>
-            ) : (
-              // Normal notes view
-              <>
             {totalPinned > 0 && (
             <>
             <h4
@@ -1186,25 +1197,13 @@ handleUnpinNote = async (noteid) => {
                 <p className="empty-state-hint">Try a different search term</p>
               </div>
             ) : null}
-              </>
-            )}
           </div>
           )}
 
-          {!this.state.showFullTableConverter && (
+          {!this.state.showSettings && !this.state.showTableConverter && (
           <NoteSort
             handleSortNotes={this.handleSortNotes}
             sortby={this.state.sortby}
-            handleNotesBackup={this.handleNotesBackup}
-            handleNotesUpload={this.handleNotesUpload}
-            handleZipImport={this.handleZipImport}
-            workspaces={this.state.workspaces}
-            activeDb={this.state.activeDb}
-            handleSwitchWorkspace={this.handleSwitchWorkspace}
-            handleAddWorkspace={this.handleAddWorkspace}
-            handleRenameWorkspace={this.handleRenameWorkspace}
-            handleDeleteWorkspace={this.handleDeleteWorkspace}
-            showConfirm={this.showConfirm}
           />
           )}
         </div>
@@ -1254,12 +1253,51 @@ handleUnpinNote = async (noteid) => {
         />
 
         <div className="main-content">
-          {this.state.showFullTableConverter ? (
+          {this.state.showSettings ? (
+            <SettingsPanel
+              darkMode={this.state.darkMode}
+              onToggleDarkMode={() => this.setState((s) => {
+                const next = !s.darkMode;
+                localStorage.setItem("noteapp_dark_mode", next);
+                return { darkMode: next };
+              })}
+              autoSave={this.state.autoSave}
+              onToggleAutoSave={() => this.setState((s) => {
+                const next = !s.autoSave;
+                localStorage.setItem("noteapp_autosave", next);
+                return { autoSave: next };
+              })}
+              tagSuggestEnabled={this.state.tagSuggestEnabled}
+              onToggleTagSuggest={() => this.setState((s) => {
+                const next = !s.tagSuggestEnabled;
+                localStorage.setItem("noteapp_tag_suggest", next);
+                return { tagSuggestEnabled: next };
+              })}
+              workspaces={this.state.workspaces}
+              activeDb={this.state.activeDb}
+              onSwitchWorkspace={(dbName) => { this.handleSwitchWorkspace(dbName); }}
+              onAddWorkspace={this.handleAddWorkspace}
+              onRenameWorkspace={this.handleRenameWorkspace}
+              onDeleteWorkspace={this.handleDeleteWorkspace}
+              archivedNotes={this.state.archivedNotes}
+              onRestoreNote={this.handleRestoreNote}
+              onPermanentDelete={this.handlePermanentDelete}
+              onLoadArchive={async () => {
+                const archived = await db.getArchivedNotes();
+                this.setState({ archivedNotes: archived });
+              }}
+              onBackup={this.handleNotesBackup}
+              onUploadNote={this.handleNotesUpload}
+              onZipImport={this.handleZipImport}
+              showConfirm={this.showConfirm}
+              onClose={() => this.setState({ showSettings: false })}
+            />
+          ) : this.state.showTableConverter ? (
             <div className="full-table-converter">
               <TableConverter
                 darkMode={this.state.darkMode}
                 fullPage
-                onClose={() => this.setState({ showFullTableConverter: false })}
+                onClose={() => this.setState({ showTableConverter: false })}
               />
             </div>
           ) : (

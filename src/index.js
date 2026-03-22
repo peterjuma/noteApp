@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom";
 import "github-markdown-css/github-markdown.css";
 import "highlight.js/styles/github.css";
+import "katex/dist/katex.min.css";
 import App from "./App";
 import ErrorBoundary from "./ErrorBoundary";
 import "./styles.css";

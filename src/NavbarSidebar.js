@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Plus, Search, Moon, Sun, Archive, ChevronsLeft, ChevronsRight, TableProperties, StickyNote, Upload, Download, FolderUp } from "lucide-react";
+import { Home, Plus, Search, ChevronsLeft, ChevronsRight, Settings, TableProperties, StickyNote } from "lucide-react";
 
 function NavbarSidebar(props) {
   var note = {
@@ -10,9 +10,9 @@ function NavbarSidebar(props) {
     action: "addnote",
   };
   const searchRef = React.useRef();
-  const fileInputRef = React.useRef();
-  const zipInputRef = React.useRef();
   const [searchVisible, setSearchVisible] = React.useState(false);
+
+  const isPageActive = props.showSettings || props.showTableConverter;
 
   if (props.sidebarCollapsed) {
     return (
@@ -23,29 +23,19 @@ function NavbarSidebar(props) {
         <button onClick={(e) => props.handleClickHomeBtn(e)} className="icon-btn" title="Home" aria-label="Home">
           <Home size={18} />
         </button>
-        <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="Add" aria-label="Add note">
+        <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title={props.showTableConverter ? "Back to Notes" : "Table Converter"} aria-label="Table Converter">
+          {props.showTableConverter ? <StickyNote size={16} /> : <TableProperties size={16} />}
+        </button>
+        <button onClick={props.onOpenSettings} className={`icon-btn ${props.showSettings ? "icon-btn-active" : ""}`} title="Settings" aria-label="Settings">
+          <Settings size={16} />
+        </button>
+        <span className="toolbar-divider" style={{ height: 1, width: 24, margin: "2px 0" }} />
+        <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="Add" aria-label="Add note" disabled={isPageActive}>
           <Plus size={18} style={{ pointerEvents: "none" }} />
         </button>
-        <button onClick={props.onToggleArchive} className={`icon-btn ${props.viewingArchive ? "icon-btn-active" : ""}`} title="Archive" aria-label="Archive">
-          <Archive size={16} />
-        </button>
-        <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search" aria-label="Toggle search">
+        <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search" aria-label="Toggle search" disabled={isPageActive}>
           <Search size={16} />
         </button>
-        <button onClick={() => fileInputRef.current.click()} className="icon-btn" title="Upload" aria-label="Upload note">
-          <Upload size={16} />
-        </button>
-        <button onClick={props.handleNotesBackup} className="icon-btn" title="Backup" aria-label="Download backup">
-          <Download size={16} />
-        </button>
-        <button onClick={props.onOpenTableConverter} className="icon-btn" title="Tables" aria-label="Table Converter">
-          <TableProperties size={16} />
-        </button>
-        <button onClick={props.onToggleDarkMode} className="icon-btn" title={props.darkMode ? "Light" : "Dark"} aria-label="Toggle theme">
-          {props.darkMode ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
-        <input ref={fileInputRef} type="file" accept=".md" className="hidden" aria-label="Select markdown file" onChange={props.handleNotesUpload} />
-        <input ref={zipInputRef} type="file" accept=".zip" className="hidden" aria-label="Select ZIP archive" onChange={props.handleZipImport} />
       </nav>
     );
   }
@@ -58,12 +48,12 @@ function NavbarSidebar(props) {
           <Home size={18} />
         </button>
         <h4 className="sidebar-title">
-          {props.showTableConverter
-            ? "Table Converter"
-            : props.viewingArchive
-              ? "Archive"
+          {props.showSettings
+            ? "Settings"
+            : props.showTableConverter
+              ? "Table Converter"
               : props.workspaceName && props.workspaceName !== "Default"
-                ? `${props.workspaceName} Notes`
+                ? props.workspaceName
                 : "Notes"
           }
         </h4>
@@ -71,48 +61,33 @@ function NavbarSidebar(props) {
           <ChevronsLeft size={16} />
         </button>
       </div>
-      {/* Action bar */}
+      {/* Action bar: pages on left, actions on right */}
       <div className="sidebar-actions">
         <span className="toolbar-group">
-          <button onClick={props.onToggleArchive} className={`icon-btn ${props.viewingArchive ? "icon-btn-active" : ""}`} title={props.viewingArchive ? "Back to Notes" : "Archive"} aria-label={props.viewingArchive ? "Back to notes" : "View archive"} disabled={props.showTableConverter}>
-            <Archive size={15} />
-          </button>
-          <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title={props.showTableConverter ? "Back to Notes" : "Table Converter"} aria-label={props.showTableConverter ? "Back to notes" : "Open table converter"}>
+          <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title={props.showTableConverter ? "Back to Notes" : "Table Converter"} aria-label="Table Converter">
             {props.showTableConverter ? <StickyNote size={15} /> : <TableProperties size={15} />}
           </button>
+          <button onClick={props.onOpenSettings} className={`icon-btn ${props.showSettings ? "icon-btn-active" : ""}`} title="Settings" aria-label="Settings">
+            <Settings size={15} />
+          </button>
         </span>
         <span className="toolbar-divider" />
         <span className="toolbar-group">
-          <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search" aria-label="Toggle search" disabled={props.showTableConverter}>
+          <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search" aria-label="Toggle search" disabled={isPageActive}>
             <Search size={15} />
           </button>
-          <button onClick={() => fileInputRef.current.click()} className="icon-btn" title="Upload Note" aria-label="Upload a markdown note" disabled={props.showTableConverter}>
-            <Upload size={15} />
-          </button>
-          <button onClick={() => zipInputRef.current.click()} className="icon-btn" title="Import Archive" aria-label="Import notes from ZIP archive" disabled={props.showTableConverter}>
-            <FolderUp size={15} />
-          </button>
-          <button onClick={props.handleNotesBackup} className="icon-btn" title="Download Backup" aria-label="Download all notes as ZIP" disabled={props.showTableConverter}>
-            <Download size={15} />
-          </button>
-        </span>
-        <span className="toolbar-divider" />
-        <span className="toolbar-group">
-          <button onClick={props.onToggleDarkMode} className="icon-btn" title={props.darkMode ? "Light Mode" : "Dark Mode"} aria-label="Toggle theme">
-            {props.darkMode ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
-          <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="New Note" aria-label="Create new note" disabled={props.showTableConverter}>
+          <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="New Note" aria-label="Create new note" disabled={isPageActive}>
             <Plus size={16} style={{ pointerEvents: "none" }} />
           </button>
         </span>
       </div>
-      {/* Search — toggled via toolbar icon, hidden when table converter is active */}
-      {!props.showTableConverter && searchVisible && (
+      {/* Search */}
+      {!isPageActive && searchVisible && (
       <div className="sidebar-search">
         <Search size={14} />
         <input
           type="search"
-          placeholder="Search notes, tags..."
+          placeholder="Search notes..."
           ref={searchRef}
           aria-label="Search notes"
           autoFocus
@@ -120,8 +95,6 @@ function NavbarSidebar(props) {
         />
       </div>
       )}
-      <input ref={fileInputRef} type="file" accept=".md" className="hidden" aria-label="Select markdown file" onChange={props.handleNotesUpload} />
-      <input ref={zipInputRef} type="file" accept=".zip" className="hidden" aria-label="Select ZIP archive" onChange={props.handleZipImport} />
     </nav>
   );
 }

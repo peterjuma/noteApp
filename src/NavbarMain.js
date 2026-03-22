@@ -1,4 +1,6 @@
-import { Download, Trash2, Printer, FolderOutput } from "lucide-react";
+import { Download, Trash2, Printer, FolderOutput, ClipboardPaste } from "lucide-react";
+import DOMPurify from "dompurify";
+import { md2html } from "./useMarkDown";
 
 function NavbarMain(props) {
   var isActive = props.display;
@@ -10,11 +12,33 @@ function NavbarMain(props) {
     window.print();
   };
 
+  const handleCopyAsHtml = () => {
+    const html = DOMPurify.sanitize(md2html.render(note.notebody || ""));
+    const blob = new Blob([html], { type: "text/html" });
+    const plainText = note.notebody || "";
+    const item = new ClipboardItem({
+      "text/html": blob,
+      "text/plain": new Blob([plainText], { type: "text/plain" }),
+    });
+    navigator.clipboard.write([item]).then(() => {
+      // Brief visual feedback
+      const btn = document.querySelector("[data-copy-html-btn]");
+      if (btn) {
+        btn.classList.add("copy-feedback");
+        setTimeout(() => btn.classList.remove("copy-feedback"), 1500);
+      }
+    });
+  };
+
   return (
     <nav className="view-toolbar" aria-label="Note actions">
       <span className="toolbar-group">
-        <button onClick={(e) => props.handleCopyEvent(e, note.notebody)} className="view-toolbar-text-btn" title="Copy" aria-label="Copy note as markdown">
+        <button onClick={(e) => props.handleCopyEvent(e, note.notebody)} className="view-toolbar-text-btn" title="Copy as Markdown" aria-label="Copy note as markdown">
           Copy
+        </button>
+        <button onClick={handleCopyAsHtml} className="view-toolbar-text-btn" title="Copy as Rich HTML (paste into Zendesk)" aria-label="Copy as formatted HTML" data-copy-html-btn>
+          <ClipboardPaste size={13} style={{ marginRight: 4 }} />
+          Copy HTML
         </button>
         <button data-action="updatenote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="view-toolbar-text-btn" title="Edit" aria-label="Edit this note">
           Edit
