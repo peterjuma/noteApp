@@ -1,25 +1,30 @@
-feat: version history with auto-snapshots and restore
+feat: GitHub Gist sync for cross-device backup
 
-Storage:
-- Bumped DB_VERSION to 4, added 'versions' object store
-- Indexes on noteid and timestamp for efficient queries
-- Auto-prunes to 50 versions per note
+Sync Service (src/services/gistSync.js):
+- Push notes to a private GitHub Gist (one per workspace)
+- Pull notes from Gist with newest-wins merge strategy
+- Full bidirectional sync (pull + merge + push)
+- Token validation against GitHub API
+- Link existing Gist by ID
+- Last sync timestamp tracking per workspace
 
-Auto-Snapshot:
-- Every save (manual or autosave) creates a version snapshot
-- Stores title, body, tags, and timestamp
-- Current state is saved before restoring an older version
+Settings > Sync Tab:
+- GitHub Personal Access Token input with show/hide
+- Verify button validates token and shows GitHub username + avatar
+- Enable Sync toggle for automatic background sync
+- Sync Now button with spinner animation and status messages
+- View Gist link opens the Gist on GitHub
+- Link Existing Gist input for connecting to a previous sync
 
-Version History UI:
-- Clock icon in note view toolbar opens version history modal
-- Left panel: chronological version list with relative timestamps
-- Right panel: full markdown preview of selected version
-- Diff summary between consecutive versions (chars added/removed)
-- Restore button overwrites current note with selected version
-- Current state auto-saved before restore (safety net)
+Auto-Sync:
+- Background push after every save (10-second debounce)
+- Non-blocking, silent failure for background operations
+- Only active when sync is enabled and token is configured
 
-Functions added to notesDB.js:
-- saveVersion(), getVersions(), getVersion()
-- restoreVersion(), deleteVersions()
+Merge Strategy:
+- Per-note newest-wins based on updated_at timestamp
+- New remote notes are added to local
+- New local notes are pushed to remote
+- Conflicts within 1 minute flagged (but resolved automatically)
 
-New file: src/VersionHistory.js
+New file: src/services/gistSync.js

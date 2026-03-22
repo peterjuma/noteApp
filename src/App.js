@@ -14,6 +14,7 @@ import { html2md, md2html } from "./useMarkDown";
 import { saveAs } from "file-saver";
 import Fuse from "fuse.js";
 import * as db from "./services/notesDB";
+import * as gistSync from "./services/gistSync";
 import { Menu } from "lucide-react";
 
 // Slugify a note title for URL hash
@@ -779,6 +780,20 @@ handleUnpinNote = async (noteid) => {
         }, this.state.activeDb);
       });
     }
+
+    // Background gist sync (debounced, non-blocking)
+    this._scheduleSyncAfterSave();
+  }
+
+  _scheduleSyncAfterSave() {
+    if (!gistSync.isSyncEnabled()) return;
+    if (this._syncTimer) clearTimeout(this._syncTimer);
+    this._syncTimer = setTimeout(() => {
+      const wsName = (this.state.workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default";
+      gistSync.push(this.state.activeDb, wsName, this.state.allnotes).catch(() => {
+        // Silent fail for background sync
+      });
+    }, 10000); // 10 second debounce
   }
 
   handleCopyEvent(e, copiedContent = "") {
@@ -1348,6 +1363,24 @@ handleUnpinNote = async (noteid) => {
                 this.showAlert("All Data Deleted", "All workspaces and notes have been permanently deleted.");
               }}
               showConfirm={this.showConfirm}
+              onSyncNow={async () => {
+                const wsName = (this.state.workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default";
+                const result = await gistSync.sync(
+                  this.state.activeDb,
+                  wsName,
+                  this.state.allnotes,
+                  async (mergedNotes) => {
+                    // Save merged notes to IndexedDB
+                    for (const note of mergedNotes) {
+                      await db.updateNote(note, this.state.activeDb);
+                    }
+                    this.setState({ allnotes: mergedNotes }, () => {
+                      this.handleSortNotes(this.state.sortby);
+                    });
+                  }
+                );
+                return result;
+              }}
               onClose={() => this.setState({ showSettings: false })}
             />
           ) : this.state.showTableConverter ? (
