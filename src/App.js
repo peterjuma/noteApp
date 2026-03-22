@@ -960,15 +960,16 @@ handleUnpinNote = async (noteid) => {
       // Add note to IndexedDB
       await db.addNote(newNote, this.state.activeDb);
   
-      // Add note to the state
+      // Add note to the state, close settings, and show the imported note
       this.setState(prevState => ({
         ...prevState,
-        allnotes: [...prevState.allnotes, newNote]
+        allnotes: [...prevState.allnotes, newNote],
+        showSettings: false,
     }), () => {
         // Now that the state is updated, perform actions that depend on the updated state
         this.handleSortNotes("4");
+        this.handleNoteListItemClick(null, newNote);
     });
-      this.handleNoteListItemClick(null, newNote);
     };
     reader.readAsText(file);
   };
@@ -1002,9 +1003,11 @@ handleUnpinNote = async (noteid) => {
         this.setState(
           (prevState) => ({
             allnotes: [...prevState.allnotes, ...importedNotes],
+            showSettings: false,
           }),
           () => {
             this.handleSortNotes("4");
+            this.handleNoteListItemClick(null, importedNotes[importedNotes.length - 1]);
           }
         );
       }
