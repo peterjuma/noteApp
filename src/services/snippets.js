@@ -23,7 +23,7 @@ export function getSnippets() {
 export function addSnippet(name, content, category) {
   const snippets = load();
   const snippet = {
-    id: Date.now().toString(),
+    id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
     name: name.trim(),
     content,
     category: category || "general",

@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import ReactDOM from "react-dom";
+import { createRoot } from "react-dom/client";
 import "github-markdown-css/github-markdown.css";
 import "highlight.js/styles/github.css";
 import "katex/dist/katex.min.css";
@@ -7,14 +7,13 @@ import App from "./App";
 import ErrorBoundary from "./ErrorBoundary";
 import "./styles.css";
 
-const rootElement = document.getElementById("root");
-ReactDOM.render(
+const root = createRoot(document.getElementById("root"));
+root.render(
   <StrictMode>
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
-  </StrictMode>,
-  rootElement
+  </StrictMode>
 );
 
 // Register service worker for offline support

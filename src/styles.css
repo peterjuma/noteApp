@@ -8,8 +8,9 @@ body {
   color: #1a1a1a;
   overflow: hidden;
   background: #f8f9fa;
+  -webkit-text-size-adjust: 100%;
 }
-button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
+button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 ul, ol { list-style: none; }
 a { color: #2563eb; text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -1373,48 +1374,90 @@ a:hover { text-decoration: underline; }
   .note-view-inner { padding: 16px 12px; }
   .note-view-title { font-size: 1.25rem; }
   .note-meta { flex-direction: column; gap: 4px; }
-  .view-toolbar { padding: 0 8px; }
+  .view-toolbar { padding: 0 8px; flex-wrap: wrap; height: auto; min-height: 44px; }
+  .view-toolbar-text-btn { font-size: 12px; padding: 4px 8px; }
 
   /* Editor */
   .editor-title { padding: 8px 12px; font-size: 16px; }
-  .editor-toolbar { padding: 3px 4px; gap: 0; overflow-x: auto; }
-  .toolbar-btn { padding: 4px; }
+  .editor-toolbar { padding: 3px 4px; gap: 0; overflow-x: auto; flex-wrap: nowrap; }
+  .toolbar-btn { padding: 6px; min-width: 32px; min-height: 32px; }
   .toolbar-divider { margin: 0 2px; height: 14px; }
-  .editor-bottom { padding: 6px 8px; gap: 4px; }
+  .editor-bottom { padding: 6px 8px; gap: 4px; flex-wrap: wrap; }
   .editor-hint { display: none; }
-  .btn-save, .btn-cancel { padding: 5px 10px; font-size: 12px; }
+  .btn-save, .btn-cancel { padding: 6px 12px; font-size: 12px; }
 
   /* Hide split preview on mobile */
   .split-preview { display: none !important; }
   .editor-panel-half { width: 100% !important; }
 
   /* Tags tighter */
-  .editor-tags { padding: 4px 8px; }
-  .tag { font-size: 11px; padding: 1px 8px; }
+  .editor-tags { padding: 4px 8px; flex-wrap: wrap; }
+  .tag { font-size: 11px; padding: 2px 8px; }
+  .tag-input { min-width: 80px; }
 
-  /* Workspace + sort bar tighter */
-  .workspace-bar { padding: 3px 8px; font-size: 10px; }
+  /* Sort bar tighter */
   .sort-bar { padding: 3px 8px; }
   .sort-bar-left { font-size: 11px; }
-  .sort-bar-right .icon-btn { padding: 3px; }
 
   /* Drag handle hidden on mobile — use sort/pin instead */
   .drag-handle { display: none; }
 
   /* Note list tighter */
-  .note-item { padding: 8px 10px; }
+  .note-item { padding: 10px 10px; }
   .note-item-title { font-size: 13px; }
   .pin-btn-unpinned { opacity: 0.5; }
   .section-header { padding: 5px 10px; font-size: 10px; }
+
+  /* Settings responsive */
+  .settings-header { padding: 0 12px; }
+  .settings-title { font-size: 16px; }
+  .settings-tabs { padding: 0 8px; overflow-x: auto; }
+  .settings-tab { padding: 0 10px; font-size: 12px; white-space: nowrap; }
+  .settings-body { padding: 16px 12px; }
+  .settings-actions-grid { grid-template-columns: 1fr; }
+  .settings-action-card { padding: 14px 12px; flex-direction: row; gap: 12px; }
+  .settings-danger-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .settings-danger-btn { align-self: flex-end; }
+  .settings-toggle-row { padding: 10px 0; }
+  .settings-inline-form { flex-wrap: wrap; }
+  .settings-input { min-width: 0; }
+
+  /* Slash menu responsive */
+  .slash-menu { width: calc(100vw - 40px); max-width: 280px; }
+
+  /* Version history responsive */
+  .version-history-panel { width: 95vw; height: 85vh; }
+  .version-history-body { flex-direction: column; }
+  .version-list { width: 100%; min-width: 0; max-height: 200px; border-right: none; border-bottom: 1px solid #e5e7eb; }
+  .dark .version-list { border-color: #374151; }
+  .version-preview { min-height: 200px; }
+  .version-preview-content { padding: 12px 16px; }
+
+  /* Language picker responsive */
+  .lang-picker { max-width: calc(100vw - 40px); }
+
+  /* Variable prompt responsive */
+  .var-prompt-dialog { width: 90vw; }
+
+  /* Table converter responsive */
+  .tc-fullpage { padding: 0; }
+  .tc-header { padding: 0 12px; }
+  .tc-body-vertical { padding: 8px; }
+
+  /* Touch-friendly buttons (min 44px tap target) */
+  .icon-btn { min-width: 36px; min-height: 36px; }
+  .sidebar-actions .icon-btn { min-width: 32px; min-height: 32px; }
 }
 
 /* Extra small screens */
 @media (max-width: 400px) {
   .sidebar { width: 260px; }
-  .editor-toolbar .toolbar-btn { padding: 3px; }
+  .editor-toolbar .toolbar-btn { padding: 3px; min-width: 28px; min-height: 28px; }
   .editor-toolbar .toolbar-divider { display: none; }
-  .workspace-bar .workspace-label { display: none; }
+  .view-toolbar-text-btn { padding: 3px 6px; font-size: 11px; }
   .modal-dialog { width: 95vw; }
+  .settings-tabs { gap: 0; }
+  .settings-tab { padding: 0 8px; font-size: 11px; }
 }
 
 /* ===== Settings Panel ===== */
