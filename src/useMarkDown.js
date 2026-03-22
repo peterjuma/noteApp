@@ -90,8 +90,8 @@ const md2html = new MarkdownIt({
 });
 md2html.use(markdownitEmoji);
 md2html.use(markdownitTaskLists);
-md2html.use(markdownitKatex);
 md2html.use(markdownitFootnote);
+md2html.use(markdownitKatex);
 md2html.use(markdownitAnchor, {
   permalink: false,
   slugify: (s) =>
@@ -100,5 +100,29 @@ md2html.use(markdownitAnchor, {
       .replace(/[^\w]+/g, "-")
       .replace(/(^-|-$)/g, ""),
 });
+
+// Wiki-style note linking: [[note title]]
+function wikiLinkPlugin(md) {
+  md.inline.ruler.after("escape", "wiki_link", function (state, silent) {
+    const start = state.pos;
+    const max = state.posMax;
+    if (state.src.charCodeAt(start) !== 0x5b || state.src.charCodeAt(start + 1) !== 0x5b) return false; // [[
+    const end = state.src.indexOf("]]", start + 2);
+    if (end === -1 || end > max) return false;
+    const content = state.src.slice(start + 2, end).trim();
+    if (!content) return false;
+    if (!silent) {
+      const token = state.push("wiki_link", "", 0);
+      token.content = content;
+    }
+    state.pos = end + 2;
+    return true;
+  });
+  md.renderer.rules.wiki_link = function (tokens, idx) {
+    const title = md.utils.escapeHtml(tokens[idx].content);
+    return `<a class="wiki-link" href="#" data-wiki-link="${title}">[[${title}]]</a>`;
+  };
+}
+md2html.use(wikiLinkPlugin);
 
 export { html2md, md2html };

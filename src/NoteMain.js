@@ -8,6 +8,43 @@ import { Sparkles, Check, X } from "lucide-react";
 
 mermaid.initialize({ startOnLoad: false, theme: "default" });
 
+// PlantUML text encoder (deflate + custom base64 for plantuml.com server)
+function plantumlEncode(text) {
+  function encode6bit(b) {
+    if (b < 10) return String.fromCharCode(48 + b);
+    b -= 10;
+    if (b < 26) return String.fromCharCode(65 + b);
+    b -= 26;
+    if (b < 26) return String.fromCharCode(97 + b);
+    b -= 26;
+    if (b === 0) return "-";
+    if (b === 1) return "_";
+    return "?";
+  }
+  function append3bytes(b1, b2, b3) {
+    const c1 = b1 >> 2;
+    const c2 = ((b1 & 0x3) << 4) | (b2 >> 4);
+    const c3 = ((b2 & 0xf) << 2) | (b3 >> 6);
+    const c4 = b3 & 0x3f;
+    return encode6bit(c1 & 0x3f) + encode6bit(c2 & 0x3f) + encode6bit(c3 & 0x3f) + encode6bit(c4 & 0x3f);
+  }
+  function encodeBytes(data) {
+    let r = "";
+    for (let i = 0; i < data.length; i += 3) {
+      if (i + 2 === data.length) r += append3bytes(data[i], data[i + 1], 0);
+      else if (i + 1 === data.length) r += append3bytes(data[i], 0, 0);
+      else r += append3bytes(data[i], data[i + 1], data[i + 2]);
+    }
+    return r;
+  }
+  // Use TextEncoder + pako-like raw deflate via browser DecompressionStream is complex,
+  // so we use the simpler ~h hex encoding which PlantUML also supports
+  const encoded = Array.from(new TextEncoder().encode(text))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return "~h" + encoded;
+}
+
 // Allow id attributes through DOMPurify for anchor navigation
 DOMPurify.addHook("uponSanitizeAttribute", (node, data) => {
   if (data.attrName === "id") {
@@ -76,6 +113,27 @@ function NoteMain(props) {
     };
     renderMermaidDiagrams();
 
+    // PlantUML diagrams — render via public PlantUML server
+    const renderPlantUML = () => {
+      if (!bodyRef.current) return;
+      const blocks = bodyRef.current.querySelectorAll("code.language-plantuml");
+      blocks.forEach((block) => {
+        const pre = block.parentNode;
+        if (!pre || !pre.parentNode) return;
+        const src = block.textContent.trim();
+        const encoded = plantumlEncode(src);
+        const container = document.createElement("div");
+        container.className = "plantuml-diagram";
+        const img = document.createElement("img");
+        img.src = `https://www.plantuml.com/plantuml/svg/${encoded}`;
+        img.alt = "PlantUML diagram";
+        img.style.maxWidth = "100%";
+        container.appendChild(img);
+        pre.replaceWith(container);
+      });
+    };
+    renderPlantUML();
+
     // Resolve noteapp-img: references to blob URLs
     const resolveImages = async () => {
       if (!bodyRef.current) return;
@@ -96,6 +154,15 @@ function NoteMain(props) {
     const handleClick = (e) => {
       const link = e.target.closest("a");
       if (!link) return;
+
+      // Wiki-link navigation
+      const wikiTitle = link.getAttribute("data-wiki-link");
+      if (wikiTitle) {
+        e.preventDefault();
+        if (props.onWikiLink) props.onWikiLink(wikiTitle);
+        return;
+      }
+
       const href = link.getAttribute("href");
       if (!href || !href.startsWith("#")) return;
       e.preventDefault();

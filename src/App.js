@@ -1008,6 +1008,16 @@ handleUnpinNote = async (noteid) => {
             onAddTag={this.handleAddTag}
             onAddTags={this.handleAddTags}
             tagSuggestEnabled={this.state.tagSuggestEnabled}
+            onWikiLink={(title) => {
+              const note = this.state.allnotes.find(n =>
+                (n.title || "").toLowerCase() === title.toLowerCase()
+              );
+              if (note) {
+                this.handleNoteListItemClick(null, note);
+              } else {
+                this.showAlert("Note Not Found", `No note titled "${title}" was found in this workspace.`);
+              }
+            }}
           />
         </>
       );

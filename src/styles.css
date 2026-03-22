@@ -1793,6 +1793,28 @@ a:hover { text-decoration: underline; }
 .dark .markdown-body sup a.footnote-ref { color: #60a5fa; }
 .markdown-body a.footnote-backref { text-decoration: none; margin-left: 4px; }
 
+/* ===== Wiki Links ===== */
+.markdown-body a.wiki-link {
+  color: #7c3aed;
+  background: #f5f3ff;
+  padding: 1px 4px;
+  border-radius: 3px;
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 0.95em;
+}
+.markdown-body a.wiki-link:hover { background: #ede9fe; text-decoration: underline; }
+.dark .markdown-body a.wiki-link { color: #a78bfa; background: #1e1b4b33; }
+.dark .markdown-body a.wiki-link:hover { background: #1e1b4b66; }
+
+/* ===== PlantUML ===== */
+.plantuml-diagram {
+  margin: 1rem 0;
+  display: flex;
+  justify-content: center;
+}
+.plantuml-diagram img { max-width: 100%; }
+
 /* ===== Copy HTML Feedback ===== */
 .copy-feedback { color: #059669 !important; }
 .view-toolbar-text-btn { position: relative; }

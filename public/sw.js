@@ -1,11 +1,9 @@
 /* eslint-disable no-restricted-globals */
-const CACHE_NAME = "noteapp-v1";
+const CACHE_NAME = "noteapp-v2";
 const PRECACHE_URLS = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./icon-192.svg",
-  "./icon-512.svg",
 ];
 
 // Install: precache app shell
@@ -55,7 +53,10 @@ self.addEventListener("fetch", (event) => {
   if (
     request.url.includes("/static/") ||
     request.url.endsWith(".svg") ||
-    request.url.endsWith(".ico")
+    request.url.endsWith(".ico") ||
+    request.url.endsWith(".css") ||
+    request.url.endsWith(".woff2") ||
+    request.url.endsWith(".woff")
   ) {
     event.respondWith(
       caches.match(request).then((cached) => {
