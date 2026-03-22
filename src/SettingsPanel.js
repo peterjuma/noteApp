@@ -3,7 +3,7 @@ import {
   X, Plus, Check, Trash2, PencilLine, ArrowLeftRight,
   Upload, Download, FolderUp, RotateCcw, Archive,
   Moon, Sun, Save, Sparkles, Settings, FileText,
-  RefreshCw, Cloud, CloudOff, Eye, EyeOff, Link2, ExternalLink,
+  RefreshCw, Cloud, CloudOff, Link2, ExternalLink,
 } from "lucide-react";
 import * as snippetService from "./services/snippets";
 import * as gistSync from "./services/gistSync";
@@ -49,7 +49,6 @@ function SettingsPanel({
   const [snippetCategory, setSnippetCategory] = useState("zendesk");
   const [syncEnabled, setSyncEnabled] = useState(gistSync.isSyncEnabled());
   const [syncToken, setSyncToken] = useState(gistSync.getToken());
-  const [showToken, setShowToken] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null); // null | "syncing" | "success" | "error"
   const [syncMessage, setSyncMessage] = useState("");
   const [syncUser, setSyncUser] = useState(null);
@@ -567,20 +566,14 @@ function SettingsPanel({
               </label>
               <div className="settings-inline-form">
                 <input
-                  type={showToken ? "text" : "password"}
+                  type="password"
                   className="settings-input"
                   placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
                   value={syncToken}
                   onChange={(e) => setSyncToken(e.target.value)}
                   style={{ fontFamily: "monospace" }}
+                  autoComplete="off"
                 />
-                <button
-                  className="icon-btn"
-                  onClick={() => setShowToken(!showToken)}
-                  title={showToken ? "Hide token" : "Show token"}
-                >
-                  {showToken ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
                 <button
                   className="settings-btn-sm settings-btn-primary"
                   onClick={() => {
