@@ -458,6 +458,7 @@ handleUnpinNote = async (noteid) => {
   handleClickHomeBtn = () => {
     fetch(readmePath)
       .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.text();
       })
       .then((readmetext) => {
@@ -473,6 +474,17 @@ handleUnpinNote = async (noteid) => {
           action: "homepage",
         });
         // Clear URL hash when going home
+        window.history.replaceState(null, "", window.location.pathname);
+      })
+      .catch(() => {
+        // Fallback: show a minimal home screen if README cannot be fetched
+        this.setState({
+          noteid: "00000000",
+          notetitle: "# Welcome to NoteApp",
+          notebody: "Create a new note to get started.",
+          activepage: "viewnote",
+          action: "homepage",
+        });
         window.history.replaceState(null, "", window.location.pathname);
       });
   };
