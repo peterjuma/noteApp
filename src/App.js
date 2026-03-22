@@ -1317,19 +1317,25 @@ handleUnpinNote = async (noteid) => {
         </div>
 
         {/* Navigation confirm dialog */}
-        {this.state.showNavConfirm && (
-          <ConfirmDialog
-            title="Unsaved Changes"
-            message="You have unsaved changes in the editor. What would you like to do?"
-            confirmText="Discard"
-            secondaryText="Save & Switch"
-            cancelText="Keep Editing"
-            danger
-            onConfirm={this.handleNavConfirmDiscard}
-            onSecondary={this.handleNavConfirmSave}
-            onCancel={this.handleNavConfirmCancel}
-          />
-        )}
+        {this.state.showNavConfirm && (() => {
+          const canSave = (this.state.notetitle || "").trim() && (this.state.notebody || "").trim();
+          return (
+            <ConfirmDialog
+              title="Unsaved Changes"
+              message={canSave
+                ? "You have unsaved changes in the editor. What would you like to do?"
+                : "This note is empty and cannot be saved."
+              }
+              confirmText="Discard"
+              secondaryText={canSave ? "Save & Switch" : undefined}
+              cancelText="Keep Editing"
+              danger
+              onConfirm={this.handleNavConfirmDiscard}
+              onSecondary={canSave ? this.handleNavConfirmSave : undefined}
+              onCancel={this.handleNavConfirmCancel}
+            />
+          );
+        })()}
         {/* Generic dialog */}
         {this.state.dialog && !this.state.dialog.workspaceList && (
           <ConfirmDialog

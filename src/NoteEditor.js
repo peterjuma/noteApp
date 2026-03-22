@@ -620,6 +620,7 @@ function NoteEditor(props) {
   };
 
   const handleSaveBtn = (e) => {
+    if (!title.trim() && !bodytxt.trim()) return;
     note.notetitle = title;
     note.notebody = bodytxt;
     note.tags = tags;
@@ -904,7 +905,7 @@ function NoteEditor(props) {
           )}
         </div>
         <div className={`editor-bottom ${darkMode ? "editor-bottom-dark" : ""}`}>
-          <button onClick={(e) => handleSaveBtn(e)} data-action={note.action} className="btn-save">
+          <button onClick={(e) => handleSaveBtn(e)} data-action={note.action} className="btn-save" disabled={!title.trim() && !bodytxt.trim()}>
             <Save size={14} /> {isDirty ? "Save" : "Saved"}
           </button>
           <span className="editor-hint" role="status" aria-live="polite">
