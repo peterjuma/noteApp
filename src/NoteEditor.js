@@ -546,7 +546,7 @@ function NoteEditor(props) {
           fontFamily: "'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, 'Liberation Mono', monospace",
           lineHeight: "1.6",
         },
-        ".cm-content": { padding: "16px 20px", minHeight: "200px" },
+        ".cm-content": { padding: "16px 20px", minHeight: "100%" },
         ".cm-gutters": { display: "none" },
         ".cm-activeLine": { backgroundColor: isDark ? "#1e293b" : "#f8fafc" },
         ".cm-selectionBackground": { backgroundColor: isDark ? "#1e40af44" : "#bfdbfe66" },
