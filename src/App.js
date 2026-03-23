@@ -84,7 +84,7 @@ class App extends Component {
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
     this.handleSearchNotes = this.handleSearchNotes.bind(this);
-    this.debouncedSearch = this.debounce(this.performSearch, 250);
+    this.debouncedSearch = this.debounce(this.performSearch.bind(this), 300);
     this.handleCopyEvent = this.handleCopyEvent.bind(this);
     this.handleSortNotes = this.handleSortNotes.bind(this);
     this.handleNoteEditor = this.handleNoteEditor.bind(this);
@@ -883,6 +883,10 @@ handleUnpinNote = async (noteid) => {
         return;
     }
 
+    this.debouncedSearch(searchString);
+  }
+
+  performSearch(searchString) {
     // Field prefix support: title:, body:, tag:
     const fieldMatch = searchString.match(/^(title:|body:|tag:)(.*)/);
     let keys, query;
@@ -913,7 +917,7 @@ handleUnpinNote = async (noteid) => {
     if (filteredNotes.length > 0) {
         this.handleNoteListItemClick(null, filteredNotes[0]);
     }
-}
+  }
 
 
   handleDownloadNote(note) {
