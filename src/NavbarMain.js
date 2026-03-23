@@ -7,11 +7,22 @@ function NavbarMain(props) {
   var isActive = props.display;
   var note = props.notesData;
   const [copied, setCopied] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   if (!isActive) return null;
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handlePdfDownload = async () => {
+    if (exportingPdf || !props.handleDownloadPdf) return;
+    setExportingPdf(true);
+    try {
+      await props.handleDownloadPdf(note);
+    } finally {
+      setExportingPdf(false);
+    }
   };
 
   const handleCopy = () => {
@@ -41,6 +52,9 @@ function NavbarMain(props) {
       <span className="toolbar-group">
         <button onClick={handlePrint} className="icon-btn" title="Print / Save as PDF" aria-label="Print or save as PDF">
           <Printer size={15} />
+        </button>
+        <button onClick={handlePdfDownload} className="icon-btn" title="Download PDF" aria-label="Download as PDF" disabled={exportingPdf}>
+          <FileDown size={15} />
         </button>
         <button onClick={() => props.handleDownloadNote(note)} className="icon-btn" title="Download .md" aria-label="Download as markdown file">
           <Download size={15} />

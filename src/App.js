@@ -928,6 +928,16 @@ handleUnpinNote = async (noteid) => {
     saveAs(blob, title);
   }
 
+  handleDownloadPdf = async (note) => {
+    const { exportNoteToPdf } = await import("./services/pdfExport");
+    const currentNote = this.state.allnotes.find(n => n.noteid === note.noteid) || {};
+    await exportNoteToPdf({
+      ...note,
+      created_at: currentNote.created_at,
+      updated_at: currentNote.updated_at,
+    });
+  };
+
   handleNotesBackup() {
     const JSZip = require("jszip");
     const zip = new JSZip();
@@ -1081,6 +1091,7 @@ handleUnpinNote = async (noteid) => {
           handleMoveNote={this.handleMoveNote}
           handleCopyEvent={this.handleCopyEvent}
           handleDownloadNote={this.handleDownloadNote}
+          handleDownloadPdf={this.handleDownloadPdf}
           onShowHistory={() => this.setState({ showVersionHistory: true })}
         />
       );
