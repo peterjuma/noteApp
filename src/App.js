@@ -80,6 +80,8 @@ class App extends Component {
       tagSuggestEnabled: localStorage.getItem("noteapp_tag_suggest") !== "false",
       vimMode: localStorage.getItem("noteapp_vim_mode") === "true",
       profileName: localStorage.getItem("noteapp_profile_name") || generateProfileName(),
+      selectedNotes: [],
+      lastSelectedNoteId: null,
     };
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
@@ -680,6 +682,89 @@ handleUnpinNote = async (noteid) => {
     });
   };
 
+  handleToggleSelectNote = (noteId) => {
+    this.setState((prev) => {
+      const selected = prev.selectedNotes.includes(noteId)
+        ? prev.selectedNotes.filter((id) => id !== noteId)
+        : [...prev.selectedNotes, noteId];
+      return { selectedNotes: selected, lastSelectedNoteId: noteId };
+    });
+  };
+
+  handleSelectRange = (noteId, displayNotes) => {
+    this.setState((prev) => {
+      const lastId = prev.lastSelectedNoteId;
+      if (!lastId) return { selectedNotes: [noteId], lastSelectedNoteId: noteId };
+      const ids = displayNotes.map((n) => n.noteid);
+      const startIdx = ids.indexOf(lastId);
+      const endIdx = ids.indexOf(noteId);
+      if (startIdx === -1 || endIdx === -1) return { selectedNotes: [noteId], lastSelectedNoteId: noteId };
+      const low = Math.min(startIdx, endIdx);
+      const high = Math.max(startIdx, endIdx);
+      const rangeIds = ids.slice(low, high + 1);
+      const merged = [...new Set([...prev.selectedNotes, ...rangeIds])];
+      return { selectedNotes: merged, lastSelectedNoteId: noteId };
+    });
+  };
+
+  handleClearSelection = () => {
+    this.setState({ selectedNotes: [], lastSelectedNoteId: null });
+  };
+
+  handleBulkDeleteNotes = () => {
+    const count = this.state.selectedNotes.length;
+    if (count === 0) return;
+    this.setState({
+      dialog: {
+        title: "Delete Multiple Notes",
+        message: `Delete ${count} selected note${count !== 1 ? "s" : ""}? This cannot be undone.`,
+        confirmText: "Delete Forever",
+        secondaryText: "Archive All",
+        cancelText: "Cancel",
+        danger: true,
+        onConfirm: () => {
+          this.setState({ dialog: null });
+          this._doBulkDelete(this.state.selectedNotes);
+        },
+        onSecondary: () => {
+          this.setState({ dialog: null });
+          this._doBulkArchiveAndDelete(this.state.selectedNotes);
+        },
+        onCancel: () => this.setState({ dialog: null }),
+      },
+    });
+  };
+
+  _doBulkArchiveAndDelete = async (noteIds) => {
+    for (const id of noteIds) {
+      const noteObj = this.state.allnotes.find((n) => n.noteid === id);
+      if (noteObj) await db.archiveNote(noteObj, this.state.activeDb);
+    }
+    this._doBulkDelete(noteIds);
+  };
+
+  _doBulkDelete = (noteIds) => {
+    const idsSet = new Set(noteIds);
+    this.setState(
+      (prev) => ({
+        allnotes: prev.allnotes.filter((n) => !idsSet.has(n.noteid)),
+        selectedNotes: [],
+        lastSelectedNoteId: null,
+      }),
+      () => this.initializeFuse()
+    );
+    for (const id of noteIds) {
+      db.deleteNote(id, this.state.activeDb);
+    }
+    // Navigate to remaining note or home
+    const remaining = this.state.allnotes;
+    if (remaining.length > 0) {
+      this.handleNoteListItemClick(null, remaining[0]);
+    } else {
+      this.handleClickHomeBtn();
+    }
+  };
+
   handleDeleteNote = (e, note) => {
     const noteTitle = note.notetitle || note.title || "this note";
     this.setState({
@@ -1159,9 +1244,13 @@ handleUnpinNote = async (noteid) => {
 
     // Use a unified source of truth for notes to display
     const displayNotes = filteredNotes.length > 0 ? filteredNotes : allnotes;
+    const selectedNotes = this.state.selectedNotes || [];
 
     let filteredPinnedNotes = displayNotes.filter(note => pinnedNotes.includes(note.noteid));
     let filteredUnpinnedNotes = displayNotes.filter(note => !pinnedNotes.includes(note.noteid));
+
+    // Combined display order for shift-select range calculation
+    const orderedDisplayNotes = [...filteredPinnedNotes, ...filteredUnpinnedNotes];
 
         // Count the total number of notes
     const totalPinned = filteredPinnedNotes.length;
@@ -1176,9 +1265,15 @@ handleUnpinNote = async (noteid) => {
                     note={note}
                     isPinned={true}
                     isActive={note.noteid === this.state.noteid}
+                    isSelected={selectedNotes.includes(note.noteid)}
+                    selectedCount={selectedNotes.length}
                     handlePinNote={this.handlePinNote}
                     handleUnpinNote={this.handleUnpinNote}
                     handleNoteListItemClick={this.handleNoteListItemClick}
+                    handleToggleSelectNote={this.handleToggleSelectNote}
+                    handleSelectRange={() => this.handleSelectRange(note.noteid, orderedDisplayNotes)}
+                    handleBulkDeleteNotes={this.handleBulkDeleteNotes}
+                    handleClearSelection={this.handleClearSelection}
                     onReorder={this.handleReorderNotes}
                 />
             ))}
@@ -1193,9 +1288,15 @@ handleUnpinNote = async (noteid) => {
                     note={note}
                     isPinned={false}
                     isActive={note.noteid === this.state.noteid}
+                    isSelected={selectedNotes.includes(note.noteid)}
+                    selectedCount={selectedNotes.length}
                     handlePinNote={this.handlePinNote}
                     handleUnpinNote={this.handleUnpinNote}
                     handleNoteListItemClick={this.handleNoteListItemClick}
+                    handleToggleSelectNote={this.handleToggleSelectNote}
+                    handleSelectRange={() => this.handleSelectRange(note.noteid, orderedDisplayNotes)}
+                    handleBulkDeleteNotes={this.handleBulkDeleteNotes}
+                    handleClearSelection={this.handleClearSelection}
                     onReorder={this.handleReorderNotes}
                 />
             ))}
