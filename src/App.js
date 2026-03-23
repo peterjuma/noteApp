@@ -1226,6 +1226,7 @@ handleUnpinNote = async (noteid) => {
             handleClickHomeBtn={this.handleClickHomeBtn}
             handleEditNoteBtn={this.handleEditNoteBtn}
             handleSearchNotes={this.handleSearchNotes}
+            onUploadNote={this.handleNotesUpload}
             darkMode={this.state.darkMode}
             showSettings={this.state.showSettings}
             showTableConverter={this.state.showTableConverter}

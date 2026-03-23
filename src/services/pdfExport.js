@@ -16,35 +16,8 @@ export async function exportNoteToPdf(note) {
   const bodyHtml = DOMPurify.sanitize(md2html.render(note.notebody || ""));
   const titleHtml = DOMPurify.sanitize(md2html.render(note.notetitle || "Untitled"));
 
-  // Create an offscreen container so we control styling independent of the app
-  const container = document.createElement("div");
-  Object.assign(container.style, {
-    position: "absolute",
-    left: "-9999px",
-    top: "0",
-    width: "750px", // roughly A4 content width at 96 DPI
-    padding: "40px",
-    background: "#ffffff",
-    color: "#1f2937",
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    fontSize: "15px",
-    lineHeight: "1.7",
-  });
-
-  container.innerHTML = `
-    <h1 style="font-size:1.75rem;font-weight:600;margin:0 0 8px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;">${titleHtml}</h1>
-    <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">
-      ${note.created_at ? `Created ${new Date(note.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}` : ""}
-      ${note.updated_at ? ` · Modified ${new Date(note.updated_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}` : ""}
-    </div>
-    <div class="markdown-body">${bodyHtml}</div>
-  `;
-
-  document.body.appendChild(container);
-
-  // Copy relevant stylesheets so code blocks, tables, etc. render correctly
+  // Collect relevant CSS from the parent page
   const styleSheets = Array.from(document.styleSheets);
-  const styleEl = document.createElement("style");
   let cssText = "";
   for (const sheet of styleSheets) {
     try {
@@ -65,6 +38,7 @@ export async function exportNoteToPdf(note) {
   }
   // Force light-mode colors for PDF
   cssText += `
+    body { margin: 0; padding: 40px; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.7; color: #1f2937; }
     .markdown-body { color: #1f2937 !important; }
     .markdown-body h1, .markdown-body h2 { border-color: #e5e7eb !important; color: #1f2937 !important; }
     .markdown-body pre { background: #f6f8fa !important; color: #1f2937 !important; }
@@ -74,15 +48,47 @@ export async function exportNoteToPdf(note) {
     .markdown-body table td, .markdown-body table th { border-color: #d1d5db !important; }
     .markdown-body a { color: #2563eb !important; }
   `;
-  styleEl.textContent = cssText;
-  container.prepend(styleEl);
+
+  // Render inside a hidden iframe so html2canvas doesn't touch the visible UI
+  const iframe = document.createElement("iframe");
+  Object.assign(iframe.style, {
+    position: "fixed",
+    left: "-10000px",
+    top: "0",
+    width: "750px",
+    height: "0",
+    border: "none",
+    visibility: "hidden",
+  });
+  document.body.appendChild(iframe);
+
+  // Wait for iframe to be ready
+  await new Promise((resolve) => { iframe.onload = resolve; iframe.src = "about:blank"; });
+
+  const iframeDoc = iframe.contentDocument;
+  iframeDoc.open();
+  iframeDoc.write(`<!DOCTYPE html><html><head><style>${cssText}</style></head><body>
+    <h1 style="font-size:1.75rem;font-weight:600;margin:0 0 8px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;">${titleHtml}</h1>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">
+      ${note.created_at ? `Created ${new Date(note.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}` : ""}
+      ${note.updated_at ? ` &middot; Modified ${new Date(note.updated_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}` : ""}
+    </div>
+    <div class="markdown-body">${bodyHtml}</div>
+  </body></html>`);
+  iframeDoc.close();
+
+  // Let the iframe content lay out fully
+  iframe.style.height = iframeDoc.body.scrollHeight + "px";
+  await new Promise((resolve) => setTimeout(resolve, 100));
 
   try {
-    const canvas = await html2canvas(container, {
+    const canvas = await html2canvas(iframeDoc.body, {
       scale: 2,
       useCORS: true,
       logging: false,
       backgroundColor: "#ffffff",
+      windowWidth: 750,
+      windowHeight: iframeDoc.body.scrollHeight,
     });
 
     const imgWidth = 210; // A4 width in mm
@@ -117,6 +123,6 @@ export async function exportNoteToPdf(note) {
     const filename = `${(note.notetitle || "note").replace(/[^A-Z0-9]+/gi, "_")}.pdf`;
     pdf.save(filename);
   } finally {
-    document.body.removeChild(container);
+    document.body.removeChild(iframe);
   }
 }

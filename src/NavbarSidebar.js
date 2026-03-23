@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Plus, Search, ChevronsLeft, ChevronsRight, Settings, TableProperties, StickyNote } from "lucide-react";
+import { Home, Plus, Search, ChevronsLeft, ChevronsRight, Settings, TableProperties, StickyNote, Upload } from "lucide-react";
 
 function NavbarSidebar(props) {
   var note = {
@@ -10,6 +10,7 @@ function NavbarSidebar(props) {
     action: "addnote",
   };
   const searchRef = React.useRef();
+  const uploadRef = React.useRef();
   const [searchVisible, setSearchVisible] = React.useState(false);
 
   const isPageActive = props.showSettings || props.showTableConverter;
@@ -23,12 +24,16 @@ function NavbarSidebar(props) {
         <button onClick={(e) => props.handleClickHomeBtn(e)} className="icon-btn" title="Home" aria-label="Home">
           <Home size={18} />
         </button>
-        <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title={props.showTableConverter ? "Back to Notes" : "Table Converter"} aria-label="Table Converter">
-          {props.showTableConverter ? <StickyNote size={16} /> : <TableProperties size={16} />}
-        </button>
         <button onClick={props.onOpenSettings} className={`icon-btn ${props.showSettings ? "icon-btn-active" : ""}`} title="Settings" aria-label="Settings">
           <Settings size={16} />
         </button>
+        <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title={props.showTableConverter ? "Back to Notes" : "Table Converter"} aria-label="Table Converter">
+          {props.showTableConverter ? <StickyNote size={16} /> : <TableProperties size={16} />}
+        </button>
+        <button onClick={() => uploadRef.current && uploadRef.current.click()} className="icon-btn" title="Upload .md" aria-label="Upload a markdown file" disabled={isPageActive}>
+          <Upload size={16} />
+        </button>
+        <input ref={uploadRef} type="file" accept=".md" style={{ display: "none" }} onChange={(e) => { if (props.onUploadNote) props.onUploadNote(e); e.target.value = ""; }} />
         <span className="toolbar-divider" style={{ height: 1, width: 24, margin: "2px 0" }} />
         <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="Add" aria-label="Add note" disabled={isPageActive}>
           <Plus size={18} style={{ pointerEvents: "none" }} />
@@ -64,12 +69,16 @@ function NavbarSidebar(props) {
       {/* Action bar: pages on left, actions on right */}
       <div className="sidebar-actions">
         <span className="toolbar-group">
-          <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title={props.showTableConverter ? "Back to Notes" : "Table Converter"} aria-label="Table Converter">
-            {props.showTableConverter ? <StickyNote size={15} /> : <TableProperties size={15} />}
-          </button>
           <button onClick={props.onOpenSettings} className={`icon-btn ${props.showSettings ? "icon-btn-active" : ""}`} title="Settings" aria-label="Settings">
             <Settings size={15} />
           </button>
+          <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title={props.showTableConverter ? "Back to Notes" : "Table Converter"} aria-label="Table Converter">
+            {props.showTableConverter ? <StickyNote size={15} /> : <TableProperties size={15} />}
+          </button>
+          <button onClick={() => uploadRef.current && uploadRef.current.click()} className="icon-btn" title="Upload .md" aria-label="Upload a markdown file" disabled={isPageActive}>
+            <Upload size={15} />
+          </button>
+          <input ref={uploadRef} type="file" accept=".md" style={{ display: "none" }} onChange={(e) => { if (props.onUploadNote) props.onUploadNote(e); e.target.value = ""; }} />
         </span>
         <span className="toolbar-divider" />
         <span className="toolbar-group">

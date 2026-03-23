@@ -1,4 +1,4 @@
-import { Download, Trash2, Printer, FolderOutput, Copy, Check, FileDown, Clock } from "lucide-react";
+import { Download, Trash2, FolderOutput, Copy, Check, FileText, Clock } from "lucide-react";
 import { useState } from "react";
 import DOMPurify from "dompurify";
 import { md2html } from "./useMarkDown";
@@ -10,10 +10,6 @@ function NavbarMain(props) {
   const [exportingPdf, setExportingPdf] = useState(false);
 
   if (!isActive) return null;
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   const handlePdfDownload = async () => {
     if (exportingPdf || !props.handleDownloadPdf) return;
@@ -50,11 +46,8 @@ function NavbarMain(props) {
       </span>
       <div style={{ flex: 1 }} />
       <span className="toolbar-group">
-        <button onClick={handlePrint} className="icon-btn" title="Print / Save as PDF" aria-label="Print or save as PDF">
-          <Printer size={15} />
-        </button>
         <button onClick={handlePdfDownload} className="icon-btn" title="Download PDF" aria-label="Download as PDF" disabled={exportingPdf}>
-          <FileDown size={15} />
+          <FileText size={15} />
         </button>
         <button onClick={() => props.handleDownloadNote(note)} className="icon-btn" title="Download .md" aria-label="Download as markdown file">
           <Download size={15} />
