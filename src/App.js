@@ -84,7 +84,7 @@ class App extends Component {
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
     this.handleSearchNotes = this.handleSearchNotes.bind(this);
-    this.debouncedSearch = this.debounce(this.handleSearchNotes, 250);
+    this.debouncedSearch = this.debounce(this.performSearch, 250);
     this.handleCopyEvent = this.handleCopyEvent.bind(this);
     this.handleSortNotes = this.handleSortNotes.bind(this);
     this.handleNoteEditor = this.handleNoteEditor.bind(this);
@@ -107,12 +107,14 @@ class App extends Component {
 
       // Navigate to note from URL hash on initial load
       this.navigateFromHash();
+      this.initializeFuse();
     });
 
     // Listen for browser back/forward
     window.addEventListener("hashchange", this.handleHashChange);
 
     this.handleCopyCodeButtonClick();
+    this.initializeFuse();
   }
 
   componentWillUnmount() {
@@ -125,6 +127,9 @@ class App extends Component {
       prevState.activepage !== this.state.activepage
     ) {
       this.handleCopyCodeButtonClick();
+    }
+    if (prevState.allnotes !== this.state.allnotes) {
+      this.initializeFuse();
     }
   }
 
@@ -277,7 +282,7 @@ handleUnpinNote = async (noteid) => {
       const [dragged] = notes.splice(dragIdx, 1);
       notes.splice(targetIdx, 0, dragged);
       return { allnotes: notes, sortby: "manual" };
-    });
+    }, () => this.initializeFuse());
   };
   
   // Handle Click List Item
@@ -405,7 +410,10 @@ handleUnpinNote = async (noteid) => {
       // If restored to current workspace, refresh notes
       if (result.workspace === this.state.activeDb) {
         const notes = await db.getAllNotes(this.state.activeDb);
-        this.setState({ allnotes: notes }, () => this.handleSortNotes(this.state.sortby));
+        this.setState({ allnotes: notes }, () => {
+          this.handleSortNotes(this.state.sortby);
+          this.initializeFuse();
+        });
       }
       this.showAlert("Restored", `Note restored to workspace.`);
     }
@@ -452,6 +460,7 @@ handleUnpinNote = async (noteid) => {
             } else {
               this.handleClickHomeBtn();
             }
+            this.initializeFuse();
           });
           const targetName = (this.state.workspaces.find(w => w.dbName === targetDb) || {}).name || targetDb;
           this.showAlert("Moved", `Note moved to ${targetName}.`);
@@ -595,7 +604,7 @@ handleUnpinNote = async (noteid) => {
     this.setState({
       sortby: sortValue,
       allnotes: sortedNotes,
-    });
+    }, () => this.initializeFuse());
   
     // Auto-select the first note only on initial load (no current note selected)
     if (sortedNotes.length > 0 && !this.state.noteid && this.state.action !== "addnote" && this.state.action !== "updatenote") {
@@ -615,7 +624,7 @@ handleUnpinNote = async (noteid) => {
         return n;
       });
       return { allnotes };
-    });
+    }, () => this.initializeFuse());
   };
 
   // Add multiple suggested tags to a note
@@ -630,7 +639,7 @@ handleUnpinNote = async (noteid) => {
         return n;
       });
       return { allnotes };
-    });
+    }, () => this.initializeFuse());
   };
 
   handleEditNoteBtn = (e, note) => {
@@ -707,7 +716,7 @@ handleUnpinNote = async (noteid) => {
       return {
         allnotes: updatedNotes,
       };
-    });
+    }, () => this.initializeFuse());
     db.deleteNote(note.noteid, this.state.activeDb);
     if (this.state.allnotes.length - 1 === 0) {
       this.handleClickHomeBtn();
@@ -752,6 +761,7 @@ handleUnpinNote = async (noteid) => {
         allnotes: [...prevState.allnotes, newNote],
       }), () => {
         if (!isSilent) this.handleSortNotes(this.state.sortby);
+        this.initializeFuse();
       });
       db.addNote(newNote, this.state.activeDb);
       db.saveVersion(newNote, this.state.activeDb);
@@ -780,6 +790,7 @@ handleUnpinNote = async (noteid) => {
         };
       }, () => {
         if (!isSilent) this.handleSortNotes(this.state.sortby);
+        this.initializeFuse();
       });
       // Find the existing note to preserve created_at
       const existingNote = this.state.allnotes.find(
@@ -895,14 +906,7 @@ handleUnpinNote = async (noteid) => {
       ];
     }
 
-    const fuse = new Fuse(this.state.allnotes, {
-      keys,
-      threshold: 0.35,
-      ignoreLocation: true,
-      minMatchCharLength: 2,
-    });
-
-    const results = fuse.search(query);
+    const results = this.state.fuse.search(query);
     const filteredNotes = results.map(r => r.item);
 
     this.setState({ filteredNotes });
@@ -977,6 +981,7 @@ handleUnpinNote = async (noteid) => {
         // Now that the state is updated, perform actions that depend on the updated state
         this.handleSortNotes("4");
         this.handleNoteListItemClick(null, newNote);
+        this.initializeFuse();
     });
     };
     reader.readAsText(file);
@@ -1024,6 +1029,7 @@ handleUnpinNote = async (noteid) => {
           () => {
             this.handleSortNotes("4");
             this.handleNoteListItemClick(null, importedNotes[importedNotes.length - 1]);
+            this.initializeFuse();
           }
         );
       }
@@ -1035,6 +1041,19 @@ handleUnpinNote = async (noteid) => {
     event.target.value = "";
   };
   
+  initializeFuse = () => {
+    const fuse = new Fuse(this.state.allnotes, {
+      keys: [
+        { name: "title", weight: 0.4 },
+        { name: "body", weight: 0.3 },
+        { name: "tags", weight: 0.3 },
+      ],
+      threshold: 0.35,
+      ignoreLocation: true,
+      minMatchCharLength: 2,
+    });
+    this.setState({ fuse });
+  };
 
   render() {
     const allnotes = this.state.allnotes || [];
