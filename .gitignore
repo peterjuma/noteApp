@@ -20,6 +20,7 @@ yarn.lock
 keycodes-OLD.js
 script-OLD.js
 NoteList-DEL.js
+enhancements.md
 
 .DS_STORE
 node_modules
