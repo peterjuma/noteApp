@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Plus, Search, ChevronsLeft, ChevronsRight, Settings, TableProperties, StickyNote, Upload } from "lucide-react";
+import { Home, Plus, Search, ChevronsLeft, ChevronsRight, Settings, TableProperties, StickyNote, Upload, Layers } from "lucide-react";
 
 function NavbarSidebar(props) {
   var note = {
@@ -12,6 +12,23 @@ function NavbarSidebar(props) {
   const searchRef = React.useRef();
   const uploadRef = React.useRef();
   const [searchVisible, setSearchVisible] = React.useState(false);
+  const [wsDropdownOpen, setWsDropdownOpen] = React.useState(false);
+  const wsDropdownRef = React.useRef();
+
+  const workspaces = props.workspaces || [];
+  const hasMultipleWorkspaces = workspaces.length > 0;
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    if (!wsDropdownOpen) return;
+    const handleClickOutside = (e) => {
+      if (wsDropdownRef.current && !wsDropdownRef.current.contains(e.target)) {
+        setWsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [wsDropdownOpen]);
 
   const isPageActive = props.showSettings || props.showTableConverter;
 
@@ -34,6 +51,22 @@ function NavbarSidebar(props) {
           <Upload size={16} />
         </button>
         <input ref={uploadRef} type="file" accept=".md" style={{ display: "none" }} onChange={(e) => { if (props.onUploadNote) props.onUploadNote(e); e.target.value = ""; }} />
+        {hasMultipleWorkspaces && (
+          <div className="ws-switcher-wrapper" ref={wsDropdownRef}>
+            <button onClick={() => setWsDropdownOpen(v => !v)} className={`icon-btn ${wsDropdownOpen ? "icon-btn-active" : ""}`} title="Switch workspace" aria-label="Switch workspace">
+              <Layers size={16} />
+            </button>
+            {wsDropdownOpen && (
+              <ul className="ws-switcher-dropdown">
+                {workspaces.map((w) => (
+                  <li key={w.dbName} className={`ws-switcher-item ${w.dbName === props.activeDb ? "ws-switcher-item-active" : ""}`} onClick={() => { props.onSwitchWorkspace(w.dbName); setWsDropdownOpen(false); }}>
+                    {w.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
         <span className="toolbar-divider" style={{ height: 1, width: 24, margin: "2px 0" }} />
         <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="Add" aria-label="Add note" disabled={isPageActive}>
           <Plus size={18} style={{ pointerEvents: "none" }} />
@@ -79,6 +112,22 @@ function NavbarSidebar(props) {
             <Upload size={15} />
           </button>
           <input ref={uploadRef} type="file" accept=".md" style={{ display: "none" }} onChange={(e) => { if (props.onUploadNote) props.onUploadNote(e); e.target.value = ""; }} />
+          {hasMultipleWorkspaces && (
+            <div className="ws-switcher-wrapper" ref={wsDropdownRef}>
+              <button onClick={() => setWsDropdownOpen(v => !v)} className={`icon-btn ${wsDropdownOpen ? "icon-btn-active" : ""}`} title="Switch workspace" aria-label="Switch workspace">
+                <Layers size={15} />
+              </button>
+              {wsDropdownOpen && (
+                <ul className="ws-switcher-dropdown">
+                  {workspaces.map((w) => (
+                    <li key={w.dbName} className={`ws-switcher-item ${w.dbName === props.activeDb ? "ws-switcher-item-active" : ""}`} onClick={() => { props.onSwitchWorkspace(w.dbName); setWsDropdownOpen(false); }}>
+                      {w.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </span>
         <span className="toolbar-divider" />
         <span className="toolbar-group">

@@ -3,7 +3,7 @@ import {
   X, Plus, Check, Trash2, PencilLine, ArrowLeftRight,
   Upload, Download, FolderUp, RotateCcw, Archive,
   Moon, Sun, Save, Sparkles, Settings, FileText,
-  RefreshCw, Cloud, CloudOff, Link2, ExternalLink,
+  RefreshCw, Cloud, CloudOff, Link2, ExternalLink, HardDrive,
 } from "lucide-react";
 import * as snippetService from "./services/snippets";
 import * as gistSync from "./services/gistSync";
@@ -59,9 +59,9 @@ function SettingsPanel({
   const fileInputRef = useRef(null);
   const zipInputRef = useRef(null);
 
-  // Load archive when switching to data tab
+  // Load archive when switching to archive tab
   useEffect(() => {
-    if (activeTab === "data" && onLoadArchive) {
+    if (activeTab === "archive" && onLoadArchive) {
       onLoadArchive();
     }
     if (activeTab === "templates") {
@@ -103,7 +103,8 @@ function SettingsPanel({
   const tabs = [
     { id: "general", label: "General", icon: Settings },
     { id: "workspaces", label: "Workspaces", icon: ArrowLeftRight },
-    { id: "data", label: "Data & Archive", icon: Archive },
+    { id: "data", label: "Data", icon: HardDrive },
+    { id: "archive", label: "Archive", icon: Archive },
     { id: "templates", label: "Templates", icon: FileText },
     { id: "sync", label: "Sync", icon: Cloud },
   ];
@@ -347,57 +348,6 @@ function SettingsPanel({
             <input ref={fileInputRef} type="file" accept=".md" className="hidden" onChange={onUploadNote} />
             <input ref={zipInputRef} type="file" accept=".zip" className="hidden" onChange={onZipImport} />
 
-            <h3 className="settings-section-title" style={{ marginTop: "24px" }}>
-              Archive
-              {archivedNotes.length > 0 && <span className="settings-badge">{archivedNotes.length}</span>}
-            </h3>
-            <p className="settings-hint">Notes moved to archive can be restored or permanently deleted.</p>
-
-            {archivedNotes.length > 0 && (
-              <div style={{ marginBottom: 8 }}>
-                <button
-                  className="settings-btn-sm"
-                  style={{ color: "#dc2626" }}
-                  onClick={() => showConfirm(
-                    "Purge Archive",
-                    `Permanently delete all ${archivedNotes.length} archived note${archivedNotes.length !== 1 ? "s" : ""}? This cannot be undone.`,
-                    onPurgeArchive,
-                    { confirmText: "Purge All", danger: true }
-                  )}
-                >
-                  <Trash2 size={12} /> Purge All Archived
-                </button>
-              </div>
-            )}
-
-            {archivedNotes.length > 0 ? (
-              <ul className="settings-archive-list">
-                {archivedNotes.map((note) => (
-                  <li key={note.noteid} className="settings-archive-item">
-                    <div className="settings-archive-info">
-                      <span className="settings-archive-title">{note.title}</span>
-                      <span className="settings-archive-meta">
-                        {note.sourceWorkspace === "notesdb" ? "Default" : note.sourceWorkspace.replace("notesdb_", "")}
-                        {note.archivedAt && ` · ${new Date(note.archivedAt).toLocaleDateString()}`}
-                      </span>
-                    </div>
-                    <div className="settings-archive-actions">
-                      <button onClick={() => onRestoreNote(note.noteid)} className="icon-btn" title="Restore">
-                        <RotateCcw size={14} />
-                      </button>
-                      <button onClick={() => onPermanentDelete(note.noteid)} className="icon-btn icon-btn-danger" title="Delete forever">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="settings-empty">
-                <p>No archived notes</p>
-              </div>
-            )}
-
             {/* Danger Zone */}
             <h3 className="settings-section-title settings-danger-title" style={{ marginTop: "32px" }}>
               Danger Zone
@@ -443,6 +393,65 @@ function SettingsPanel({
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ─── Archive Tab ─── */}
+        {activeTab === "archive" && (
+          <div className="settings-section">
+            <div className="bin-page-header" style={{ padding: "0 0 16px" }}>
+              <div className="bin-page-title">
+                <Archive size={18} />
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Archive</h3>
+                <span className="bin-page-count">{archivedNotes.length} item{archivedNotes.length !== 1 ? "s" : ""}</span>
+              </div>
+              {archivedNotes.length > 0 && (
+                <button
+                  className="bin-purge-btn"
+                  onClick={() => showConfirm(
+                    "Purge Archive",
+                    `Permanently delete all ${archivedNotes.length} archived note${archivedNotes.length !== 1 ? "s" : ""}? This cannot be undone.`,
+                    onPurgeArchive,
+                    { confirmText: "Purge All", danger: true }
+                  )}
+                >
+                  Empty Archive
+                </button>
+              )}
+            </div>
+            <p className="settings-hint">Notes moved to archive can be restored or permanently deleted.</p>
+
+            {archivedNotes.length > 0 ? (
+              <div className="bin-page-list" style={{ overflow: "visible" }}>
+                {archivedNotes.map((note) => (
+                  <div key={note.noteid} className="bin-page-item">
+                    <div className="bin-page-item-info">
+                      <span className="bin-page-item-title">{note.title}</span>
+                      <span className="bin-page-item-meta">
+                        {note.sourceWorkspace === "notesdb" ? "Default" : (note.sourceWorkspace || "").replace("notesdb_", "")}
+                        {note.archivedAt && ` · ${new Date(note.archivedAt).toLocaleDateString()}`}
+                      </span>
+                      {note.body && (
+                        <span className="bin-page-item-preview">{note.body.slice(0, 120)}{note.body.length > 120 ? "..." : ""}</span>
+                      )}
+                    </div>
+                    <div className="bin-page-item-actions">
+                      <button onClick={() => onRestoreNote(note.noteid)} className="btn-save" style={{ padding: "5px 12px", fontSize: "12px" }} title="Restore to workspace">
+                        <RotateCcw size={13} /> Restore
+                      </button>
+                      <button onClick={() => onPermanentDelete(note.noteid)} className="btn-cancel" style={{ padding: "5px 12px", fontSize: "12px", color: "#dc2626" }} title="Delete forever">
+                        <Trash2 size={13} /> Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="settings-empty">
+                <p>No archived notes</p>
+                <p style={{ fontSize: 12, color: "#9ca3af" }}>Archived notes will appear here when you delete them.</p>
+              </div>
+            )}
           </div>
         )}
 

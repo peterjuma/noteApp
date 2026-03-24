@@ -1371,6 +1371,9 @@ handleUnpinNote = async (noteid) => {
             showSettings={this.state.showSettings}
             showTableConverter={this.state.showTableConverter}
             workspaceName={(workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default"}
+            workspaces={workspaces}
+            activeDb={this.state.activeDb}
+            onSwitchWorkspace={this.handleSwitchWorkspace}
             sidebarCollapsed={this.state.sidebarCollapsed}
             onToggleCollapse={() => this.setState((s) => {
               const next = !s.sidebarCollapsed;
@@ -1615,10 +1618,36 @@ handleUnpinNote = async (noteid) => {
               />
             </div>
           ) : (
-            <>
-              {RightNavbar}
-              {ActivePage}
-            </>
+            <div className={`main-split ${this.state.showVersionHistory ? "main-split-history" : ""}`}>
+              <div className="main-split-primary">
+                {RightNavbar}
+                {ActivePage}
+              </div>
+              {this.state.showVersionHistory && this.state.noteid && (
+                <Suspense fallback={null}>
+                <div className="main-split-secondary">
+                  <VersionHistory
+                    noteid={this.state.noteid}
+                    currentTitle={this.state.notetitle}
+                    darkMode={this.state.darkMode}
+                    activeDb={this.state.activeDb}
+                    onRestore={(restoredNote) => {
+                      this.setState({
+                        notetitle: restoredNote.title,
+                        notebody: restoredNote.body,
+                        showVersionHistory: false,
+                        allnotes: this.state.allnotes.map((n) =>
+                          n.noteid === restoredNote.noteid ? restoredNote : n
+                        ),
+                      });
+                      this.showAlert("Version Restored", "The note has been restored to the selected version.");
+                    }}
+                    onClose={() => this.setState({ showVersionHistory: false })}
+                  />
+                </div>
+                </Suspense>
+              )}
+            </div>
           )}
           </Suspense>
         </div>
@@ -1683,29 +1712,6 @@ handleUnpinNote = async (noteid) => {
               </div>
             </div>
           </div>
-        )}
-        {/* Version History */}
-        {this.state.showVersionHistory && this.state.noteid && (
-          <Suspense fallback={null}>
-          <VersionHistory
-            noteid={this.state.noteid}
-            currentTitle={this.state.notetitle}
-            darkMode={this.state.darkMode}
-            activeDb={this.state.activeDb}
-            onRestore={(restoredNote) => {
-              this.setState({
-                notetitle: restoredNote.title,
-                notebody: restoredNote.body,
-                showVersionHistory: false,
-                allnotes: this.state.allnotes.map((n) =>
-                  n.noteid === restoredNote.noteid ? restoredNote : n
-                ),
-              });
-              this.showAlert("Version Restored", "The note has been restored to the selected version.");
-            }}
-            onClose={() => this.setState({ showVersionHistory: false })}
-          />
-          </Suspense>
         )}
       </div>
     );
