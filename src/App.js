@@ -11,6 +11,7 @@ import { html2md, md2html } from "./useMarkDown";
 import { saveAs } from "file-saver";
 import Fuse from "fuse.js";
 import * as db from "./services/notesDB";
+import { computeContentHash, buildHashSet } from "./services/contentHash";
 
 // Lazy-load heavy components (not needed on initial render)
 const SettingsPanel = lazy(() => import("./SettingsPanel"));
@@ -110,6 +111,9 @@ class App extends Component {
       // Navigate to note from URL hash on initial load
       this.navigateFromHash();
       this.initializeFuse();
+
+      // Backfill contentHash on notes that don't have one yet
+      this.backfillContentHashes(getnotes);
     });
 
     // Listen for browser back/forward
@@ -1059,11 +1063,21 @@ handleUnpinNote = async (noteid) => {
       } else {
         title = file.name.replace(".md", "");
       }
+
+      // Duplicate check: skip if identical content already exists
+      const hash = await computeContentHash(title, content);
+      const existingHashes = await buildHashSet(this.state.allnotes);
+      if (existingHashes.has(hash)) {
+        this.showAlert("Already Imported", `"${title}" is already in your notes - skipping duplicate.`);
+        event.target.value = "";
+        return;
+      }
   
       const newNote = {
         noteid: new Date().getTime().toString(), // Generate a unique note ID
         title,
         body: content,
+        contentHash: hash,
         created_at: Date.now(),
         updated_at: Date.now(),
       };
@@ -1093,6 +1107,8 @@ handleUnpinNote = async (noteid) => {
     try {
       const zip = await JSZip.loadAsync(file);
       const importedNotes = [];
+      let skippedCount = 0;
+      const existingHashes = await buildHashSet(this.state.allnotes);
       const fileNames = Object.keys(zip.files).filter(
         (name) => name.endsWith(".md") && !zip.files[name].dir
       );
@@ -1108,10 +1124,20 @@ handleUnpinNote = async (noteid) => {
         } else {
           title = name.replace(/\.md$/, "").replace(/^.*\//, "");
         }
+
+        // Duplicate check: skip if identical content already exists
+        const hash = await computeContentHash(title, content);
+        if (existingHashes.has(hash)) {
+          skippedCount++;
+          continue;
+        }
+        existingHashes.add(hash);
+
         const newNote = {
           noteid: Date.now().toString() + Math.random().toString(36).slice(2, 6),
           title,
           body: content,
+          contentHash: hash,
           created_at: Date.now(),
           updated_at: Date.now(),
         };
@@ -1133,11 +1159,24 @@ handleUnpinNote = async (noteid) => {
         );
       }
 
-      this.showAlert("Import Complete", `Imported ${importedNotes.length} note${importedNotes.length !== 1 ? "s" : ""} from archive.`);
+      const parts = [];
+      if (importedNotes.length > 0) parts.push(`Imported ${importedNotes.length} note${importedNotes.length !== 1 ? "s" : ""}`);
+      if (skippedCount > 0) parts.push(`skipped ${skippedCount} duplicate${skippedCount !== 1 ? "s" : ""}`);
+      this.showAlert("Import Complete", parts.join(", ") + ".");
     } catch {
       this.showAlert("Import Failed", "Failed to read ZIP archive. Please ensure it's a valid .zip file.");
     }
     event.target.value = "";
+  };
+
+  backfillContentHashes = async (notes) => {
+    const needsHash = notes.filter((n) => !n.contentHash);
+    if (needsHash.length === 0) return;
+    for (const note of needsHash) {
+      note.contentHash = await computeContentHash(note.title, note.body);
+      await db.updateNote(note, this.state.activeDb);
+    }
+    this.setState({ allnotes: [...this.state.allnotes] });
   };
   
   initializeFuse = () => {
