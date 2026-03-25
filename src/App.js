@@ -1402,6 +1402,7 @@ handleUnpinNote = async (noteid) => {
                 return { showTableConverter: next, showSettings: false };
               });
             }}
+            onAddWorkspace={this.handleAddWorkspace}
           />
 
           {!this.state.showSettings && !this.state.showTableConverter && (

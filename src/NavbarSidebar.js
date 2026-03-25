@@ -14,9 +14,11 @@ function NavbarSidebar(props) {
   const [searchVisible, setSearchVisible] = React.useState(false);
   const [wsDropdownOpen, setWsDropdownOpen] = React.useState(false);
   const wsDropdownRef = React.useRef();
+  const [showNewWs, setShowNewWs] = React.useState(false);
+  const [newWsName, setNewWsName] = React.useState("");
+  const newWsInputRef = React.useRef();
 
   const workspaces = props.workspaces || [];
-  const hasMultipleWorkspaces = workspaces.length > 0;
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -24,11 +26,27 @@ function NavbarSidebar(props) {
     const handleClickOutside = (e) => {
       if (wsDropdownRef.current && !wsDropdownRef.current.contains(e.target)) {
         setWsDropdownOpen(false);
+        setShowNewWs(false);
+        setNewWsName("");
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [wsDropdownOpen]);
+
+  // Focus the new-workspace input when shown
+  React.useEffect(() => {
+    if (showNewWs && newWsInputRef.current) newWsInputRef.current.focus();
+  }, [showNewWs]);
+
+  const handleCreateWorkspace = () => {
+    if (newWsName.trim() && props.onAddWorkspace) {
+      props.onAddWorkspace(newWsName.trim());
+      setNewWsName("");
+      setShowNewWs(false);
+      setWsDropdownOpen(false);
+    }
+  };
 
   const isPageActive = props.showSettings || props.showTableConverter;
 
@@ -51,22 +69,31 @@ function NavbarSidebar(props) {
           <Upload size={16} />
         </button>
         <input ref={uploadRef} type="file" accept=".md" style={{ display: "none" }} onChange={(e) => { if (props.onUploadNote) props.onUploadNote(e); e.target.value = ""; }} />
-        {hasMultipleWorkspaces && (
-          <div className="ws-switcher-wrapper" ref={wsDropdownRef}>
-            <button onClick={() => setWsDropdownOpen(v => !v)} className={`icon-btn ${wsDropdownOpen ? "icon-btn-active" : ""}`} title="Switch workspace" aria-label="Switch workspace">
-              <Layers size={16} />
-            </button>
-            {wsDropdownOpen && (
-              <ul className="ws-switcher-dropdown">
-                {workspaces.map((w) => (
-                  <li key={w.dbName} className={`ws-switcher-item ${w.dbName === props.activeDb ? "ws-switcher-item-active" : ""}`} onClick={() => { props.onSwitchWorkspace(w.dbName); setWsDropdownOpen(false); }}>
-                    {w.name}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+        <div className="ws-switcher-wrapper" ref={wsDropdownRef}>
+          <button onClick={() => { setWsDropdownOpen(v => !v); setShowNewWs(false); setNewWsName(""); }} className={`icon-btn ${wsDropdownOpen ? "icon-btn-active" : ""}`} title="Workspaces" aria-label="Workspaces">
+            <Layers size={16} />
+          </button>
+          {wsDropdownOpen && (
+            <ul className="ws-switcher-dropdown">
+              {workspaces.map((w) => (
+                <li key={w.dbName} className={`ws-switcher-item ${w.dbName === props.activeDb ? "ws-switcher-item-active" : ""}`} onClick={() => { props.onSwitchWorkspace(w.dbName); setWsDropdownOpen(false); }}>
+                  {w.name}
+                </li>
+              ))}
+              <li className="ws-switcher-divider" />
+              {!showNewWs ? (
+                <li className="ws-switcher-item ws-switcher-create" onClick={() => setShowNewWs(true)}>
+                  <Plus size={13} style={{ marginRight: 6 }} />Create workspace
+                </li>
+              ) : (
+                <li className="ws-switcher-inline-create">
+                  <input ref={newWsInputRef} type="text" className="ws-create-input" placeholder="Workspace name..." value={newWsName} onChange={(e) => setNewWsName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleCreateWorkspace(); if (e.key === "Escape") { setShowNewWs(false); setNewWsName(""); } }} />
+                  <button className="ws-create-btn" onClick={handleCreateWorkspace} disabled={!newWsName.trim()}>Create</button>
+                </li>
+              )}
+            </ul>
+          )}
+        </div>
         <span className="toolbar-divider" style={{ height: 1, width: 24, margin: "2px 0" }} />
         <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="Add" aria-label="Add note" disabled={isPageActive}>
           <Plus size={18} style={{ pointerEvents: "none" }} />
@@ -112,22 +139,31 @@ function NavbarSidebar(props) {
             <Upload size={15} />
           </button>
           <input ref={uploadRef} type="file" accept=".md" style={{ display: "none" }} onChange={(e) => { if (props.onUploadNote) props.onUploadNote(e); e.target.value = ""; }} />
-          {hasMultipleWorkspaces && (
-            <div className="ws-switcher-wrapper" ref={wsDropdownRef}>
-              <button onClick={() => setWsDropdownOpen(v => !v)} className={`icon-btn ${wsDropdownOpen ? "icon-btn-active" : ""}`} title="Switch workspace" aria-label="Switch workspace">
-                <Layers size={15} />
-              </button>
-              {wsDropdownOpen && (
-                <ul className="ws-switcher-dropdown">
-                  {workspaces.map((w) => (
-                    <li key={w.dbName} className={`ws-switcher-item ${w.dbName === props.activeDb ? "ws-switcher-item-active" : ""}`} onClick={() => { props.onSwitchWorkspace(w.dbName); setWsDropdownOpen(false); }}>
-                      {w.name}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
+          <div className="ws-switcher-wrapper" ref={wsDropdownRef}>
+            <button onClick={() => { setWsDropdownOpen(v => !v); setShowNewWs(false); setNewWsName(""); }} className={`icon-btn ${wsDropdownOpen ? "icon-btn-active" : ""}`} title="Workspaces" aria-label="Workspaces">
+              <Layers size={15} />
+            </button>
+            {wsDropdownOpen && (
+              <ul className="ws-switcher-dropdown">
+                {workspaces.map((w) => (
+                  <li key={w.dbName} className={`ws-switcher-item ${w.dbName === props.activeDb ? "ws-switcher-item-active" : ""}`} onClick={() => { props.onSwitchWorkspace(w.dbName); setWsDropdownOpen(false); }}>
+                    {w.name}
+                  </li>
+                ))}
+                <li className="ws-switcher-divider" />
+                {!showNewWs ? (
+                  <li className="ws-switcher-item ws-switcher-create" onClick={() => setShowNewWs(true)}>
+                    <Plus size={13} style={{ marginRight: 6 }} />Create workspace
+                  </li>
+                ) : (
+                  <li className="ws-switcher-inline-create">
+                    <input ref={newWsInputRef} type="text" className="ws-create-input" placeholder="Workspace name..." value={newWsName} onChange={(e) => setNewWsName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleCreateWorkspace(); if (e.key === "Escape") { setShowNewWs(false); setNewWsName(""); } }} />
+                    <button className="ws-create-btn" onClick={handleCreateWorkspace} disabled={!newWsName.trim()}>Create</button>
+                  </li>
+                )}
+              </ul>
+            )}
+          </div>
         </span>
         <span className="toolbar-divider" />
         <span className="toolbar-group">

@@ -1354,6 +1354,75 @@ a:hover { text-decoration: underline; }
   margin-left: 4px;
 }
 
+/* ── Workspace dropdown create option ── */
+.ws-switcher-divider {
+  height: 1px;
+  margin: 4px 10px;
+  background: #e5e7eb;
+  list-style: none;
+}
+.dark .ws-switcher-divider {
+  background: #374151;
+}
+.ws-switcher-create {
+  display: flex;
+  align-items: center;
+  color: #2563eb !important;
+  font-weight: 500;
+}
+.dark .ws-switcher-create {
+  color: #60a5fa !important;
+}
+.ws-switcher-inline-create {
+  display: flex;
+  gap: 4px;
+  padding: 6px 10px;
+  list-style: none;
+}
+.ws-create-input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  outline: none;
+  background: #fff;
+  color: #1f2937;
+}
+.ws-create-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+.dark .ws-create-input {
+  background: #111827;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+.dark .ws-create-input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.15);
+}
+.ws-create-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: #2563eb;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+}
+.ws-create-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+.ws-create-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* ===== Bin / Archive Styles ===== */
 .bin-purge-btn {
   font-size: 11px;
