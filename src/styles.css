@@ -399,6 +399,37 @@ a:hover { text-decoration: underline; }
 }
 .dark .note-view-title { color: #f3f4f6; border-color: #374151; }
 
+/* ===== Brand Header (Home Page) ===== */
+.brand-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.dark .brand-header { border-color: #374151; }
+.brand-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.brand-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  line-height: 1.2;
+}
+.dark .brand-name { color: #f3f4f6; }
+.brand-tagline {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 2px 0 0;
+}
+.dark .brand-tagline { color: #9ca3af; }
+
 /* ===== Editor ===== */
 .editor-container {
   display: flex;
