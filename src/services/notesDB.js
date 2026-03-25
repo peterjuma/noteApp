@@ -118,13 +118,17 @@ export async function getImageURL(id, dbName = "notesdb") {
 
 // Move a note from one workspace to another
 export async function moveNote(noteid, fromDb, toDb) {
+  // Read note from source DB
   const fromConn = await getDB(fromDb);
   const note = await fromConn.get("notes", noteid);
   if (!note) return null;
   note.updated_at = Date.now();
+  // Write note to target DB (this closes the source connection via singleton)
   const toConn = await getDB(toDb);
   await toConn.put("notes", note);
-  await fromConn.delete("notes", noteid);
+  // Re-open source DB to delete the original (closes the target connection)
+  const reopenedFrom = await getDB(fromDb);
+  await reopenedFrom.delete("notes", noteid);
   return note;
 }
 

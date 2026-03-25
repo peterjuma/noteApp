@@ -61,6 +61,7 @@ function VersionHistory({ noteid, currentTitle, darkMode, activeDb, onRestore, o
   };
 
   return (
+    <div className="version-history-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
     <div className={`version-history-panel ${darkMode ? "version-history-dark" : ""}`}>
       {/* Header */}
       <div className="version-history-header">
@@ -140,6 +141,7 @@ function VersionHistory({ noteid, currentTitle, darkMode, activeDb, onRestore, o
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }
