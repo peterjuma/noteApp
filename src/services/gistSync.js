@@ -5,6 +5,7 @@ const TOKEN_KEY = "noteapp_gist_token";
 const GIST_IDS_KEY = "noteapp_gist_ids"; // { workspaceDbName: gistId }
 const LAST_SYNC_KEY = "noteapp_last_sync";
 const SYNC_ENABLED_KEY = "noteapp_sync_enabled";
+const SYNC_INTERVAL_KEY = "noteapp_sync_interval";
 
 const API_BASE = "https://api.github.com";
 
@@ -28,6 +29,14 @@ export function isSyncEnabled() {
 
 export function setSyncEnabled(enabled) {
   localStorage.setItem(SYNC_ENABLED_KEY, enabled ? "true" : "false");
+}
+
+export function getSyncInterval() {
+  return parseInt(localStorage.getItem(SYNC_INTERVAL_KEY)) || 0; // ms, 0 = off
+}
+
+export function setSyncInterval(ms) {
+  localStorage.setItem(SYNC_INTERVAL_KEY, String(ms));
 }
 
 // ─── Gist ID Management ───

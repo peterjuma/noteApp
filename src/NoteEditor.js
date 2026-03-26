@@ -14,6 +14,7 @@ import * as noteDB from "./services/notesDB";
 import { suggestTags } from "./services/tagSuggester";
 import { ensureDefaults as loadSnippets } from "./services/snippets";
 import TableConverter from "./TableConverter";
+import TableEditor from "./TableEditor";
 import {
   Bold, Italic, Heading2, Link, ListOrdered, List, Quote, Paperclip, Image,
   Code, Braces, CheckSquare, Table, Strikethrough, Save, X,
@@ -91,6 +92,8 @@ function NoteEditor(props) {
   const [slashMenu, setSlashMenu] = useState(null); // { pos, filter }
   const [varPrompt, setVarPrompt] = useState(null); // { variables: [{name, value}], template, from, to }
   const [showDiagramPicker, setShowDiagramPicker] = useState(false);
+  const [vimModeLabel, setVimModeLabel] = useState(props.vimMode ? "NORMAL" : "");
+  const [tableEdit, setTableEdit] = useState(null); // { from, to, markdown }
   const langPickerRef = useRef(null);
   const diagramPickerRef = useRef(null);
   const slashMenuRef = useRef(null);
@@ -168,6 +171,35 @@ function NoteEditor(props) {
     e.target.value = ""; // Reset so same file can be selected again
   };
 
+  // Detect markdown table around cursor and open visual editor
+  const openTableEditorAtCursor = useCallback(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    const doc = view.state.doc;
+    const { head } = view.state.selection.main;
+    const curLine = doc.lineAt(head);
+    // Check if current line looks like a table row
+    if (!/^\|.*\|$/.test(curLine.text.trim())) return;
+    // Expand upward to find table start
+    let startLine = curLine.number;
+    while (startLine > 1) {
+      const prev = doc.line(startLine - 1);
+      if (!/^\|.*\|/.test(prev.text.trim())) break;
+      startLine--;
+    }
+    // Expand downward to find table end
+    let endLine = curLine.number;
+    while (endLine < doc.lines) {
+      const next = doc.line(endLine + 1);
+      if (!/^\|.*\|/.test(next.text.trim())) break;
+      endLine++;
+    }
+    const from = doc.line(startLine).from;
+    const to = doc.line(endLine).to;
+    const tableMd = doc.sliceString(from, to);
+    setTableEdit({ from, to, markdown: tableMd });
+  }, []);
+
   const toolbarItems = [
     { icon: Heading2, command: "heading", tooltip: "Heading", size: 15 },
     { icon: Bold, command: "bold", tooltip: "Bold (Ctrl+B)", size: 15 },
@@ -186,7 +218,7 @@ function NoteEditor(props) {
     { icon: Indent, command: "indent", tooltip: "Indent (Tab)", size: 15 },
     { icon: Outdent, command: "outdent", tooltip: "Outdent (Shift+Tab)", size: 15 },
     { divider: true },
-    { icon: Table, command: "openTableConverter", tooltip: "Table Converter", size: 15 },
+    { icon: Table, command: "editTable", tooltip: "Table Editor (visual)", size: 15 },
     { icon: GitBranch, command: "diagramPicker", tooltip: "Insert Diagram", size: 15 },
     { icon: Minus, command: "hr", tooltip: "Horizontal Rule", size: 15 },
     { icon: Strikethrough, command: "strike", tooltip: "Strikethrough", size: 15 },
@@ -437,6 +469,24 @@ function NoteEditor(props) {
 
   // Markdown autocomplete: triggered by typing common patterns
   const markdownCompletions = useCallback((context) => {
+    // Wiki-link autocomplete: detect [[ prefix
+    const wikiMatch = context.matchBefore(/\[\[[^\]]*$/);
+    if (wikiMatch) {
+      const partial = wikiMatch.text.slice(2).toLowerCase(); // text after [[
+      const noteList = (props.allNotes || [])
+        .filter((n) => (n.title || n.notetitle || "").trim())
+        .filter((n) => !partial || (n.title || n.notetitle || "").toLowerCase().includes(partial));
+      if (noteList.length === 0) return null;
+      return {
+        from: wikiMatch.from,
+        options: noteList.slice(0, 20).map((n) => {
+          const t = n.title || n.notetitle;
+          return { label: `[[${t}]]`, detail: "Wiki link", apply: `[[${t}]]` };
+        }),
+        validFor: /[^\]]*$/,
+      };
+    }
+
     // Match word at cursor (min 2 chars) — only at line start for block-level, anywhere for inline
     const word = context.matchBefore(/\w{2,}$/);
     if (!word) return null;
@@ -649,7 +699,7 @@ function NoteEditor(props) {
     if (isDark) exts.push(oneDark);
     if (useVim) exts.push(vim());
     return exts;
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track latest doc content for dark mode switch
   const docRef = useRef(initialBody);
@@ -666,6 +716,17 @@ function NoteEditor(props) {
     const vimMode = props.vimMode;
     const state = EditorState.create({ doc: docRef.current, extensions: createExtensions(darkMode, vimMode) });
     viewRef.current = new EditorView({ state, parent: editorRef.current });
+    // Track vim mode changes for status bar
+    if (vimMode && viewRef.current.cm) {
+      setVimModeLabel("NORMAL");
+      viewRef.current.cm.on("vim-mode-change", (e) => {
+        const mode = (e.mode || "normal").toUpperCase();
+        const sub = e.subMode ? ` ${e.subMode.toUpperCase()}` : "";
+        setVimModeLabel(`${mode}${sub}`);
+      });
+    } else {
+      setVimModeLabel("");
+    }
     // Auto-focus the editor (especially for new notes)
     setTimeout(() => viewRef.current && viewRef.current.focus(), 50);
     return () => {
@@ -848,7 +909,20 @@ function NoteEditor(props) {
                 key={item.command}
                 onClick={() => {
                   if (item.command === "uploadImage") imageInputRef.current.click();
-                  else if (item.command === "openTableConverter") setShowTableConverter(true);
+                  else if (item.command === "editTable") {
+                    // If cursor is inside a table, open visual editor for it; otherwise create new
+                    const view = viewRef.current;
+                    if (view) {
+                      const line = view.state.doc.lineAt(view.state.selection.main.head);
+                      if (/^\|.*\|$/.test(line.text.trim())) {
+                        openTableEditorAtCursor();
+                      } else {
+                        setTableEdit({ from: null, to: null, markdown: "" }); // New table
+                      }
+                    } else {
+                      setTableEdit({ from: null, to: null, markdown: "" });
+                    }
+                  }
                   else if (item.command === "codeblockPicker") setShowLangPicker(!showLangPicker);
                   else if (item.command === "indent") indentLines("indent");
                   else if (item.command === "outdent") indentLines("outdent");
@@ -1108,6 +1182,7 @@ function NoteEditor(props) {
             <Save size={14} /> {isDirty ? "Save" : "Saved"}
           </button>
           <span className="editor-hint" role="status" aria-live="polite">
+            {vimModeLabel && <span className="vim-mode-badge">{`--${vimModeLabel}--`}</span>}
             {wordCount} words · {charCount} chars
             {lastSaved && ` · Saved ${lastSaved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
             {isDirty && !autoSave && " · Unsaved"}
@@ -1187,6 +1262,35 @@ function NoteEditor(props) {
               });
               view.focus();
             }
+          }}
+        />
+      )}
+
+      {/* Visual Table Editor */}
+      {tableEdit && (
+        <TableEditor
+          initialMarkdown={tableEdit.markdown}
+          darkMode={darkMode}
+          onCancel={() => setTableEdit(null)}
+          onSave={(md) => {
+            const view = viewRef.current;
+            if (view) {
+              if (tableEdit.from != null && tableEdit.to != null) {
+                // Replace existing table
+                view.dispatch({
+                  changes: { from: tableEdit.from, to: tableEdit.to, insert: md.trimEnd() },
+                });
+              } else {
+                // Insert new table at cursor
+                const { from, to } = view.state.selection.main;
+                view.dispatch({
+                  changes: { from, to, insert: "\n" + md },
+                  selection: { anchor: from + md.length + 1 },
+                });
+              }
+              view.focus();
+            }
+            setTableEdit(null);
           }}
         />
       )}

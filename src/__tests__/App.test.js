@@ -111,6 +111,8 @@ jest.mock("../services/gistSync", () => ({
   getToken: jest.fn(() => ""),
   getLastSync: jest.fn(() => null),
   getGistId: jest.fn(() => null),
+  getSyncInterval: jest.fn(() => 0),
+  setSyncInterval: jest.fn(),
 }));
 
 // Mock README.md import (CRA treats it as a file URL)

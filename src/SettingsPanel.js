@@ -657,6 +657,26 @@ function SettingsPanel({
               </button>
             </label>
 
+            {/* Auto-sync interval */}
+            <div className="settings-sync-field" style={{ marginTop: 16 }}>
+              <label className="settings-toggle-label" style={{ marginBottom: 6, fontSize: 13 }}>
+                Auto-Sync Interval
+              </label>
+              <select
+                className="settings-input"
+                value={props.syncInterval || 0}
+                onChange={(e) => props.onSyncIntervalChange && props.onSyncIntervalChange(Number(e.target.value))}
+                style={{ maxWidth: 200 }}
+              >
+                <option value={0}>Off (manual only)</option>
+                <option value={60000}>Every 1 minute</option>
+                <option value={300000}>Every 5 minutes</option>
+                <option value={900000}>Every 15 minutes</option>
+                <option value={1800000}>Every 30 minutes</option>
+              </select>
+              <p className="settings-hint" style={{ marginTop: 4 }}>Pauses when the tab is hidden to save API calls.</p>
+            </div>
+
             {/* Sync actions */}
             <div className="settings-sync-actions" style={{ marginTop: 20 }}>
               <button

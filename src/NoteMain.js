@@ -3,7 +3,7 @@ import DOMPurify from "dompurify";
 import { md2html } from "./useMarkDown";
 import * as noteDB from "./services/notesDB";
 import { suggestTags } from "./services/tagSuggester";
-import { Sparkles, Check, X } from "lucide-react";
+import { Sparkles, Check, X, Link2, ChevronDown, ChevronRight } from "lucide-react";
 
 // Lazy-load mermaid only when needed
 let mermaidModule = null;
@@ -69,6 +69,24 @@ function NoteMain(props) {
   const bodyRef = useRef(null);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showBacklinks, setShowBacklinks] = useState(true);
+
+  // Compute backlinks: notes that contain [[Current Title]]
+  const backlinks = (() => {
+    const title = notesData.notetitle;
+    if (!title || !props.allNotes || notesData.action === "homepage") return [];
+    const pattern = `[[${title}]]`.toLowerCase();
+    return props.allNotes
+      .filter((n) => n.noteid !== notesData.noteid && (n.body || n.notebody || "").toLowerCase().includes(pattern))
+      .map((n) => {
+        const body = n.body || n.notebody || "";
+        const idx = body.toLowerCase().indexOf(pattern);
+        const start = Math.max(0, body.lastIndexOf("\n", idx) + 1);
+        const end = body.indexOf("\n", idx + pattern.length);
+        const snippet = body.slice(start, end > start ? end : start + 120).trim();
+        return { noteid: n.noteid, title: n.title || n.notetitle || "Untitled", snippet };
+      });
+  })();
 
   const handleSuggestTags = () => {
     const suggested = suggestTags(notesData.notetitle, notesData.notebody, notesData.tags);
@@ -277,6 +295,31 @@ function NoteMain(props) {
           dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(notesData.notebody)) }}
           onCopy={(e) => props.handleCopyEvent(e)}
         ></div>
+
+        {/* Backlinks panel */}
+        {backlinks.length > 0 && (
+          <div className="backlinks-panel">
+            <button className="backlinks-toggle" onClick={() => setShowBacklinks((s) => !s)}>
+              {showBacklinks ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <Link2 size={14} />
+              <span>{backlinks.length} backlink{backlinks.length !== 1 ? "s" : ""}</span>
+            </button>
+            {showBacklinks && (
+              <ul className="backlinks-list">
+                {backlinks.map((bl) => (
+                  <li
+                    key={bl.noteid}
+                    className="backlink-item"
+                    onClick={() => props.onNavigateToNote && props.onNavigateToNote({ noteid: bl.noteid, notetitle: bl.title, title: bl.title })}
+                  >
+                    <span className="backlink-title">{bl.title}</span>
+                    <span className="backlink-snippet">{bl.snippet}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
     </main>
   );

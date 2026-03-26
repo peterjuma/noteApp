@@ -18,7 +18,9 @@ const SettingsPanel = lazy(() => import("./SettingsPanel"));
 const VersionHistory = lazy(() => import("./VersionHistory"));
 const TableConverter = lazy(() => import("./TableConverter"));
 import * as gistSync from "./services/gistSync";
-import { Menu } from "lucide-react";
+import { Menu, FilePlus, Search, Moon, Sun, Settings, Trash2, Download, FileDown, RefreshCw, Keyboard, Home } from "lucide-react";
+import QuickSwitcher from "./QuickSwitcher";
+import CommandPalette from "./CommandPalette";
 
 // Slugify a note title for URL hash
 function slugify(title) {
@@ -84,6 +86,11 @@ class App extends Component {
       profileName: localStorage.getItem("noteapp_profile_name") || generateProfileName(),
       selectedNotes: [],
       lastSelectedNoteId: null,
+      showQuickSwitcher: false,
+      showCommandPalette: false,
+      syncStatus: { state: "idle", message: "", lastSync: gistSync.getLastSync(db.getActiveWorkspace()) },
+      swUpdateAvailable: false,
+      isOffline: !navigator.onLine,
     };
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
@@ -119,14 +126,113 @@ class App extends Component {
 
     // Listen for browser back/forward
     window.addEventListener("hashchange", this.handleHashChange);
+    window.addEventListener("keydown", this._handleGlobalKeyDown);
+    window.addEventListener("sw-update-available", this._handleSWUpdate);
+    window.addEventListener("online", this._handleOnline);
+    window.addEventListener("offline", this._handleOffline);
 
     this.handleCopyCodeButtonClick();
     this.initializeFuse();
+    this._startSyncInterval();
   }
 
   componentWillUnmount() {
     window.removeEventListener("hashchange", this.handleHashChange);
+    window.removeEventListener("keydown", this._handleGlobalKeyDown);
+    window.removeEventListener("sw-update-available", this._handleSWUpdate);
+    window.removeEventListener("online", this._handleOnline);
+    window.removeEventListener("offline", this._handleOffline);
+    if (this._syncInterval) clearInterval(this._syncInterval);
   }
+
+  _handleSWUpdate = (e) => {
+    this._swRegistration = e.detail?.registration;
+    this.setState({ swUpdateAvailable: true });
+  };
+
+  _handleOnline = () => {
+    this.setState({ isOffline: false });
+    // Retry sync when coming back online
+    if (gistSync.isSyncEnabled()) this._doFullSync();
+  };
+
+  _handleOffline = () => this.setState({ isOffline: true });
+
+  _handleGlobalKeyDown = (e) => {
+    const mod = e.metaKey || e.ctrlKey;
+    // Cmd+P — Quick Switcher
+    if (mod && !e.shiftKey && e.key === "p") {
+      e.preventDefault();
+      this.setState((s) => ({ showQuickSwitcher: !s.showQuickSwitcher, showCommandPalette: false }));
+      return;
+    }
+    // Cmd+Shift+P — Command Palette
+    if (mod && e.shiftKey && e.key === "p") {
+      e.preventDefault();
+      this.setState((s) => ({ showCommandPalette: !s.showCommandPalette, showQuickSwitcher: false }));
+      return;
+    }
+    // Cmd+N — New Note
+    if (mod && !e.shiftKey && e.key === "n") {
+      e.preventDefault();
+      if (this.state.activepage === "editnote") return; // already editing
+      this._openEditor(
+        { noteid: new Date().getTime().toString(), notetitle: "", notebody: "", tags: [] },
+        true,
+        "addnote"
+      );
+      return;
+    }
+  };
+
+  _relativeTime = (ts) => {
+    const diff = Date.now() - ts;
+    if (diff < 60000) return "just now";
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return new Date(ts).toLocaleDateString();
+  };
+
+  _getCommands = () => [
+    { id: "new-note", label: "New Note", shortcut: "⌘N", icon: FilePlus, action: () => {
+      if (this.state.activepage === "editnote") return;
+      this._openEditor({ noteid: new Date().getTime().toString(), notetitle: "", notebody: "", tags: [] }, true, "addnote");
+    }},
+    { id: "search", label: "Search Notes", shortcut: "⌘K", icon: Search, action: () => {
+      this.setState({ showCommandPalette: false });
+      const input = document.querySelector(".sidebar-search input");
+      if (input) input.focus();
+    }},
+    { id: "quick-switch", label: "Quick Switcher", shortcut: "⌘P", icon: Keyboard, action: () => {
+      this.setState({ showCommandPalette: false, showQuickSwitcher: true });
+    }},
+    { id: "home", label: "Go Home", shortcut: "", icon: Home, action: () => this.handleClickHomeBtn() },
+    { id: "toggle-dark", label: `Switch to ${this.state.darkMode ? "Light" : "Dark"} Mode`, shortcut: "", icon: this.state.darkMode ? Sun : Moon, action: () => {
+      const next = !this.state.darkMode;
+      localStorage.setItem("noteapp_dark_mode", next);
+      this.setState({ darkMode: next });
+    }},
+    { id: "toggle-sidebar", label: `${this.state.sidebarCollapsed ? "Expand" : "Collapse"} Sidebar`, shortcut: "", icon: Menu, action: () => {
+      const next = !this.state.sidebarCollapsed;
+      localStorage.setItem("noteapp_sidebar_collapsed", next);
+      this.setState({ sidebarCollapsed: next });
+    }},
+    { id: "open-settings", label: "Open Settings", shortcut: "", icon: Settings, action: () => {
+      this.setState({ showSettings: true, showTableConverter: false });
+    }},
+    { id: "export-md", label: "Export Note as Markdown", shortcut: "", icon: Download, action: () => {
+      if (this.state.noteid) this.handleDownloadNote({ noteid: this.state.noteid, notetitle: this.state.notetitle, notebody: this.state.notebody });
+    }},
+    { id: "export-pdf", label: "Export Note as PDF", shortcut: "", icon: FileDown, action: () => {
+      if (this.state.noteid) this.handleDownloadPdf({ noteid: this.state.noteid, notetitle: this.state.notetitle, notebody: this.state.notebody });
+    }},
+    { id: "delete-note", label: "Delete Current Note", shortcut: "", icon: Trash2, action: () => {
+      if (this.state.noteid) this.handleDeleteNote(null, { noteid: this.state.noteid, notetitle: this.state.notetitle });
+    }},
+    { id: "sync-now", label: "Sync Now (Gist)", shortcut: "", icon: RefreshCw, action: () => {
+      if (gistSync.isSyncEnabled()) this._scheduleSyncAfterSave();
+    }},
+  ];
     
   componentDidUpdate(prevProps, prevState) {
     if (
@@ -911,13 +1017,55 @@ handleUnpinNote = async (noteid) => {
   _scheduleSyncAfterSave() {
     if (!gistSync.isSyncEnabled()) return;
     if (this._syncTimer) clearTimeout(this._syncTimer);
-    this._syncTimer = setTimeout(() => {
-      const wsName = (this.state.workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default";
-      gistSync.push(this.state.activeDb, wsName, this.state.allnotes).catch(() => {
-        // Silent fail for background sync
-      });
-    }, 10000); // 10 second debounce
+    this._syncTimer = setTimeout(async () => {
+      this.setState({ syncStatus: { state: "syncing", message: "Syncing…", lastSync: this.state.syncStatus.lastSync } });
+      try {
+        const wsName = (this.state.workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default";
+        await gistSync.push(this.state.activeDb, wsName, this.state.allnotes);
+        const now = Date.now();
+        this.setState({ syncStatus: { state: "success", message: "Synced", lastSync: now } });
+        setTimeout(() => {
+          this.setState((s) => s.syncStatus.state === "success" ? { syncStatus: { ...s.syncStatus, state: "idle" } } : null);
+        }, 5000);
+      } catch (err) {
+        this.setState({ syncStatus: { state: "error", message: err.message || "Sync failed", lastSync: this.state.syncStatus.lastSync } });
+      }
+    }, 10000);
   }
+
+  _startSyncInterval = () => {
+    if (this._syncInterval) clearInterval(this._syncInterval);
+    const ms = gistSync.getSyncInterval();
+    if (!ms || !gistSync.isSyncEnabled()) return;
+    this._syncInterval = setInterval(() => {
+      if (document.visibilityState === "hidden") return; // skip when tab hidden
+      if (this.state.syncStatus.state === "syncing") return; // skip if already syncing
+      this._doFullSync();
+    }, ms);
+  };
+
+  _doFullSync = async () => {
+    this.setState({ syncStatus: { state: "syncing", message: "Syncing…", lastSync: this.state.syncStatus.lastSync } });
+    try {
+      const wsName = (this.state.workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default";
+      const result = await gistSync.sync(
+        this.state.activeDb, wsName, this.state.allnotes,
+        async (mergedNotes) => {
+          for (const note of mergedNotes) await db.updateNote(note, this.state.activeDb);
+          this.setState({ allnotes: mergedNotes }, () => this.handleSortNotes(this.state.sortby));
+        }
+      );
+      const now = Date.now();
+      this.setState({ syncStatus: { state: "success", message: `Synced ${result.noteCount} notes`, lastSync: now } });
+      setTimeout(() => {
+        this.setState((s) => s.syncStatus.state === "success" ? { syncStatus: { ...s.syncStatus, state: "idle" } } : null);
+      }, 5000);
+      return result;
+    } catch (err) {
+      this.setState({ syncStatus: { state: "error", message: err.message || "Sync failed", lastSync: this.state.syncStatus.lastSync } });
+      throw err;
+    }
+  };
 
   handleCopyEvent(e, copiedContent = "") {
     if (copiedContent) {
@@ -979,34 +1127,23 @@ handleUnpinNote = async (noteid) => {
 
   performSearch(searchString) {
     // Field prefix support: title:, body:, tag:
-    const fieldMatch = searchString.match(/^(title:|body:|tag:)(.*)/);
-    let keys, query;
+    const fieldMatch = searchString.match(/^(title:|body:|tag:)(.*)/);;
+    let fuse, query;
     if (fieldMatch) {
       const field = fieldMatch[1].replace(":", "");
       query = fieldMatch[2].trim();
       if (!query) { this.setState({ filteredNotes: [] }); return; }
-      if (field === "tag") {
-        keys = [{ name: "tags", weight: 1 }];
-      } else if (field === "title") {
-        keys = [{ name: "title", weight: 1 }];
-      } else {
-        keys = [{ name: "body", weight: 1 }];
-      }
+      fuse = this.fusePrefixIndexes?.[field];
     } else {
       query = searchString;
-      keys = [
-        { name: "title", weight: 0.4 },
-        { name: "body", weight: 0.3 },
-        { name: "tags", weight: 0.3 },
-      ];
+      fuse = this.fuseIndex;
     }
 
-    const fuse = new Fuse(this.state.allnotes, {
-      keys,
-      threshold: 0.15,
-      ignoreLocation: true,
-      minMatchCharLength: 2,
-    });
+    if (!fuse) {
+      this.initializeFuse();
+      fuse = fieldMatch ? this.fusePrefixIndexes?.[fieldMatch[1].replace(":", "")] : this.fuseIndex;
+    }
+
     const results = fuse.search(query);
     const filteredNotes = results.map(r => r.item);
 
@@ -1188,17 +1325,20 @@ handleUnpinNote = async (noteid) => {
   };
   
   initializeFuse = () => {
-    const fuse = new Fuse(this.state.allnotes, {
+    const opts = { threshold: 0.15, ignoreLocation: true, minMatchCharLength: 2 };
+    this.fuseIndex = new Fuse(this.state.allnotes, {
       keys: [
         { name: "title", weight: 0.4 },
         { name: "body", weight: 0.3 },
         { name: "tags", weight: 0.3 },
       ],
-      threshold: 0.15,
-      ignoreLocation: true,
-      minMatchCharLength: 2,
+      ...opts,
     });
-    this.setState({ fuse });
+    this.fusePrefixIndexes = {
+      title: new Fuse(this.state.allnotes, { keys: [{ name: "title", weight: 1 }], ...opts }),
+      body:  new Fuse(this.state.allnotes, { keys: [{ name: "body", weight: 1 }], ...opts }),
+      tag:   new Fuse(this.state.allnotes, { keys: [{ name: "tags", weight: 1 }], ...opts }),
+    };
   };
 
   render() {
@@ -1253,6 +1393,8 @@ handleUnpinNote = async (noteid) => {
                 this.showAlert("Note Not Found", `No note titled "${title}" was found in this workspace.`);
               }
             }}
+            allNotes={allnotes}
+            onNavigateToNote={(note) => this.handleNoteListItemClick(null, note)}
           />
         </>
       );
@@ -1285,6 +1427,7 @@ handleUnpinNote = async (noteid) => {
           handleNoteEditor={this.handleNoteEditor}
           handleSortNotes={this.handleSortNotes}
           handleNoteListItemClick={this.handleNoteListItemClick}
+          allNotes={allnotes}
         />
       );
     }
@@ -1356,6 +1499,22 @@ handleUnpinNote = async (noteid) => {
 
     return (
       <div className={`app-container ${this.state.darkMode ? "dark" : ""}`}>
+        {/* Offline indicator */}
+        {this.state.isOffline && (
+          <div className="offline-banner">You are offline — changes are saved locally</div>
+        )}
+        {/* Update available banner */}
+        {this.state.swUpdateAvailable && (
+          <div className="update-banner">
+            <span>A new version of NoteApp is available.</span>
+            <button onClick={() => {
+              if (this._swRegistration?.waiting) {
+                this._swRegistration.waiting.postMessage({ type: "SKIP_WAITING" });
+              }
+            }}>Reload</button>
+            <button onClick={() => this.setState({ swUpdateAvailable: false })} className="update-dismiss">✕</button>
+          </div>
+        )}
         {/* Mobile sidebar overlay */}
         <div
           className={`sidebar-overlay ${this.state.sidebarOpen ? "active" : ""}`}
@@ -1477,6 +1636,30 @@ handleUnpinNote = async (noteid) => {
             handleSortNotes={this.handleSortNotes}
             sortby={this.state.sortby}
           />
+          )}
+
+          {/* Sync status indicator */}
+          {gistSync.isSyncEnabled() && (
+            <div
+              className={`sync-indicator sync-${this.state.syncStatus.state}`}
+              onClick={() => {
+                if (this.state.syncStatus.state === "error") this._doFullSync();
+              }}
+              title={this.state.syncStatus.state === "error" ? "Click to retry" : this.state.syncStatus.message}
+            >
+              {this.state.syncStatus.state === "syncing" && <RefreshCw size={12} className="spin" />}
+              {this.state.syncStatus.state === "success" && <span style={{ color: "#16a34a" }}>✓</span>}
+              {this.state.syncStatus.state === "error" && <span style={{ color: "#dc2626" }}>✕</span>}
+              {this.state.syncStatus.state === "idle" && <span style={{ opacity: 0.5 }}>☁</span>}
+              <span className="sync-indicator-text">
+                {this.state.syncStatus.state === "syncing" ? "Syncing…"
+                  : this.state.syncStatus.state === "success" ? this.state.syncStatus.message
+                  : this.state.syncStatus.state === "error" ? "Sync failed"
+                  : this.state.syncStatus.lastSync
+                    ? `Synced ${this._relativeTime(this.state.syncStatus.lastSync)}`
+                    : "Not synced yet"}
+              </span>
+            </div>
           )}
         </div>
 
@@ -1602,24 +1785,12 @@ handleUnpinNote = async (noteid) => {
                 this.showAlert("All Data Deleted", "All workspaces and notes have been permanently deleted.");
               }}
               showConfirm={this.showConfirm}
-              onSyncNow={async () => {
-                const wsName = (this.state.workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default";
-                const result = await gistSync.sync(
-                  this.state.activeDb,
-                  wsName,
-                  this.state.allnotes,
-                  async (mergedNotes) => {
-                    // Save merged notes to IndexedDB
-                    for (const note of mergedNotes) {
-                      await db.updateNote(note, this.state.activeDb);
-                    }
-                    this.setState({ allnotes: mergedNotes }, () => {
-                      this.handleSortNotes(this.state.sortby);
-                    });
-                  }
-                );
-                return result;
+              onSyncNow={() => this._doFullSync()}
+              onSyncIntervalChange={(ms) => {
+                gistSync.setSyncInterval(ms);
+                this._startSyncInterval();
               }}
+              syncInterval={gistSync.getSyncInterval()}
               onClose={() => this.setState({ showSettings: false })}
             />
           ) : this.state.showTableConverter ? (
@@ -1725,6 +1896,26 @@ handleUnpinNote = async (noteid) => {
               </div>
             </div>
           </div>
+        )}
+
+        {this.state.showQuickSwitcher && (
+          <QuickSwitcher
+            allNotes={allnotes}
+            darkMode={this.state.darkMode}
+            onSelect={(note) => {
+              this.setState({ showQuickSwitcher: false });
+              this.handleNoteListItemClick(null, note);
+            }}
+            onClose={() => this.setState({ showQuickSwitcher: false })}
+          />
+        )}
+
+        {this.state.showCommandPalette && (
+          <CommandPalette
+            commands={this._getCommands()}
+            darkMode={this.state.darkMode}
+            onClose={() => this.setState({ showCommandPalette: false })}
+          />
         )}
       </div>
     );
