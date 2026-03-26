@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-globals */
-const CACHE_NAME = "noteapp-v2";
+const CACHE_NAME = "noteapp-v3";
 const PRECACHE_URLS = [
   "./",
   "./index.html",
@@ -11,7 +11,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
   );
-  self.skipWaiting();
+  // Don't skipWaiting automatically — let the app control when to activate
 });
 
 // Activate: clean old caches
@@ -26,6 +26,13 @@ self.addEventListener("activate", (event) => {
     )
   );
   self.clients.claim();
+});
+
+// Listen for skipWaiting message from the app
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 // Fetch: network-first for navigation, cache-first for static assets
