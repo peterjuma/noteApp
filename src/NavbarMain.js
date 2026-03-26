@@ -1,4 +1,4 @@
-import { Download, Trash2, FolderOutput, Copy, Check, FileText, Clock } from "lucide-react";
+import { Download, Trash2, FolderOutput, Copy, Check, FileText, Clock, PencilLine } from "lucide-react";
 import { useState } from "react";
 import DOMPurify from "dompurify";
 import { md2html } from "./useMarkDown";
@@ -41,7 +41,7 @@ function NavbarMain(props) {
           {copied ? <><Check size={13} style={{ marginRight: 4 }} />Copied</> : <><Copy size={13} style={{ marginRight: 4 }} />Copy</>}
         </button>
         <button data-action="updatenote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="view-toolbar-text-btn" title="Edit" aria-label="Edit this note">
-          Edit
+          <PencilLine size={13} style={{ marginRight: 4 }} />Edit
         </button>
       </span>
       <div style={{ flex: 1 }} />

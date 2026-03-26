@@ -551,7 +551,7 @@ function NoteEditor(props) {
         ".cm-activeLine": { backgroundColor: isDark ? "#1e293b" : "#f8fafc" },
         ".cm-selectionBackground": { backgroundColor: isDark ? "#1e40af44" : "#bfdbfe66" },
         "&.cm-focused .cm-selectionBackground": { backgroundColor: isDark ? "#1e40af66" : "#93c5fd66" },
-        ".cm-cursor": { borderLeftColor: isDark ? "#60a5fa" : "#2563eb" },
+        ".cm-cursor": { borderLeftColor: isDark ? "#4493f8" : "#0969da" },
       }),
     ];
     if (isDark) exts.push(oneDark);

@@ -113,8 +113,8 @@ function SettingsPanel({
     <div className="settings-fullpage">
       <div className="settings-header">
         <h2 className="settings-title">Settings</h2>
-        <button className="icon-btn" onClick={onClose} aria-label="Close settings">
-          <X size={18} />
+        <button className="settings-close-btn" onClick={onClose} aria-label="Close settings">
+          <X size={15} /> Close
         </button>
       </div>
 
@@ -585,7 +585,7 @@ function SettingsPanel({
             <h3 className="settings-section-title">GitHub Gist Sync</h3>
             <p className="settings-hint">
               Sync your notes to a private GitHub Gist for backup and cross-device access.
-              Requires a <a href="https://github.com/settings/tokens/new?scopes=gist&description=NoteApp+Sync" target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb" }}>GitHub Personal Access Token</a> with <code>gist</code> scope.
+              Requires a <a href="https://github.com/settings/tokens/new?scopes=gist&description=NoteApp+Sync" target="_blank" rel="noopener noreferrer" style={{ color: "#0969da" }}>GitHub Personal Access Token</a> with <code>gist</code> scope.
             </p>
 
             {/* Token input */}

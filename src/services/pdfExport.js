@@ -46,7 +46,7 @@ export async function exportNoteToPdf(note) {
     .markdown-body blockquote { border-left: 4px solid #d1d5db !important; color: #4b5563 !important; }
     .markdown-body table th { background: #f9fafb !important; }
     .markdown-body table td, .markdown-body table th { border-color: #d1d5db !important; }
-    .markdown-body a { color: #2563eb !important; }
+    .markdown-body a { color: #0969da !important; }
   `;
 
   // Render inside a hidden iframe so html2canvas doesn't touch the visible UI

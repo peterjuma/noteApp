@@ -215,8 +215,8 @@ function NoteMain(props) {
         {notesData.action === "homepage" ? (
           <div className="brand-header">
             <svg className="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-              <rect width="32" height="32" rx="6" fill="#2563eb" opacity="0.15" />
-              <polygon points="5,25.3 5,7 9.7,7 14,12.7 11.3,12.7 16,18.3 20.7,12.7 18,12.7 22.3,7 27,7 27,25.3 23,25.3 23,12 18.7,16.7 21.3,16.7 16,23 10.7,16.7 13.3,16.7 9,12 9,25.3" fill="#2563eb" />
+              <rect width="32" height="32" rx="6" fill="#24292f" opacity="0.15" />
+              <polygon points="5,25.3 5,7 9.7,7 14,12.7 11.3,12.7 16,18.3 20.7,12.7 18,12.7 22.3,7 27,7 27,25.3 23,25.3 23,12 18.7,16.7 21.3,16.7 16,23 10.7,16.7 13.3,16.7 9,12 9,25.3" fill="#24292f" />
             </svg>
             <div className="brand-text">
               <h1 className="brand-name">NoteApp</h1>
