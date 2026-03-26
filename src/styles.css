@@ -519,7 +519,9 @@ a:hover { text-decoration: underline; }
   height: 48px;
   border-radius: 10px;
   flex-shrink: 0;
+  color: #24292f;
 }
+.dark .brand-logo { color: #e5e7eb; }
 .brand-name {
   font-size: 1.5rem;
   font-weight: 700;
