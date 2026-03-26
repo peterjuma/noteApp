@@ -64,7 +64,9 @@ class App extends Component {
       filteredNotes: [],
       searchQuery: "",
       pinnedNotes: [],
-      darkMode: localStorage.getItem("noteapp_dark_mode") === "true",
+      darkMode: localStorage.getItem("noteapp_dark_mode") !== null
+        ? localStorage.getItem("noteapp_dark_mode") === "true"
+        : window.matchMedia("(prefers-color-scheme: dark)").matches,
       activeDb: db.getActiveWorkspace(),
       workspaces: db.getWorkspaces(),
       sidebarOpen: false,
@@ -131,6 +133,15 @@ class App extends Component {
     window.addEventListener("online", this._handleOnline);
     window.addEventListener("offline", this._handleOffline);
 
+    // Sync with OS color scheme changes when user hasn't set a manual preference
+    this._darkModeMedia = window.matchMedia("(prefers-color-scheme: dark)");
+    this._handleColorSchemeChange = (e) => {
+      if (localStorage.getItem("noteapp_dark_mode") === null) {
+        this.setState({ darkMode: e.matches });
+      }
+    };
+    this._darkModeMedia.addEventListener("change", this._handleColorSchemeChange);
+
     this.handleCopyCodeButtonClick();
     this.initializeFuse();
     this._startSyncInterval();
@@ -142,6 +153,7 @@ class App extends Component {
     window.removeEventListener("sw-update-available", this._handleSWUpdate);
     window.removeEventListener("online", this._handleOnline);
     window.removeEventListener("offline", this._handleOffline);
+    if (this._darkModeMedia) this._darkModeMedia.removeEventListener("change", this._handleColorSchemeChange);
     if (this._syncInterval) clearInterval(this._syncInterval);
   }
 
