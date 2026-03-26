@@ -38,6 +38,8 @@ function SettingsPanel({
   onSyncNow,
   showConfirm,
   onClose,
+  syncInterval,
+  onSyncIntervalChange,
 }) {
   const [activeTab, setActiveTab] = useState("general");
   const [wsName, setWsName] = useState("");
@@ -664,8 +666,8 @@ function SettingsPanel({
               </label>
               <select
                 className="settings-input"
-                value={props.syncInterval || 0}
-                onChange={(e) => props.onSyncIntervalChange && props.onSyncIntervalChange(Number(e.target.value))}
+                value={syncInterval || 0}
+                onChange={(e) => onSyncIntervalChange && onSyncIntervalChange(Number(e.target.value))}
                 style={{ maxWidth: 200 }}
               >
                 <option value={0}>Off (manual only)</option>

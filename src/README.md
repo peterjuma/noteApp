@@ -21,6 +21,9 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 - **Split preview** — Resizable side-by-side editor and rendered preview
 - **Inline preview** — Full rendered preview toggle
 - **Vim keybindings** — Optional Vim-style editing mode, toggled in Settings
+- **Vim status line** — Live mode indicator (`--NORMAL--`, `--INSERT--`, `--VISUAL--`, `--REPLACE--`) displayed in the editor status bar when Vim mode is active
+- **Visual table editor** — Grid-based table editing overlay: add/remove rows and columns, cycle column alignment (left/center/right), Tab/Shift+Tab cell navigation, and Enter/Escape to save or cancel — works on existing tables or creates new ones from the toolbar
+- **Note link autocomplete** — Type `[[` in the editor to trigger fuzzy autocomplete of note titles across the current workspace; selecting a suggestion inserts a `[[Note Title]]` wiki link
 - **Word & character count** — Live counters in the status bar
 - **Unsaved changes guard** — Save/Discard/Keep Editing dialog when navigating away or switching to Settings/Table Converter
 - **Empty note protection** — Prevents saving empty notes; Save button disabled without title or body
@@ -33,6 +36,7 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 - **KaTeX math** — Inline `$E=mc^2$` and block `$$...$$` equation rendering
 - **Footnotes** — `[^1]` reference footnotes with superscript links and backref navigation
 - **Wiki-style note linking** — `[[note title]]` creates clickable links that navigate to matching notes in the workspace
+- **Backlinks panel** — Each note displays a collapsible panel showing all other notes that reference it via `[[wiki links]]`, with context snippets and one-click navigation
 - **Anchor navigation** — Click any heading link to scroll smoothly; URL updates to reflect position
 - **Copy code blocks** — One-click copy button on every code block with language labels
 - **Nested lists** — Proper marker styles at each nesting level (disc → circle → square, decimal → lower-alpha → lower-roman)
@@ -56,6 +60,7 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 - **Pinned section** — Only visible when pinned notes exist; drag notes between sections to pin/unpin
 - **Sort** — By title (A-Z, Z-A), created date, modified date, or manual drag-to-reorder
 - **Fuzzy search** — Fuse.js-powered search with weighted scoring across title (0.4), body (0.3), and tags (0.3), with `title:`, `body:`, `tag:` scope prefixes
+- **Cached search index** — Fuse.js instances (default + 3 prefix-scoped variants) are cached and rebuilt only when notes change, eliminating per-keystroke index creation for instant results
 - **Note metadata** — Created and modified timestamps displayed on each note
 - **Drag & drop reorder** — Manual ordering with visual drag handles and drop zone feedback
 - **Keyboard navigation** — Arrow keys, Enter, Space to navigate and select notes in the list
@@ -104,17 +109,22 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 ### GitHub Gist Sync
 - **Cross-device sync** — Sync notes to a private GitHub Gist for backup and multi-device access
 - **Auto-sync** — Background push after every save (10-second debounce)
+- **Configurable sync interval** — Set automatic background sync to 1, 5, 15, or 30 minutes from Settings; interval pauses when the tab is hidden and resumes on focus
 - **Bidirectional merge** — Pull + merge + push with newest-wins per-note conflict resolution
+- **Full sync on demand** — One-click "Sync Now" from the command palette or settings triggers a complete bidirectional sync
 - **Token-based auth** — GitHub Personal Access Token with `gist` scope only
 - **Per-workspace Gists** — Each workspace syncs to its own private Gist
 - **Link existing Gist** — Connect another device by pasting the Gist ID
-- **Sync status** — Last sync timestamp, success/error feedback, spinner animation
+- **Live sync status** — Header indicator shows sync state (idle/syncing/success/error) with relative timestamps ("just now", "5m ago"), spinner animation, and color-coded feedback
+- **Auto-sync on reconnect** — Automatically triggers a full sync when the browser comes back online
 - **Privacy** — Notes stored as JSON in your own GitHub account; no third-party servers
 
 ### App
 - **Dark / Light mode** — Full theme toggle with GitHub-style syntax highlighting in both modes
 - **PWA installable** — Add to home screen on mobile or desktop
-- **Offline support** — Service worker with network-first navigation and cache-first static assets (JS, CSS, fonts, SVGs)
+- **Offline support** — Service worker (v3) with network-first navigation and cache-first static assets (JS, CSS, fonts, SVGs)
+- **Offline banner** — Visual indicator when the app is offline, with automatic dismissal on reconnect
+- **App update banner** — Detects new service worker versions and prompts to reload with one click; controlled `skipWaiting` for safe updates
 - **URL routing** — Each note has a shareable URL (`#note/my-note-title`)
 - **Deep linking** — Link directly to a heading within a note (`#note/my-note/section`)
 - **Browser navigation** — Back/forward buttons navigate between notes
@@ -147,9 +157,20 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 | `Ctrl/Cmd + Z` | Undo |
 | `Ctrl/Cmd + Y` | Redo |
 | `Ctrl/Cmd + F` | Find in editor |
+| `Ctrl/Cmd + P` | Quick Switcher — fuzzy search and jump to any note |
+| `Ctrl/Cmd + Shift + P` | Command Palette — access 11 app commands with shortcuts |
+| `Ctrl/Cmd + N` | Create new note |
 | `Tab` | Indent |
 | `Arrow Up/Down` | Navigate note list |
 | `Enter / Space` | Open selected note |
+
+---
+
+## Quick Switcher & Command Palette
+
+**Quick Switcher** (`Cmd/Ctrl + P`) — Fuzzy-search note titles and tags to instantly jump to any note. Shows recent notes when the query is empty, with a body preview for each result. Navigate with arrow keys, select with Enter, dismiss with Escape.
+
+**Command Palette** (`Cmd/Ctrl + Shift + P`) — Access app-wide actions: create note, search, toggle dark mode, toggle sidebar, open settings, export, delete, sync, and more. Each command shows its keyboard shortcut. Filter by typing.
 
 ---
 
