@@ -160,6 +160,47 @@ a:hover { text-decoration: underline; }
 .dark .sidebar-search input { color: #d1d5db; }
 .sidebar-search input::placeholder { color: #9ca3af; }
 .dark .sidebar-search input::placeholder { color: #6b7280; }
+/* Hide native search clear button (we provide our own) */
+.sidebar-search input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+
+/* Search result count badge */
+.search-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.dark .search-count { color: #9ca3af; background: #30363d; }
+
+/* Search clear button */
+.search-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 4px;
+  color: #9ca3af;
+  flex-shrink: 0;
+  margin-left: 4px;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.search-clear-btn:hover { color: #374151; background: #f3f4f6; }
+.dark .search-clear-btn:hover { color: #d1d5db; background: #30363d; }
+
+/* Search match highlight in note list */
+.search-highlight {
+  background: #fff3bf;
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.dark .search-highlight { background: #5c4b1f; }
+
 .sidebar-scroll {
   flex: 1;
   overflow-y: auto;
@@ -840,13 +881,48 @@ a:hover { text-decoration: underline; }
 .lang-picker-item-dark { color: #d1d5db; }
 .lang-picker-item-dark:hover { background: #374151; }
 .lang-picker-name { font-family: 'SF Mono', 'Fira Code', Menlo, Consolas, monospace; font-size: 12px; }
-.lang-picker-hint { font-size: 11px; color: #9ca3af; font-style: italic; }
+.lang-picker-hint { font-size: 11px; color: #9ca3af; font-style: italic; margin-left: auto; padding-left: 8px; }
 .toolbar-chevron { margin-left: 1px; opacity: 0.6; }
 
 /* ===== CodeMirror Overrides ===== */
 .cm-editor { height: 100%; font-size: 15px; }
 .cm-editor .cm-scroller { font-family: 'SF Mono', 'Fira Code', Menlo, Consolas, monospace; min-height: 100%; }
 .cm-editor.cm-focused { outline: none; }
+
+/* CodeMirror Autocomplete */
+.cm-tooltip-autocomplete {
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
+  font-family: 'SF Mono', 'Fira Code', Menlo, Consolas, monospace !important;
+  font-size: 12px !important;
+  overflow: hidden;
+}
+.dark .cm-tooltip-autocomplete {
+  background: #1f2937 !important;
+  border-color: #374151 !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
+}
+.cm-tooltip-autocomplete > ul > li {
+  padding: 4px 10px !important;
+}
+.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: #eff6ff !important;
+  color: #111827 !important;
+}
+.dark .cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: #1e3a5f !important;
+  color: #e5e7eb !important;
+}
+.cm-completionLabel {
+  font-size: 12px !important;
+}
+.cm-completionDetail {
+  font-style: italic !important;
+  color: #9ca3af !important;
+  margin-left: 8px !important;
+  font-size: 11px !important;
+}
 
 /* ===== Mermaid ===== */
 .mermaid-diagram {

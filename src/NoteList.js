@@ -3,7 +3,7 @@ import { Pin, PinOff, GripVertical, Trash2 } from "lucide-react";
 
 function NoteList(props) {
   const {
-    note, isPinned, isActive, isSelected, selectedCount,
+    note, isPinned, isActive, isSelected, selectedCount, searchQuery,
     handlePinNote, handleUnpinNote,
     handleToggleSelectNote, handleSelectRange,
     handleBulkDeleteNotes, handleClearSelection,
@@ -13,6 +13,23 @@ function NoteList(props) {
   const menuRef = useRef(null);
 
   const closeMenu = useCallback(() => setContextMenu(null), []);
+
+  // Highlight matching text in title
+  const highlightTitle = (title, query) => {
+    if (!query || query.startsWith("body:")) return title;
+    const clean = query.replace(/^(title:|tag:)/, "").trim();
+    if (!clean) return title;
+    try {
+      const regex = new RegExp(`(${clean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+      const parts = title.split(regex);
+      if (parts.length === 1) return title;
+      return parts.map((part, i) =>
+        regex.test(part) ? <mark key={i} className="search-highlight">{part}</mark> : part
+      );
+    } catch {
+      return title;
+    }
+  };
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -143,7 +160,7 @@ function NoteList(props) {
       <span className="drag-handle" role="img" aria-label="Drag to reorder">
         <GripVertical size={14} />
       </span>
-      <span className="note-item-title">{note.title}</span>
+      <span className="note-item-title">{highlightTitle(note.title, searchQuery)}</span>
       <button
         onClick={handlePinClick}
         className={`pin-btn ${isPinned ? "pin-btn-pinned" : "pin-btn-unpinned"}`}

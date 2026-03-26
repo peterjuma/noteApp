@@ -60,6 +60,7 @@ class App extends Component {
       sortby: "4",
       allnotes: [],
       filteredNotes: [],
+      searchQuery: "",
       pinnedNotes: [],
       darkMode: localStorage.getItem("noteapp_dark_mode") === "true",
       activeDb: db.getActiveWorkspace(),
@@ -87,7 +88,7 @@ class App extends Component {
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
     this.handleSearchNotes = this.handleSearchNotes.bind(this);
-    this.debouncedSearch = this.debounce(this.performSearch.bind(this), 300);
+    this.debouncedSearch = this.debounce(this.performSearch.bind(this), 150);
     this.handleCopyEvent = this.handleCopyEvent.bind(this);
     this.handleSortNotes = this.handleSortNotes.bind(this);
     this.handleNoteEditor = this.handleNoteEditor.bind(this);
@@ -968,10 +969,11 @@ handleUnpinNote = async (noteid) => {
     const searchString = e.target.value.trim();
 
     if (!searchString) {
-        this.setState({ filteredNotes: [] });
+        this.setState({ filteredNotes: [], searchQuery: "" });
         return;
     }
 
+    this.setState({ searchQuery: searchString });
     this.debouncedSearch(searchString);
   }
 
@@ -999,7 +1001,13 @@ handleUnpinNote = async (noteid) => {
       ];
     }
 
-    const results = this.state.fuse.search(query);
+    const fuse = new Fuse(this.state.allnotes, {
+      keys,
+      threshold: 0.15,
+      ignoreLocation: true,
+      minMatchCharLength: 2,
+    });
+    const results = fuse.search(query);
     const filteredNotes = results.map(r => r.item);
 
     this.setState({ filteredNotes });
@@ -1186,7 +1194,7 @@ handleUnpinNote = async (noteid) => {
         { name: "body", weight: 0.3 },
         { name: "tags", weight: 0.3 },
       ],
-      threshold: 0.35,
+      threshold: 0.15,
       ignoreLocation: true,
       minMatchCharLength: 2,
     });
@@ -1282,7 +1290,8 @@ handleUnpinNote = async (noteid) => {
     }
 
     // Use a unified source of truth for notes to display
-    const displayNotes = filteredNotes.length > 0 ? filteredNotes : allnotes;
+    const isSearching = this.state.searchQuery.length > 0;
+    const displayNotes = isSearching ? filteredNotes : allnotes;
     const selectedNotes = this.state.selectedNotes || [];
 
     let filteredPinnedNotes = displayNotes.filter(note => pinnedNotes.includes(note.noteid));
@@ -1306,6 +1315,7 @@ handleUnpinNote = async (noteid) => {
                     isActive={note.noteid === this.state.noteid}
                     isSelected={selectedNotes.includes(note.noteid)}
                     selectedCount={selectedNotes.length}
+                    searchQuery={this.state.searchQuery}
                     handlePinNote={this.handlePinNote}
                     handleUnpinNote={this.handleUnpinNote}
                     handleNoteListItemClick={this.handleNoteListItemClick}
@@ -1329,6 +1339,7 @@ handleUnpinNote = async (noteid) => {
                     isActive={note.noteid === this.state.noteid}
                     isSelected={selectedNotes.includes(note.noteid)}
                     selectedCount={selectedNotes.length}
+                    searchQuery={this.state.searchQuery}
                     handlePinNote={this.handlePinNote}
                     handleUnpinNote={this.handleUnpinNote}
                     handleNoteListItemClick={this.handleNoteListItemClick}
@@ -1366,6 +1377,7 @@ handleUnpinNote = async (noteid) => {
             handleClickHomeBtn={this.handleClickHomeBtn}
             handleEditNoteBtn={this.handleEditNoteBtn}
             handleSearchNotes={this.handleSearchNotes}
+            searchResultCount={this.state.searchQuery ? this.state.filteredNotes.length : null}
             onUploadNote={this.handleNotesUpload}
             darkMode={this.state.darkMode}
             showSettings={this.state.showSettings}
@@ -1451,7 +1463,7 @@ handleUnpinNote = async (noteid) => {
                 <p className="empty-state-text">No notes yet</p>
                 <p className="empty-state-hint">Click + to create your first note</p>
               </div>
-            ) : filteredNotes.length === 0 && allnotes.length > 0 && totalPinned === 0 ? (
+            ) : isSearching && filteredNotes.length === 0 ? (
               <div className="empty-state">
                 <p className="empty-state-text">No matching notes</p>
                 <p className="empty-state-hint">Try a different search term</p>

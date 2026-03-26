@@ -8,7 +8,7 @@ import { languages } from "@codemirror/language-data";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { searchKeymap } from "@codemirror/search";
-import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
+import { closeBrackets, closeBracketsKeymap, autocompletion } from "@codemirror/autocomplete";
 import { vim } from "@replit/codemirror-vim";
 import * as noteDB from "./services/notesDB";
 import { suggestTags } from "./services/tagSuggester";
@@ -19,7 +19,8 @@ import {
   Code, Braces, CheckSquare, Table, Strikethrough, Save, X,
   Columns2, Maximize2, Eye, EyeOff, Minus, Sparkles, Check,
   Indent, Outdent, ChevronDown, Hash, Minus as MinusIcon, GitBranch, Sigma,
-  FileText,
+  FileText, Network, Workflow, PieChart, GitMerge, Footprints, AlertTriangle,
+  TerminalSquare, Regex, Brackets, Superscript, Subscript, Highlighter,
 } from "lucide-react";
 
 // Popular languages for the code block picker
@@ -46,8 +47,25 @@ const SLASH_COMMANDS = [
   { id: "hr", label: "Divider", icon: MinusIcon, insert: "\n---\n", description: "Horizontal rule" },
   { id: "link", label: "Link", icon: Link, insert: "[text](url)", description: "Hyperlink" },
   { id: "image", label: "Image", icon: Image, insert: "![alt](url)", description: "Image" },
-  { id: "mermaid", label: "Diagram", icon: GitBranch, insert: "```mermaid\ngraph TD\n  A-->B\n```", description: "Mermaid diagram" },
-  { id: "math", label: "Math", icon: Sigma, insert: "$$\n\n$$", description: "KaTeX math block" },
+  { id: "math", label: "Math Block", icon: Sigma, insert: "$$\n\n$$", description: "KaTeX math block" },
+  { id: "inlinemath", label: "Inline Math", icon: Superscript, insert: "$E=mc^2$", description: "Inline KaTeX formula" },
+  // ── Mermaid diagrams ──
+  { id: "mermaid", label: "Flowchart", icon: GitBranch, insert: "```mermaid\nflowchart TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[Action]\n  B -->|No| D[End]\n```", description: "Mermaid flowchart" },
+  { id: "mermaid-sequence", label: "Sequence Diagram", icon: Network, insert: "```mermaid\nsequenceDiagram\n  participant A as Client\n  participant B as Server\n  A->>B: Request\n  B-->>A: Response\n```", description: "Mermaid sequence diagram" },
+  { id: "mermaid-class", label: "Class Diagram", icon: Brackets, insert: "```mermaid\nclassDiagram\n  class Animal {\n    +String name\n    +makeSound()\n  }\n  class Dog {\n    +fetch()\n  }\n  Animal <|-- Dog\n```", description: "Mermaid class diagram" },
+  { id: "mermaid-state", label: "State Diagram", icon: Workflow, insert: "```mermaid\nstateDiagram-v2\n  [*] --> Idle\n  Idle --> Processing : submit\n  Processing --> Done : complete\n  Processing --> Error : fail\n  Error --> Idle : retry\n  Done --> [*]\n```", description: "Mermaid state diagram" },
+  { id: "mermaid-gantt", label: "Gantt Chart", icon: Footprints, insert: "```mermaid\ngantt\n  title Project Timeline\n  dateFormat YYYY-MM-DD\n  section Phase 1\n    Task A :a1, 2026-01-01, 30d\n    Task B :after a1, 20d\n  section Phase 2\n    Task C :2026-03-01, 25d\n```", description: "Mermaid Gantt chart" },
+  { id: "mermaid-pie", label: "Pie Chart", icon: PieChart, insert: "```mermaid\npie title Distribution\n  \"Category A\" : 40\n  \"Category B\" : 30\n  \"Category C\" : 20\n  \"Other\" : 10\n```", description: "Mermaid pie chart" },
+  { id: "mermaid-er", label: "ER Diagram", icon: GitMerge, insert: "```mermaid\nerDiagram\n  USER ||--o{ ORDER : places\n  ORDER ||--|{ LINE_ITEM : contains\n  PRODUCT ||--o{ LINE_ITEM : \"ordered in\"\n```", description: "Mermaid entity-relationship diagram" },
+  { id: "mermaid-mindmap", label: "Mindmap", icon: Network, insert: "```mermaid\nmindmap\n  root((Topic))\n    Branch A\n      Leaf 1\n      Leaf 2\n    Branch B\n      Leaf 3\n```", description: "Mermaid mindmap" },
+  // ── Developer tools ──
+  { id: "frontmatter", label: "Frontmatter", icon: FileText, insert: "---\ntitle: \ndate: " + new Date().toISOString().slice(0, 10) + "\ntags: []\n---\n", description: "YAML frontmatter" },
+  { id: "details", label: "Details / Collapse", icon: ChevronDown, insert: "<details>\n<summary>Click to expand</summary>\n\nHidden content here.\n\n</details>", description: "Collapsible section" },
+  { id: "footnote", label: "Footnote", icon: Subscript, insert: "Text with footnote[^1].\n\n[^1]: Footnote content here.", description: "Footnote reference" },
+  { id: "kbd", label: "Keyboard Key", icon: TerminalSquare, insert: "<kbd>Ctrl</kbd>+<kbd>C</kbd>", description: "Keyboard shortcut tag" },
+  { id: "highlight", label: "Highlight", icon: Highlighter, insert: "==highlighted text==", description: "Highlighted text" },
+  { id: "abbr", label: "Abbreviation", icon: Regex, insert: "*[HTML]: Hyper Text Markup Language", description: "Abbreviation definition" },
+  { id: "alert", label: "Alert / Callout", icon: AlertTriangle, insert: "> [!NOTE]\n> Useful information that users should know.", description: "GitHub-style alert callout" },
 ];
 
 function NoteEditor(props) {
@@ -72,7 +90,9 @@ function NoteEditor(props) {
   const [langFilter, setLangFilter] = useState("");
   const [slashMenu, setSlashMenu] = useState(null); // { pos, filter }
   const [varPrompt, setVarPrompt] = useState(null); // { variables: [{name, value}], template, from, to }
+  const [showDiagramPicker, setShowDiagramPicker] = useState(false);
   const langPickerRef = useRef(null);
+  const diagramPickerRef = useRef(null);
   const slashMenuRef = useRef(null);
   const titleRef = useRef();
   const editorRef = useRef(null);
@@ -167,8 +187,10 @@ function NoteEditor(props) {
     { icon: Outdent, command: "outdent", tooltip: "Outdent (Shift+Tab)", size: 15 },
     { divider: true },
     { icon: Table, command: "openTableConverter", tooltip: "Table Converter", size: 15 },
+    { icon: GitBranch, command: "diagramPicker", tooltip: "Insert Diagram", size: 15 },
     { icon: Minus, command: "hr", tooltip: "Horizontal Rule", size: 15 },
     { icon: Strikethrough, command: "strike", tooltip: "Strikethrough", size: 15 },
+    { icon: AlertTriangle, command: "alert", tooltip: "Alert Callout", size: 15 },
   ];
 
   // Markdown insertion logic
@@ -260,6 +282,10 @@ function NoteEditor(props) {
         insert = "\n---\n";
         selectFrom = from + insert.length; selectTo = selectFrom;
         break;
+      case "alert":
+        insert = "> [!NOTE]\n> " + (selected || "Useful information here.");
+        selectFrom = from + 14; selectTo = from + insert.length;
+        break;
       default:
         return;
     }
@@ -322,6 +348,18 @@ function NoteEditor(props) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showLangPicker]);
+
+  // Close diagram picker on outside click
+  useEffect(() => {
+    if (!showDiagramPicker) return;
+    const handleClickOutside = (e) => {
+      if (diagramPickerRef.current && !diagramPickerRef.current.contains(e.target)) {
+        setShowDiagramPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDiagramPicker]);
 
   // Keep ref in sync for keymap closures
   insertMarkdownRef.current = insertMarkdown;
@@ -396,6 +434,55 @@ function NoteEditor(props) {
     setVarPrompt(null);
     view.focus();
   }, [varPrompt]);
+
+  // Markdown autocomplete: triggered by typing common patterns
+  const markdownCompletions = useCallback((context) => {
+    // Match word at cursor (min 2 chars) — only at line start for block-level, anywhere for inline
+    const word = context.matchBefore(/\w{2,}$/);
+    if (!word) return null;
+    const token = word.text.toLowerCase();
+
+    const completions = [
+      // Block-level
+      { label: "```mermaid", detail: "Mermaid diagram", apply: "```mermaid\nflowchart TD\n  A --> B\n```\n" },
+      { label: "```javascript", detail: "JS code block", apply: "```javascript\n\n```\n" },
+      { label: "```typescript", detail: "TS code block", apply: "```typescript\n\n```\n" },
+      { label: "```python", detail: "Python code block", apply: "```python\n\n```\n" },
+      { label: "```bash", detail: "Shell code block", apply: "```bash\n\n```\n" },
+      { label: "```sql", detail: "SQL code block", apply: "```sql\n\n```\n" },
+      { label: "```json", detail: "JSON code block", apply: "```json\n\n```\n" },
+      { label: "```yaml", detail: "YAML code block", apply: "```yaml\n\n```\n" },
+      // Markdown elements
+      { label: "table", detail: "Insert table", apply: "| Column 1 | Column 2 | Column 3 |\n| -------- | -------- | -------- |\n| Cell     | Cell     | Cell     |\n" },
+      { label: "tasklist", detail: "Task list", apply: "- [ ] Task 1\n- [ ] Task 2\n- [ ] Task 3\n" },
+      { label: "frontmatter", detail: "YAML metadata", apply: "---\ntitle: \ndate: " + new Date().toISOString().slice(0, 10) + "\ntags: []\n---\n" },
+      { label: "details", detail: "Collapsible section", apply: "<details>\n<summary>Click to expand</summary>\n\nContent here.\n\n</details>\n" },
+      { label: "footnote", detail: "Footnote reference", apply: "[^1]\n\n[^1]: Footnote text here." },
+      { label: "alert-note", detail: "Note callout", apply: "> [!NOTE]\n> Information here.\n" },
+      { label: "alert-warning", detail: "Warning callout", apply: "> [!WARNING]\n> Warning message here.\n" },
+      { label: "alert-tip", detail: "Tip callout", apply: "> [!TIP]\n> Helpful tip here.\n" },
+      { label: "alert-important", detail: "Important callout", apply: "> [!IMPORTANT]\n> Important information here.\n" },
+      { label: "alert-caution", detail: "Caution callout", apply: "> [!CAUTION]\n> Caution message here.\n" },
+      // Diagrams
+      { label: "flowchart", detail: "Mermaid flowchart", apply: "```mermaid\nflowchart TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[Action]\n  B -->|No| D[End]\n```\n" },
+      { label: "sequenceDiagram", detail: "Sequence diagram", apply: "```mermaid\nsequenceDiagram\n  participant A as Client\n  participant B as Server\n  A->>B: Request\n  B-->>A: Response\n```\n" },
+      { label: "classDiagram", detail: "Class diagram", apply: "```mermaid\nclassDiagram\n  class MyClass {\n    +String name\n    +method()\n  }\n```\n" },
+      { label: "stateDiagram", detail: "State diagram", apply: "```mermaid\nstateDiagram-v2\n  [*] --> Idle\n  Idle --> Active : start\n  Active --> [*] : stop\n```\n" },
+      { label: "gantt", detail: "Gantt chart", apply: "```mermaid\ngantt\n  title Timeline\n  dateFormat YYYY-MM-DD\n  section Tasks\n    Task A :a1, 2026-01-01, 30d\n```\n" },
+      { label: "erDiagram", detail: "ER diagram", apply: "```mermaid\nerDiagram\n  USER ||--o{ ORDER : places\n  ORDER ||--|{ ITEM : contains\n```\n" },
+      { label: "mindmap", detail: "Mindmap", apply: "```mermaid\nmindmap\n  root((Topic))\n    Branch A\n      Leaf 1\n    Branch B\n      Leaf 2\n```\n" },
+      { label: "piechart", detail: "Pie chart", apply: "```mermaid\npie title Distribution\n  \"A\" : 40\n  \"B\" : 30\n  \"C\" : 30\n```\n" },
+    ];
+
+    const filtered = completions.filter(c => c.label.toLowerCase().includes(token));
+    if (filtered.length === 0) return null;
+
+    return {
+      from: word.from,
+      options: filtered,
+      validFor: /\w*/,
+    };
+  }, []);
 
   // Create CodeMirror extensions with GitHub-like keyboard shortcuts
   const createExtensions = useCallback((isDark, useVim) => {
@@ -533,6 +620,11 @@ function NoteEditor(props) {
       markdown({ base: markdownLanguage, codeLanguages: languages }),
       history(),
       closeBrackets(),
+      autocompletion({
+        override: [markdownCompletions],
+        activateOnTyping: true,
+        maxRenderedOptions: 12,
+      }),
       markdownKeymap,
       pasteHandler,
       keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
@@ -585,22 +677,75 @@ function NoteEditor(props) {
     };
   }, [darkMode, showPreview, createExtensions, initialBody, props.vimMode]);
 
-  // Resolve noteapp-img: references in preview panels
+  // Resolve noteapp-img: references, mermaid, and PlantUML in preview panels
   const previewRef = useRef(null);
   const splitPreviewRef = useRef(null);
+  const mermaidRef = useRef(null);
+
   useEffect(() => {
-    const resolve = async (container) => {
+    const postProcess = async (container) => {
       if (!container) return;
+
+      // Resolve noteapp-img: image references
       const images = container.querySelectorAll('img[src^="noteapp-img:"]');
       for (const img of images) {
         const id = img.getAttribute("src").replace("noteapp-img:", "");
         const url = await noteDB.getImageURL(id);
         if (url) img.src = url;
       }
+
+      // Render mermaid diagrams
+      const mermaidBlocks = container.querySelectorAll("code.language-mermaid");
+      if (mermaidBlocks.length > 0) {
+        if (!mermaidRef.current) {
+          const m = await import("mermaid");
+          mermaidRef.current = m.default;
+          mermaidRef.current.initialize({ startOnLoad: false, theme: darkMode ? "dark" : "default" });
+        }
+        const mermaid = mermaidRef.current;
+        for (let i = 0; i < mermaidBlocks.length; i++) {
+          const block = mermaidBlocks[i];
+          const pre = block.parentNode;
+          if (!pre || !pre.parentNode) continue;
+          const div = document.createElement("div");
+          div.className = "mermaid-diagram";
+          try {
+            const id = `mermaid-preview-${i}-${Math.random().toString(36).slice(2, 8)}`;
+            const { svg } = await mermaid.render(id, block.textContent.trim());
+            div.innerHTML = DOMPurify.sanitize(svg, { ADD_TAGS: ["foreignObject"], ADD_ATTR: ["requiredExtensions"] });
+            pre.replaceWith(div);
+          } catch (err) {
+            div.textContent = "Diagram error: " + err.message;
+            div.style.color = "#dc2626";
+            div.style.fontSize = "12px";
+            pre.replaceWith(div);
+          }
+        }
+      }
+
+      // Render PlantUML diagrams
+      const plantumlBlocks = container.querySelectorAll("code.language-plantuml");
+      plantumlBlocks.forEach((block) => {
+        const pre = block.parentNode;
+        if (!pre || !pre.parentNode) return;
+        const src = block.textContent.trim();
+        const encoded = Array.from(new TextEncoder().encode(src))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+        const div = document.createElement("div");
+        div.className = "plantuml-diagram";
+        const img = document.createElement("img");
+        img.src = `https://www.plantuml.com/plantuml/svg/~h${encoded}`;
+        img.alt = "PlantUML diagram";
+        img.style.maxWidth = "100%";
+        div.appendChild(img);
+        pre.replaceWith(div);
+      });
     };
-    if (showPreview && previewRef.current) resolve(previewRef.current);
-    if (splitscreen && splitPreviewRef.current) resolve(splitPreviewRef.current);
-  }, [bodytxt, showPreview, splitscreen]);
+
+    if (showPreview && previewRef.current) postProcess(previewRef.current);
+    if (splitscreen && splitPreviewRef.current) postProcess(splitPreviewRef.current);
+  }, [bodytxt, showPreview, splitscreen, darkMode]);
 
   const handleCancelBtn = () => {
     if (isDirty) {
@@ -658,6 +803,46 @@ function NoteEditor(props) {
           {toolbarItems.map((item, idx) =>
             item.divider ? (
               <div key={idx} className={`toolbar-divider ${darkMode ? "toolbar-divider-dark" : ""}`} />
+            ) : item.command === "diagramPicker" ? (
+              <div key={item.command} style={{ position: "relative", display: "inline-flex" }}>
+                <button
+                  onClick={() => setShowDiagramPicker(!showDiagramPicker)}
+                  className={`toolbar-btn ${darkMode ? "toolbar-btn-dark" : ""} ${showDiagramPicker ? "toolbar-btn-active" : ""}`}
+                  title={item.tooltip}
+                  aria-label={item.tooltip}
+                >
+                  <item.icon size={item.size} />
+                  <ChevronDown size={10} className="toolbar-chevron" />
+                </button>
+                {showDiagramPicker && (
+                  <div className={`lang-picker ${darkMode ? "lang-picker-dark" : ""}`} ref={diagramPickerRef} style={{ left: "auto", right: 0, marginLeft: 0, maxWidth: 400, minWidth: 340 }}>
+                    <div className="lang-picker-list">
+                      {SLASH_COMMANDS.filter(c => c.id.startsWith("mermaid")).map((cmd) => (
+                        <button
+                          key={cmd.id}
+                          className={`lang-picker-item ${darkMode ? "lang-picker-item-dark" : ""}`}
+                          onClick={() => {
+                            const view = viewRef.current;
+                            if (view) {
+                              const { from, to } = view.state.selection.main;
+                              view.dispatch({
+                                changes: { from, to, insert: cmd.insert },
+                                selection: { anchor: from + cmd.insert.length },
+                              });
+                              view.focus();
+                            }
+                            setShowDiagramPicker(false);
+                          }}
+                        >
+                          <cmd.icon size={14} style={{ marginRight: 8, flexShrink: 0 }} />
+                          <span className="lang-picker-name">{cmd.label}</span>
+                          <span className="lang-picker-hint">{cmd.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <button
                 key={item.command}

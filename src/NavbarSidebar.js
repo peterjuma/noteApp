@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Plus, Search, ChevronsLeft, ChevronsRight, Settings, TableProperties, StickyNote, Upload, Layers } from "lucide-react";
+import { Home, Plus, Search, ChevronsLeft, ChevronsRight, Settings, TableProperties, StickyNote, Upload, Layers, X } from "lucide-react";
 
 function NavbarSidebar(props) {
   var note = {
@@ -12,6 +12,7 @@ function NavbarSidebar(props) {
   const searchRef = React.useRef();
   const uploadRef = React.useRef();
   const [searchVisible, setSearchVisible] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState("");
   const [wsDropdownOpen, setWsDropdownOpen] = React.useState(false);
   const wsDropdownRef = React.useRef();
   const [showNewWs, setShowNewWs] = React.useState(false);
@@ -19,6 +20,49 @@ function NavbarSidebar(props) {
   const newWsInputRef = React.useRef();
 
   const workspaces = props.workspaces || [];
+
+  // Keyboard shortcut: Cmd/Ctrl+K to toggle search
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchVisible(v => {
+          const next = !v;
+          if (!next) {
+            setSearchValue("");
+            props.handleSearchNotes({ target: { value: "" } });
+          }
+          return next;
+        });
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [props.handleSearchNotes]);
+
+  // Auto-focus search input when it becomes visible
+  React.useEffect(() => {
+    if (searchVisible && searchRef.current) searchRef.current.focus();
+  }, [searchVisible]);
+
+  const handleSearchChange = (e) => {
+    setSearchValue(e.target.value);
+    props.handleSearchNotes(e);
+  };
+
+  const clearSearch = () => {
+    setSearchValue("");
+    props.handleSearchNotes({ target: { value: "" } });
+    if (searchRef.current) searchRef.current.focus();
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Escape") {
+      setSearchVisible(false);
+      setSearchValue("");
+      props.handleSearchNotes({ target: { value: "" } });
+    }
+  };
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -98,7 +142,7 @@ function NavbarSidebar(props) {
         <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="Add" aria-label="Add note" disabled={isPageActive}>
           <Plus size={18} style={{ pointerEvents: "none" }} />
         </button>
-        <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search" aria-label="Toggle search" disabled={isPageActive}>
+        <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search (⌘K)" aria-label="Toggle search" disabled={isPageActive}>
           <Search size={16} />
         </button>
       </nav>
@@ -167,7 +211,7 @@ function NavbarSidebar(props) {
         </span>
         <span className="toolbar-divider" />
         <span className="toolbar-group">
-          <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search" aria-label="Toggle search" disabled={isPageActive}>
+          <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search (⌘K)" aria-label="Toggle search" disabled={isPageActive}>
             <Search size={15} />
           </button>
           <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="New Note" aria-label="Create new note" disabled={isPageActive}>
@@ -181,12 +225,24 @@ function NavbarSidebar(props) {
         <Search size={14} />
         <input
           type="search"
-          placeholder="Search notes..."
+          placeholder="Search notes… (title: body: tag:)"
           ref={searchRef}
           aria-label="Search notes"
           autoFocus
-          onChange={(e) => props.handleSearchNotes(e)}
+          value={searchValue}
+          onChange={handleSearchChange}
+          onKeyDown={handleSearchKeyDown}
         />
+        {searchValue && (
+          <>
+            {props.searchResultCount != null && (
+              <span className="search-count">{props.searchResultCount}</span>
+            )}
+            <button className="search-clear-btn" onClick={clearSearch} aria-label="Clear search" title="Clear search">
+              <X size={13} />
+            </button>
+          </>
+        )}
       </div>
       )}
     </nav>
