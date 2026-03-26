@@ -31,6 +31,7 @@ describe("useMarkDown", () => {
       const result = md2html.render("See [[My Note]] for details");
       expect(result).toContain("wiki-link");
       expect(result).toContain("My Note");
+      expect(result).toContain("#wikilink/My%20Note");
     });
 
     test("renders mermaid blocks without highlighting", () => {

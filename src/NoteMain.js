@@ -182,16 +182,18 @@ function NoteMain(props) {
       const link = e.target.closest("a");
       if (!link) return;
 
-      // Wiki-link navigation
-      const wikiTitle = link.getAttribute("data-wiki-link");
-      if (wikiTitle) {
+      const href = link.getAttribute("href");
+      if (!href) return;
+
+      // Wiki-link navigation: href="#wikilink/EncodedTitle"
+      if (href.startsWith("#wikilink/")) {
         e.preventDefault();
+        const wikiTitle = decodeURIComponent(href.slice("#wikilink/".length));
         if (props.onWikiLink) props.onWikiLink(wikiTitle);
         return;
       }
 
-      const href = link.getAttribute("href");
-      if (!href || !href.startsWith("#")) return;
+      if (!href.startsWith("#")) return;
       e.preventDefault();
       const id = href.slice(1);
       const target = document.getElementById(id);

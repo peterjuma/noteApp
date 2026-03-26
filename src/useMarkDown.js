@@ -196,7 +196,8 @@ function wikiLinkPlugin(md) {
   });
   md.renderer.rules.wiki_link = function (tokens, idx) {
     const title = md.utils.escapeHtml(tokens[idx].content);
-    return `<a class="wiki-link" href="#" data-wiki-link="${title}">[[${title}]]</a>`;
+    const encoded = encodeURIComponent(tokens[idx].content);
+    return `<a class="wiki-link" href="#wikilink/${encoded}">[[${title}]]</a>`;
   };
 }
 md2html.use(wikiLinkPlugin);
