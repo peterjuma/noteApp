@@ -1,4 +1,4 @@
-import { Download, Trash2, FolderOutput, Copy, Check, FileText, Clock, PencilLine } from "lucide-react";
+import { Download, Trash2, FolderOutput, Copy, Check, FileText, Clock, PencilLine, Share2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import DOMPurify from "dompurify";
 import { md2html } from "./useMarkDown";
@@ -68,6 +68,16 @@ function NavbarMain(props) {
         <button onClick={() => props.handleDownloadNote(note)} className="icon-btn" title="Download .md" aria-label="Download as markdown file">
           <Download size={15} />
         </button>
+        {navigator.share && (
+          <button onClick={() => {
+            navigator.share({
+              title: note.notetitle || "Untitled Note",
+              text: note.notebody || "",
+            }).catch(() => {});
+          }} className="icon-btn" title="Share" aria-label="Share this note">
+            <Share2 size={15} />
+          </button>
+        )}
         <div className="ws-switcher-wrapper" ref={moveDropdownRef} style={{ position: "relative" }}>
           <button onClick={() => setMoveDropdownOpen(v => !v)} className={`icon-btn ${moveDropdownOpen ? "icon-btn-active" : ""}`} title="Move to..." aria-label="Move to another workspace" disabled={otherWorkspaces.length === 0}>
             <FolderOutput size={15} />

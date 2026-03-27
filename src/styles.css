@@ -2951,4 +2951,146 @@ a:hover { text-decoration: underline; }
   .markdown-body hr { border-color: #ccc !important; }
 }
 
+/* ===== PWA Native Feel ===== */
+
+/* Prevent text selection on interactive UI elements */
+nav, .sidebar-header, .sidebar-actions, .sort-bar-container,
+.view-toolbar, .icon-btn, .view-toolbar-text-btn,
+.note-list-item, .ws-switcher-item, .modal-actions,
+.settings-tabs, .settings-tab {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Smooth touch interactions */
+.note-list-item, .sidebar-scroll, .main-content {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Disable tap highlight on interactive elements */
+button, a, .note-list-item, .icon-btn {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Overscroll containment — prevent pull-to-refresh in PWA */
+html, body {
+  overscroll-behavior: none;
+}
+
+/* ===== Skeleton Loading Screen ===== */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.skeleton-container {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.skeleton-sidebar {
+  width: 260px;
+  min-width: 260px;
+  border-right: 1px solid #e5e7eb;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-bar {
+  height: 14px;
+  border-radius: 4px;
+  background: #e5e7eb;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-bar-sm { width: 60%; }
+.skeleton-bar-md { width: 80%; }
+.skeleton-bar-lg { width: 100%; }
+.skeleton-bar-header { height: 36px; width: 100%; margin-bottom: 8px; }
+
+.skeleton-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.skeleton-main {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-main .skeleton-bar-header { height: 28px; width: 40%; }
+
+.dark .skeleton-sidebar { border-color: #374151; }
+.dark .skeleton-bar { background: #374151; }
+.dark .skeleton-list-item { border-color: #1f2937; }
+
+/* ===== Window Controls Overlay ===== */
+.wco-titlebar {
+  display: none;
+}
+
+@media all and (display-mode: window-controls-overlay) {
+  .wco-titlebar {
+    display: flex;
+    position: fixed;
+    top: env(titlebar-area-y, 0);
+    left: env(titlebar-area-x, 0);
+    width: env(titlebar-area-width, 100%);
+    height: env(titlebar-area-height, 36px);
+    align-items: center;
+    padding: 0 12px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 9999;
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+
+  .wco-titlebar .wco-title {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .app-container {
+    padding-top: env(titlebar-area-height, 0px);
+  }
+}
+
+/* ===== Standalone mode refinements ===== */
+@media all and (display-mode: standalone) {
+  /* Safe area insets for notched devices */
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* ===== Swipe hint for mobile bottom actions ===== */
+@media (max-width: 768px) {
+  .view-toolbar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .view-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+}
 

@@ -124,6 +124,9 @@ class App extends Component {
 
       // Backfill contentHash on notes that don't have one yet
       this.backfillContentHashes(getnotes);
+
+      // Update app badge with note count
+      this._updateBadge();
     });
 
     // Listen for browser back/forward
@@ -145,6 +148,17 @@ class App extends Component {
     this.handleCopyCodeButtonClick();
     this.initializeFuse();
     this._startSyncInterval();
+
+    // Handle PWA launch actions (share target, file handler, shortcuts)
+    this._handleLaunchActions();
+
+    // Listen for background sync messages from service worker
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener("message", this._handleSWMessage);
+    }
+
+    // Register periodic background sync if available
+    this._registerPeriodicSync();
   }
 
   componentWillUnmount() {
@@ -153,6 +167,9 @@ class App extends Component {
     window.removeEventListener("sw-update-available", this._handleSWUpdate);
     window.removeEventListener("online", this._handleOnline);
     window.removeEventListener("offline", this._handleOffline);
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.removeEventListener("message", this._handleSWMessage);
+    }
     if (this._darkModeMedia) this._darkModeMedia.removeEventListener("change", this._handleColorSchemeChange);
     if (this._syncInterval) clearInterval(this._syncInterval);
   }
@@ -169,6 +186,121 @@ class App extends Component {
   };
 
   _handleOffline = () => this.setState({ isOffline: true });
+
+  // --- PWA Integration Methods ---
+
+  // Update app badge with note count (Badging API)
+  _updateBadge = () => {
+    if ("setAppBadge" in navigator) {
+      const count = (this.state.allnotes || []).length;
+      if (count > 0) {
+        navigator.setAppBadge(count).catch(() => {});
+      } else {
+        navigator.clearAppBadge().catch(() => {});
+      }
+    }
+  };
+
+  // Handle PWA launch actions from manifest shortcuts, share target, and file handlers
+  _handleLaunchActions = () => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get("action");
+
+    if (action === "new") {
+      // Shortcut: New Note
+      this._openEditor(
+        { noteid: new Date().getTime().toString(), notetitle: "", notebody: "", tags: [] },
+        true,
+        "addnote"
+      );
+      // Clean up URL
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (action === "search") {
+      // Shortcut: Search — focus sidebar search
+      this.setState({ sidebarCollapsed: false }, () => {
+        const searchInput = document.querySelector(".search-input");
+        if (searchInput) searchInput.focus();
+      });
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (action === "share") {
+      // Web Share Target: create a note from shared content
+      const title = params.get("title") || "";
+      const text = params.get("text") || "";
+      const url = params.get("url") || "";
+      const body = [text, url].filter(Boolean).join("\n\n");
+      if (title || body) {
+        this._openEditor(
+          { noteid: new Date().getTime().toString(), notetitle: title, notebody: body, tags: [] },
+          true,
+          "addnote"
+        );
+      }
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (action === "open") {
+      // File Handler: handled via launchQueue API below
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    // File Handler API (launchQueue)
+    if ("launchQueue" in window) {
+      window.launchQueue.setConsumer(async (launchParams) => {
+        if (!launchParams.files || launchParams.files.length === 0) return;
+        for (const handle of launchParams.files) {
+          const file = await handle.getFile();
+          const text = await file.text();
+          const name = file.name.replace(/\.(md|markdown|mdown|mkd|txt)$/i, "");
+          this._openEditor(
+            { noteid: new Date().getTime().toString(), notetitle: name, notebody: text, tags: [] },
+            true,
+            "addnote"
+          );
+          break; // Open the first file
+        }
+      });
+    }
+  };
+
+  // Handle messages from the service worker (background sync, periodic sync)
+  _handleSWMessage = (event) => {
+    if (!event.data) return;
+    if (event.data.type === "BACKGROUND_SYNC" && event.data.tag === "noteapp-gist-sync") {
+      if (gistSync.isSyncEnabled()) this._doFullSync();
+    }
+    if (event.data.type === "PERIODIC_SYNC" && event.data.tag === "noteapp-periodic-sync") {
+      if (gistSync.isSyncEnabled()) this._doFullSync();
+    }
+  };
+
+  // Register periodic background sync (if supported)
+  _registerPeriodicSync = async () => {
+    if (!("serviceWorker" in navigator)) return;
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      if ("periodicSync" in registration) {
+        const status = await navigator.permissions.query({ name: "periodic-background-sync" });
+        if (status.state === "granted") {
+          await registration.periodicSync.register("noteapp-periodic-sync", {
+            minInterval: 12 * 60 * 60 * 1000, // 12 hours
+          });
+        }
+      }
+    } catch {
+      // Periodic sync not supported or permission denied
+    }
+  };
+
+  // Request background sync when going offline during a save
+  _requestBackgroundSync = async () => {
+    if (!("serviceWorker" in navigator)) return;
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      if ("sync" in registration) {
+        await registration.sync.register("noteapp-gist-sync");
+      }
+    } catch {
+      // Background sync not supported
+    }
+  };
 
   _handleGlobalKeyDown = (e) => {
     const mod = e.metaKey || e.ctrlKey;
@@ -909,6 +1041,8 @@ handleUnpinNote = async (noteid) => {
       };
     }, () => this.initializeFuse());
     db.deleteNote(note.noteid, this.state.activeDb);
+    // Update badge after deletion
+    setTimeout(() => this._updateBadge(), 0);
     if (this.state.allnotes.length - 1 === 0) {
       this.handleClickHomeBtn();
     } else {
@@ -1007,10 +1141,18 @@ handleUnpinNote = async (noteid) => {
 
     // Background gist sync (debounced, non-blocking)
     this._scheduleSyncAfterSave();
+
+    // Update app badge after note save
+    this._updateBadge();
   }
 
   _scheduleSyncAfterSave() {
     if (!gistSync.isSyncEnabled()) return;
+    // If offline, defer to Background Sync API
+    if (!navigator.onLine) {
+      this._requestBackgroundSync();
+      return;
+    }
     if (this._syncTimer) clearTimeout(this._syncTimer);
     this._syncTimer = setTimeout(async () => {
       this.setState({ syncStatus: { state: "syncing", message: "Syncing…", lastSync: this.state.syncStatus.lastSync } });
@@ -1496,6 +1638,10 @@ handleUnpinNote = async (noteid) => {
 
     return (
       <div className={`app-container ${this.state.darkMode ? "dark" : ""}`}>
+        {/* Window Controls Overlay titlebar (desktop PWA) */}
+        <div className="wco-titlebar">
+          <span className="wco-title">NoteApp</span>
+        </div>
         {/* Offline indicator */}
         {this.state.isOffline && (
           <div className="offline-banner">You are offline — changes are saved locally</div>
@@ -1705,7 +1851,17 @@ handleUnpinNote = async (noteid) => {
         />
 
         <div className="main-content">
-          <Suspense fallback={<div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af" }}>Loading...</div>}>
+          <Suspense fallback={
+            <div className="skeleton-main">
+              <div className="skeleton-bar skeleton-bar-header" />
+              <div className="skeleton-bar skeleton-bar-lg" />
+              <div className="skeleton-bar skeleton-bar-md" />
+              <div className="skeleton-bar skeleton-bar-lg" />
+              <div className="skeleton-bar skeleton-bar-sm" />
+              <div className="skeleton-bar skeleton-bar-lg" />
+              <div className="skeleton-bar skeleton-bar-md" />
+            </div>
+          }>
           {this.state.showSettings ? (
             <SettingsPanel
               darkMode={this.state.darkMode}
