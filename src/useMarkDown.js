@@ -202,4 +202,18 @@ function wikiLinkPlugin(md) {
 }
 md2html.use(wikiLinkPlugin);
 
+// Open all links in new tab
+const defaultLinkRender = md2html.renderer.rules.link_open || function (tokens, idx, options, env, self) {
+  return self.renderToken(tokens, idx, options);
+};
+md2html.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+  const href = tokens[idx].attrGet("href");
+  // Only add target for non-internal links (not anchors or wiki-links)
+  if (href && !href.startsWith("#")) {
+    tokens[idx].attrSet("target", "_blank");
+    tokens[idx].attrSet("rel", "noopener noreferrer");
+  }
+  return defaultLinkRender(tokens, idx, options, env, self);
+};
+
 export { html2md, md2html };

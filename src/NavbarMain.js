@@ -1,5 +1,5 @@
 import { Download, Trash2, FolderOutput, Copy, Check, FileText, Clock, PencilLine } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import DOMPurify from "dompurify";
 import { md2html } from "./useMarkDown";
 
@@ -8,6 +8,22 @@ function NavbarMain(props) {
   var note = props.notesData;
   const [copied, setCopied] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [moveDropdownOpen, setMoveDropdownOpen] = useState(false);
+  const moveDropdownRef = useRef();
+
+  const otherWorkspaces = (props.workspaces || []).filter(w => w.dbName !== props.activeDb);
+
+  // Close move dropdown when clicking outside
+  useEffect(() => {
+    if (!moveDropdownOpen) return;
+    const handleClickOutside = (e) => {
+      if (moveDropdownRef.current && !moveDropdownRef.current.contains(e.target)) {
+        setMoveDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [moveDropdownOpen]);
 
   if (!isActive) return null;
 
@@ -52,9 +68,20 @@ function NavbarMain(props) {
         <button onClick={() => props.handleDownloadNote(note)} className="icon-btn" title="Download .md" aria-label="Download as markdown file">
           <Download size={15} />
         </button>
-        <button onClick={() => props.handleMoveNote && props.handleMoveNote(note)} className="icon-btn" title="Move to..." aria-label="Move to another workspace">
-          <FolderOutput size={15} />
-        </button>
+        <div className="ws-switcher-wrapper" ref={moveDropdownRef} style={{ position: "relative" }}>
+          <button onClick={() => setMoveDropdownOpen(v => !v)} className={`icon-btn ${moveDropdownOpen ? "icon-btn-active" : ""}`} title="Move to..." aria-label="Move to another workspace" disabled={otherWorkspaces.length === 0}>
+            <FolderOutput size={15} />
+          </button>
+          {moveDropdownOpen && (
+            <ul className="ws-switcher-dropdown" style={{ left: "auto", right: 0 }}>
+              {otherWorkspaces.map((w) => (
+                <li key={w.dbName} className="ws-switcher-item" onClick={() => { setMoveDropdownOpen(false); if (props.handleMoveNote) props.handleMoveNote(note, w.dbName); }}>
+                  {w.name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <button onClick={() => props.onShowHistory && props.onShowHistory(note)} className="icon-btn" title="Version History" aria-label="Version history">
           <Clock size={15} />
         </button>

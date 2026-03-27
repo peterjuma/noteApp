@@ -193,7 +193,12 @@ function NoteMain(props) {
         return;
       }
 
-      if (!href.startsWith("#")) return;
+      // External links: open in new tab
+      if (!href.startsWith("#")) {
+        e.preventDefault();
+        window.open(href, "_blank", "noopener,noreferrer");
+        return;
+      }
       e.preventDefault();
       const id = href.slice(1);
       const target = document.getElementById(id);
