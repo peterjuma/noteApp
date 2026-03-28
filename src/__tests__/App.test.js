@@ -85,6 +85,8 @@ jest.mock("../services/notesDB", () => {
     getWorkspaces: jest.fn(() => [...defaultWorkspaces]),
     getActiveWorkspace: jest.fn(() => "notesdb"),
     setActiveWorkspace: jest.fn(),
+    getDefaultWorkspace: jest.fn(() => "notesdb"),
+    setDefaultWorkspace: jest.fn(),
     addWorkspace: jest.fn((name) => ({ name, dbName: "notesdb_" + name.toLowerCase() })),
     removeWorkspace: jest.fn(),
     renameWorkspace: jest.fn(),

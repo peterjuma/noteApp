@@ -135,6 +135,7 @@ export async function moveNote(noteid, fromDb, toDb) {
 // ===== Workspaces =====
 const WORKSPACES_KEY = "noteapp_workspaces";
 const ACTIVE_WORKSPACE_KEY = "noteapp_active_workspace";
+const DEFAULT_WORKSPACE_KEY = "noteapp_default_workspace";
 
 export function getWorkspaces() {
   const stored = localStorage.getItem(WORKSPACES_KEY);
@@ -155,6 +156,10 @@ export function removeWorkspace(dbName) {
   if (dbName === "notesdb") return; // Can't delete default
   const workspaces = getWorkspaces().filter((w) => w.dbName !== dbName);
   localStorage.setItem(WORKSPACES_KEY, JSON.stringify(workspaces));
+  // If deleted workspace was the default, reset to "notesdb"
+  if (getDefaultWorkspace() === dbName) {
+    setDefaultWorkspace("notesdb");
+  }
 }
 
 export function renameWorkspace(dbName, newName) {
@@ -167,8 +172,16 @@ export function renameWorkspace(dbName, newName) {
   }
 }
 
+export function getDefaultWorkspace() {
+  return localStorage.getItem(DEFAULT_WORKSPACE_KEY) || "notesdb";
+}
+
+export function setDefaultWorkspace(dbName) {
+  localStorage.setItem(DEFAULT_WORKSPACE_KEY, dbName);
+}
+
 export function getActiveWorkspace() {
-  return localStorage.getItem(ACTIVE_WORKSPACE_KEY) || "notesdb";
+  return localStorage.getItem(ACTIVE_WORKSPACE_KEY) || getDefaultWorkspace();
 }
 
 export function setActiveWorkspace(dbName) {
@@ -298,8 +311,9 @@ export async function purgeAllWorkspaces() {
   }
   // Clear the default workspace
   await purgeWorkspace("notesdb");
-  // Reset workspace list to just default
+  // Reset workspace list and default to original
   localStorage.setItem(WORKSPACES_KEY, JSON.stringify([{ name: "Default", dbName: "notesdb" }]));
+  setDefaultWorkspace("notesdb");
 }
 
 // ===== Version History =====

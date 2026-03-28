@@ -2434,6 +2434,8 @@ a:hover { text-decoration: underline; }
 .dark .settings-ws-name { color: #d1d5db; }
 .settings-ws-check { color: #0969da; }
 .dark .settings-ws-check { color: #4493f8; }
+.settings-ws-default-star { color: #d97706; fill: #d97706; flex-shrink: 0; }
+.dark .settings-ws-default-star { color: #f59e0b; fill: #f59e0b; }
 .settings-ws-actions {
   display: flex;
   gap: 4px;
@@ -2441,6 +2443,7 @@ a:hover { text-decoration: underline; }
   transition: opacity 0.15s;
 }
 .settings-ws-item:hover .settings-ws-actions { opacity: 1; }
+.settings-ws-actions:has(.settings-ws-default-star) { opacity: 1; }
 .settings-inline-form {
   display: flex;
   align-items: center;

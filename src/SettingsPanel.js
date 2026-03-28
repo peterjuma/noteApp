@@ -3,7 +3,7 @@ import {
   X, Plus, Check, Trash2, PencilLine, ArrowLeftRight,
   Upload, Download, FolderUp, RotateCcw, Archive,
   Moon, Sun, Save, Sparkles, Settings, FileText,
-  RefreshCw, Cloud, CloudOff, Link2, ExternalLink, HardDrive,
+  RefreshCw, Cloud, CloudOff, Link2, ExternalLink, HardDrive, Star,
 } from "lucide-react";
 import * as snippetService from "./services/snippets";
 import * as gistSync from "./services/gistSync";
@@ -25,6 +25,8 @@ function SettingsPanel({
   onAddWorkspace,
   onRenameWorkspace,
   onDeleteWorkspace,
+  defaultWorkspace,
+  onSetDefaultWorkspace,
   archivedNotes,
   onRestoreNote,
   onPermanentDelete,
@@ -292,6 +294,17 @@ function SettingsPanel({
                         {w.dbName === activeDb && <Check size={14} className="settings-ws-check" />}
                       </span>
                       <div className="settings-ws-actions">
+                        {w.dbName === defaultWorkspace ? (
+                          <Star size={13} className="settings-ws-default-star" title="Default workspace" />
+                        ) : (
+                          <button
+                            className="icon-btn"
+                            title="Set as default"
+                            onClick={() => onSetDefaultWorkspace(w.dbName)}
+                          >
+                            <Star size={13} />
+                          </button>
+                        )}
                         {w.dbName !== "notesdb" && (
                           <>
                             <button

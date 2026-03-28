@@ -523,10 +523,15 @@ handleUnpinNote = async (noteid) => {
   handleDeleteWorkspace = (dbName) => {
     if (dbName === this.state.activeDb) {
       // Switch to default first
-      this.handleSwitchWorkspace("notesdb");
+      this.handleSwitchWorkspace(db.getDefaultWorkspace());
     }
     db.removeWorkspace(dbName);
     this.setState({ workspaces: db.getWorkspaces() });
+  };
+
+  handleSetDefaultWorkspace = (dbName) => {
+    db.setDefaultWorkspace(dbName);
+    this.forceUpdate();
   };
 
   // Drag-to-reorder notes
@@ -1899,6 +1904,8 @@ handleUnpinNote = async (noteid) => {
               onAddWorkspace={this.handleAddWorkspace}
               onRenameWorkspace={this.handleRenameWorkspace}
               onDeleteWorkspace={this.handleDeleteWorkspace}
+              defaultWorkspace={db.getDefaultWorkspace()}
+              onSetDefaultWorkspace={this.handleSetDefaultWorkspace}
               archivedNotes={this.state.archivedNotes}
               onRestoreNote={this.handleRestoreNote}
               onPermanentDelete={this.handlePermanentDelete}
