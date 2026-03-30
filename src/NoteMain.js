@@ -53,6 +53,10 @@ function plantumlEncode(text) {
   return "~h" + encoded;
 }
 
+// Allow noteapp-img: protocol for inline images stored in IndexedDB
+const PURIFY_URI_REGEX = /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix|noteapp-img):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
+const PURIFY_OPTS = { ALLOWED_URI_REGEXP: PURIFY_URI_REGEX };
+
 // Allow id attributes through DOMPurify for anchor navigation
 DOMPurify.addHook("uponSanitizeAttribute", (node, data) => {
   if (data.attrName === "id") {
@@ -252,7 +256,7 @@ function NoteMain(props) {
           <h1
             className="note-view-title"
             dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(md2html.render(notesData.notetitle)),
+              __html: DOMPurify.sanitize(md2html.render(notesData.notetitle), PURIFY_OPTS),
             }}
           ></h1>
         )}
@@ -299,7 +303,7 @@ function NoteMain(props) {
         <div
           className="markdown-body"
           ref={bodyRef}
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(notesData.notebody)) }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(notesData.notebody), PURIFY_OPTS) }}
           onCopy={(e) => props.handleCopyEvent(e)}
         ></div>
 

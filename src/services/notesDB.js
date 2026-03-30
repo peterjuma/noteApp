@@ -1,16 +1,15 @@
 import { openDB } from "idb/with-async-ittr.js";
 
 const DB_VERSION = 4;
-let dbInstance = null;
-let currentDbName = null;
+const dbConnections = new Map();
 const MAX_VERSIONS_PER_NOTE = 50;
 
-// Get or create a singleton DB connection
+// Get or create a DB connection per database name
 async function getDB(dbName) {
-  if (dbInstance && currentDbName === dbName) return dbInstance;
-  if (dbInstance) dbInstance.close();
+  const existing = dbConnections.get(dbName);
+  if (existing) return existing;
 
-  dbInstance = await openDB(dbName, DB_VERSION, {
+  const db = await openDB(dbName, DB_VERSION, {
     upgrade(db) {
       // Notes store
       if (!db.objectStoreNames.contains("notes")) {
@@ -34,8 +33,8 @@ async function getDB(dbName) {
       }
     },
   });
-  currentDbName = dbName;
-  return dbInstance;
+  dbConnections.set(dbName, db);
+  return db;
 }
 
 // ===== Notes =====
@@ -118,17 +117,13 @@ export async function getImageURL(id, dbName = "notesdb") {
 
 // Move a note from one workspace to another
 export async function moveNote(noteid, fromDb, toDb) {
-  // Read note from source DB
   const fromConn = await getDB(fromDb);
   const note = await fromConn.get("notes", noteid);
   if (!note) return null;
   note.updated_at = Date.now();
-  // Write note to target DB (this closes the source connection via singleton)
   const toConn = await getDB(toDb);
   await toConn.put("notes", note);
-  // Re-open source DB to delete the original (closes the target connection)
-  const reopenedFrom = await getDB(fromDb);
-  await reopenedFrom.delete("notes", noteid);
+  await fromConn.delete("notes", noteid);
   return note;
 }
 

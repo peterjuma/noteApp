@@ -24,6 +24,50 @@ import {
   TerminalSquare, Regex, Brackets, Superscript, Subscript, Highlighter,
 } from "lucide-react";
 
+// Image types natively renderable by all modern browsers
+const WEB_IMAGE_TYPES = new Set([
+  "image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml", "image/bmp",
+  "image/avif",
+]);
+
+// Allow noteapp-img: protocol for inline images stored in IndexedDB
+const PURIFY_URI_REGEX = /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix|noteapp-img):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
+const PURIFY_OPTS = { ALLOWED_URI_REGEXP: PURIFY_URI_REGEX };
+
+/**
+ * Ensure an image file is in a web-compatible format.
+ * Returns { blob, name } — original file for web-safe types,
+ * canvas-converted JPEG for decodable-but-non-standard types (e.g. TIFF),
+ * or throws for truly unsupported types (e.g. HEIC in Chrome).
+ */
+async function prepareImageForStorage(file) {
+  if (WEB_IMAGE_TYPES.has(file.type)) {
+    return { blob: file, name: file.name };
+  }
+  // Try to decode and re-encode via canvas
+  const url = URL.createObjectURL(file);
+  try {
+    const bitmap = await createImageBitmap(await fetch(url).then(r => r.blob()));
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext("2d").drawImage(bitmap, 0, 0);
+    bitmap.close();
+    const converted = await new Promise((resolve, reject) =>
+      canvas.toBlob(b => (b ? resolve(b) : reject(new Error("Canvas conversion failed"))), "image/jpeg", 0.92)
+    );
+    const name = (file.name || "image").replace(/\.[^.]+$/, ".jpeg");
+    return { blob: converted, name };
+  } catch {
+    const ext = file.name ? file.name.split(".").pop().toUpperCase() : file.type;
+    throw new Error(
+      `This browser cannot open ${ext} images.\nPlease convert the image to PNG, JPEG, or WebP before uploading.`
+    );
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 // Popular languages for the code block picker
 const CODE_LANGUAGES = [
   "javascript", "typescript", "python", "java", "csharp", "go", "rust", "ruby",
@@ -159,9 +203,17 @@ function NoteEditor(props) {
     if (!file || !file.type.startsWith("image/")) return;
     const view = viewRef.current;
     if (!view) return;
+    let blob, name;
+    try {
+      ({ blob, name } = await prepareImageForStorage(file));
+    } catch (err) {
+      props.showConfirm("Unsupported Image", err.message, () => {}, { confirmText: "OK", hideCancel: true });
+      e.target.value = "";
+      return;
+    }
     const id = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    await noteDB.saveImage(id, file, file.name);
-    const mdImage = `![${file.name}](noteapp-img:${id})`;
+    await noteDB.saveImage(id, blob, name);
+    const mdImage = `![${name}](noteapp-img:${id})`;
     const { from, to } = view.state.selection.main;
     view.dispatch({
       changes: { from, to, insert: mdImage },
@@ -575,9 +627,17 @@ function NoteEditor(props) {
 
     // Helper: store image blob and insert markdown reference
     const insertImage = async (file, view) => {
+      let blob, name;
+      try {
+        ({ blob, name } = await prepareImageForStorage(file));
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn("Image conversion failed:", err.message);
+        return;
+      }
       const id = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      await noteDB.saveImage(id, file, file.name);
-      const mdImage = `![${file.name || "image"}](noteapp-img:${id})`;
+      await noteDB.saveImage(id, blob, name);
+      const mdImage = `![${name || "image"}](noteapp-img:${id})`;
       const { from, to } = view.state.selection.main;
       view.dispatch({
         changes: { from, to, insert: mdImage },
@@ -1030,10 +1090,10 @@ function NoteEditor(props) {
         <div className={`editor-codemirror ${darkMode ? "editor-codemirror-dark" : ""}`}>
           {showPreview ? (
             <div className="editor-preview-inline" ref={previewRef}>
-              <h1 className="note-view-title" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(title || "Untitled")) }}></h1>
+              <h1 className="note-view-title" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(title || "Untitled"), PURIFY_OPTS) }}></h1>
               <div
                 className="markdown-body"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(bodytxt || "")) }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(bodytxt || ""), PURIFY_OPTS) }}
               />
             </div>
           ) : (
@@ -1236,11 +1296,11 @@ function NoteEditor(props) {
           <div className="split-preview-inner" ref={splitPreviewRef}>
             <h2
               className="split-preview-title"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(title || "")) }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(title || ""), PURIFY_OPTS) }}
             ></h2>
             <div
               className="markdown-body"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(bodytxt || "")) }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(bodytxt || ""), PURIFY_OPTS) }}
             ></div>
           </div>
         </div>
