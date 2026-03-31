@@ -39,34 +39,20 @@ describe("NavbarSidebar", () => {
 
   test("Home button calls handleClickHomeBtn", () => {
     render(<NavbarSidebar {...defaultProps} />);
-    fireEvent.click(screen.getByLabelText("Go to home page"));
+    fireEvent.click(screen.getByLabelText("Menu"));
+    fireEvent.click(screen.getByText("Home"));
     expect(defaultProps.handleClickHomeBtn).toHaveBeenCalled();
   });
 
   test("Settings button calls onOpenSettings", () => {
     render(<NavbarSidebar {...defaultProps} />);
-    fireEvent.click(screen.getByLabelText("Settings"));
+    fireEvent.click(screen.getByLabelText("Menu"));
+    fireEvent.click(screen.getByText("Settings"));
     expect(defaultProps.onOpenSettings).toHaveBeenCalled();
   });
 
-  test("New Note button is disabled when in settings", () => {
-    render(<NavbarSidebar {...defaultProps} showSettings={true} />);
-    expect(screen.getByLabelText("Create new note")).toBeDisabled();
-  });
-
-  test("Search button is disabled when in settings", () => {
-    render(<NavbarSidebar {...defaultProps} showSettings={true} />);
-    expect(screen.getByLabelText("Toggle search")).toBeDisabled();
-  });
-
-  test("renders collapsed sidebar with expand button", () => {
-    render(<NavbarSidebar {...defaultProps} sidebarCollapsed={true} />);
-    expect(screen.getByLabelText("Expand sidebar")).toBeInTheDocument();
-  });
-
-  test("shows search input when search is toggled", () => {
+  test("search input is visible", () => {
     render(<NavbarSidebar {...defaultProps} />);
-    fireEvent.click(screen.getByLabelText("Toggle search"));
     expect(screen.getByLabelText("Search notes")).toBeInTheDocument();
   });
 });

@@ -907,10 +907,10 @@ handleUnpinNote = async (noteid) => {
   _openEditor = (note, isNew, action) => {
     this.setState({
       noteid: note.noteid,
-      notetitle: isNew ? "" : note.notetitle,
-      notebody: isNew ? "" : note.notebody,
+      notetitle: isNew ? "" : (note.notetitle || note.title || ""),
+      notebody: isNew ? "" : (note.notebody || note.body || ""),
       activepage: "editnote",
-      action: action,
+      action: action || (isNew ? "addnote" : "updatenote"),
       showNavConfirm: false,
       pendingNav: null,
       pendingEdit: null,
@@ -1305,8 +1305,10 @@ handleUnpinNote = async (noteid) => {
 
 
   handleDownloadNote(note) {
-    const title = `${note.notetitle.replace(/[^A-Z0-9]+/gi, "_") || "note"}.md`;
-    var blob = new Blob([note.notebody], {
+    const noteTitle = note.notetitle || note.title || "note";
+    const noteBody = note.notebody || note.body || "";
+    const title = `${noteTitle.replace(/[^A-Z0-9]+/gi, "_") || "note"}.md`;
+    var blob = new Blob([noteBody], {
       type: "text/plain;charset=utf-8",
     });
     saveAs(blob, title);

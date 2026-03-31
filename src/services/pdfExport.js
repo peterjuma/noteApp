@@ -13,8 +13,10 @@ export async function exportNoteToPdf(note) {
   ]);
 
   // Build a self-contained HTML string with inline styles
-  const bodyHtml = DOMPurify.sanitize(md2html.render(note.notebody || ""));
-  const titleHtml = DOMPurify.sanitize(md2html.render(note.notetitle || "Untitled"));
+  const noteBody = note.notebody || note.body || "";
+  const noteTitle = note.notetitle || note.title || "Untitled";
+  const bodyHtml = DOMPurify.sanitize(md2html.render(noteBody));
+  const titleHtml = DOMPurify.sanitize(md2html.render(noteTitle));
 
   // Collect relevant CSS from the parent page
   const styleSheets = Array.from(document.styleSheets);
@@ -68,11 +70,7 @@ export async function exportNoteToPdf(note) {
   const iframeDoc = iframe.contentDocument;
   iframeDoc.open();
   iframeDoc.write(`<!DOCTYPE html><html><head><style>${cssText}</style></head><body>
-    <h1 style="font-size:1.75rem;font-weight:600;margin:0 0 8px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;">${titleHtml}</h1>
-    <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">
-      ${note.created_at ? `Created ${new Date(note.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}` : ""}
-      ${note.updated_at ? ` &middot; Modified ${new Date(note.updated_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}` : ""}
-    </div>
+    <h1 style="font-size:1.75rem;font-weight:600;margin:0 0 16px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;">${titleHtml}</h1>
     <div class="markdown-body">${bodyHtml}</div>
   </body></html>`);
   iframeDoc.close();
@@ -120,7 +118,7 @@ export async function exportNoteToPdf(note) {
       pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", margin, margin, contentWidth, sliceHeightMm);
     }
 
-    const filename = `${(note.notetitle || "note").replace(/[^A-Z0-9]+/gi, "_")}.pdf`;
+    const filename = `${(noteTitle === "Untitled" ? "note" : noteTitle).replace(/[^A-Z0-9]+/gi, "_")}.pdf`;
     pdf.save(filename);
   } finally {
     document.body.removeChild(iframe);

@@ -54,19 +54,22 @@ describe("NavbarMain", () => {
 
   test("Delete button calls handleDeleteNote", () => {
     render(<NavbarMain {...defaultProps} />);
-    fireEvent.click(screen.getByLabelText("Delete this note"));
+    fireEvent.click(screen.getByLabelText("More actions"));
+    fireEvent.click(screen.getByText("Delete"));
     expect(defaultProps.handleDeleteNote).toHaveBeenCalled();
   });
 
   test("Version History button calls onShowHistory", () => {
     render(<NavbarMain {...defaultProps} />);
-    fireEvent.click(screen.getByLabelText("Version history"));
+    fireEvent.click(screen.getByLabelText("More actions"));
+    fireEvent.click(screen.getByText("Version History"));
     expect(defaultProps.onShowHistory).toHaveBeenCalled();
   });
 
   test("Download button calls handleDownloadNote", () => {
     render(<NavbarMain {...defaultProps} />);
-    fireEvent.click(screen.getByLabelText("Download as markdown file"));
+    fireEvent.click(screen.getByLabelText("More actions"));
+    fireEvent.click(screen.getByText("Download Markdown"));
     expect(defaultProps.handleDownloadNote).toHaveBeenCalledWith(mockNote);
   });
 });
