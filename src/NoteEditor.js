@@ -14,6 +14,7 @@ import * as noteDB from "./services/notesDB";
 import { suggestTags } from "./services/tagSuggester";
 import { getPredefinedTags, harvestTags } from "./services/tagManager";
 import { ensureDefaults as loadSnippets } from "./services/snippets";
+import { getActiveWorkspace } from "./services/notesDB";
 import TableConverter from "./TableConverter";
 import TableEditor from "./TableEditor";
 import {
@@ -138,6 +139,7 @@ function NoteEditor(props) {
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [langFilter, setLangFilter] = useState("");
   const [slashMenu, setSlashMenu] = useState(null); // { pos, filter }
+  const [slashSnippets, setSlashSnippets] = useState([]);
   const [varPrompt, setVarPrompt] = useState(null); // { variables: [{name, value}], template, from, to }
   const [showDiagramPicker, setShowDiagramPicker] = useState(false);
   const [vimModeLabel, setVimModeLabel] = useState(props.vimMode ? "NORMAL" : "");
@@ -458,6 +460,8 @@ function NoteEditor(props) {
   // Close slash menu on outside click or Escape
   useEffect(() => {
     if (!slashMenu) return;
+    // Load snippets when slash menu opens
+    loadSnippets(getActiveWorkspace()).then(setSlashSnippets);
     const handleClickOutside = (e) => {
       if (slashMenuRef.current && !slashMenuRef.current.contains(e.target)) {
         setSlashMenu(null);
@@ -1130,7 +1134,7 @@ function NoteEditor(props) {
               />
               {/* Slash command palette */}
               {slashMenu && (() => {
-                const snippets = loadSnippets();
+                const snippets = slashSnippets;
                 const filter = slashMenu.filter ? slashMenu.filter.toLowerCase() : "";
                 const filteredCmds = SLASH_COMMANDS.filter((cmd) => !filter || cmd.label.toLowerCase().includes(filter));
                 const filteredSnippets = snippets.filter((s) => !filter || s.name.toLowerCase().includes(filter));

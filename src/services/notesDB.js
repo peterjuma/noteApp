@@ -1,6 +1,6 @@
 import { openDB } from "idb/with-async-ittr.js";
 
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const dbConnections = new Map();
 const MAX_VERSIONS_PER_NOTE = 50;
 
@@ -30,6 +30,11 @@ async function getDB(dbName) {
         const vStore = db.createObjectStore("versions", { keyPath: "versionId" });
         vStore.createIndex("noteid", "noteid");
         vStore.createIndex("timestamp", "timestamp");
+      }
+      // Snippets/Templates store (v5)
+      if (!db.objectStoreNames.contains("snippets")) {
+        const sStore = db.createObjectStore("snippets", { keyPath: "id" });
+        sStore.createIndex("category", "category");
       }
     },
   });
@@ -264,13 +269,35 @@ export async function purgeArchive() {
   await tx.done;
 }
 
+// ===== Snippets/Templates =====
+export async function getAllSnippets(dbName = "notesdb") {
+  const db = await getDB(dbName);
+  return db.getAll("snippets");
+}
+
+export async function addSnippet(snippet, dbName = "notesdb") {
+  const db = await getDB(dbName);
+  return db.put("snippets", snippet);
+}
+
+export async function updateSnippet(snippet, dbName = "notesdb") {
+  const db = await getDB(dbName);
+  return db.put("snippets", snippet);
+}
+
+export async function deleteSnippet(id, dbName = "notesdb") {
+  const db = await getDB(dbName);
+  return db.delete("snippets", id);
+}
+
 // Purge all notes in a specific workspace (keeps the workspace itself)
 export async function purgeWorkspace(dbName) {
   const db = await getDB(dbName);
-  const tx = db.transaction(["notes", "pinnedNotes", "images"], "readwrite");
+  const tx = db.transaction(["notes", "pinnedNotes", "images", "snippets"], "readwrite");
   await tx.objectStore("notes").clear();
   await tx.objectStore("pinnedNotes").clear();
   await tx.objectStore("images").clear();
+  await tx.objectStore("snippets").clear();
   await tx.done;
 }
 

@@ -273,6 +273,7 @@ function NavbarSidebar(props) {
           placeholder="Search notes… ⌘K"
           ref={searchRef}
           aria-label="Search notes"
+          autoComplete="off"
           value={searchValue}
           onChange={handleSearchChange}
           onKeyDown={handleSearchKeyDown}

@@ -1,27 +1,34 @@
-// Snippet/Template storage — persisted in localStorage
-// Snippets are global (not workspace-specific)
+// Snippet/Template storage — persisted in IndexedDB per workspace
+// Migrates from legacy localStorage on first load
 
-const STORAGE_KEY = "noteapp_snippets";
+import * as db from "./notesDB";
 
-function load() {
+const LEGACY_KEY = "noteapp_snippets";
+
+// Migrate legacy localStorage snippets to IndexedDB (once per workspace)
+async function migrateLegacy(dbName) {
+  const migKey = `noteapp_snippets_migrated_${dbName}`;
+  if (localStorage.getItem(migKey)) return;
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    const stored = localStorage.getItem(LEGACY_KEY);
+    if (stored) {
+      const snippets = JSON.parse(stored);
+      for (const s of snippets) {
+        await db.addSnippet(s, dbName);
+      }
+    }
   } catch {
-    return [];
+    // ignore parse errors
   }
+  localStorage.setItem(migKey, "1");
 }
 
-function save(snippets) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(snippets));
+export async function getSnippets(dbName = "notesdb") {
+  await migrateLegacy(dbName);
+  return db.getAllSnippets(dbName);
 }
 
-export function getSnippets() {
-  return load();
-}
-
-export function addSnippet(name, content, category) {
-  const snippets = load();
+export async function addSnippet(name, content, category, dbName = "notesdb") {
   const snippet = {
     id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
     name: name.trim(),
@@ -29,27 +36,26 @@ export function addSnippet(name, content, category) {
     category: category || "general",
     created_at: Date.now(),
   };
-  snippets.push(snippet);
-  save(snippets);
+  await db.addSnippet(snippet, dbName);
   return snippet;
 }
 
-export function updateSnippet(id, updates) {
-  const snippets = load();
-  const idx = snippets.findIndex((s) => s.id === id);
-  if (idx === -1) return null;
-  snippets[idx] = { ...snippets[idx], ...updates };
-  save(snippets);
-  return snippets[idx];
+export async function updateSnippet(id, updates, dbName = "notesdb") {
+  const snippets = await db.getAllSnippets(dbName);
+  const existing = snippets.find((s) => s.id === id);
+  if (!existing) return null;
+  const updated = { ...existing, ...updates };
+  await db.updateSnippet(updated, dbName);
+  return updated;
 }
 
-export function deleteSnippet(id) {
-  const snippets = load().filter((s) => s.id !== id);
-  save(snippets);
+export async function deleteSnippet(id, dbName = "notesdb") {
+  await db.deleteSnippet(id, dbName);
 }
 
-export function getSnippetsByCategory(category) {
-  return load().filter((s) => s.category === category);
+export async function getSnippetsByCategory(category, dbName = "notesdb") {
+  const all = await db.getAllSnippets(dbName);
+  return all.filter((s) => s.category === category);
 }
 
 // Default templates — inserted on first use if no snippets exist
@@ -83,12 +89,28 @@ export function getDefaultSnippets() {
 }
 
 // Seed defaults if storage is empty
-export function ensureDefaults() {
-  const snippets = load();
+export async function ensureDefaults(dbName = "notesdb") {
+  const snippets = await getSnippets(dbName);
   if (snippets.length === 0) {
     const defaults = getDefaultSnippets();
-    save(defaults);
+    for (const s of defaults) {
+      await db.addSnippet(s, dbName);
+    }
     return defaults;
   }
   return snippets;
+}
+
+// Bulk import snippets (used by zip import)
+export async function importSnippets(snippets, dbName = "notesdb") {
+  const existing = await db.getAllSnippets(dbName);
+  const existingIds = new Set(existing.map((s) => s.id));
+  let imported = 0;
+  for (const s of snippets) {
+    if (!existingIds.has(s.id)) {
+      await db.addSnippet(s, dbName);
+      imported++;
+    }
+  }
+  return imported;
 }

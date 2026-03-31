@@ -3,11 +3,12 @@ import {
   X, Plus, Check, Trash2, PencilLine, ArrowLeftRight,
   Upload, Download, FolderUp, RotateCcw, Archive,
   Moon, Sun, Save, Sparkles, Settings, FileText, Wand2,
-  RefreshCw, Cloud, CloudOff, Link2, ExternalLink, HardDrive, Star, Tag,
+  RefreshCw, Cloud, CloudOff, Link2, ExternalLink, HardDrive, Star, Tag, Lock, Fingerprint, Clock,
 } from "lucide-react";
 import * as snippetService from "./services/snippets";
 import * as gistSync from "./services/gistSync";
 import * as tagManager from "./services/tagManager";
+import { isPinSet, setPin, removePin, verifyPin, getSessionTimeout, setSessionTimeout, isBiometricAvailable, isBiometricEnabled, registerBiometric, removeBiometric } from "./LockScreen";
 
 function SettingsPanel({
   darkMode,
@@ -72,13 +73,30 @@ function SettingsPanel({
   const fileInputRef = useRef(null);
   const zipInputRef = useRef(null);
 
+  // PIN lock state
+  const [pinEnabled, setPinEnabled] = useState(isPinSet());
+  const [showPinForm, setShowPinForm] = useState(false);
+  const [pinValue, setPinValue] = useState("");
+  const [pinConfirm, setPinConfirm] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [pinCurrentValue, setPinCurrentValue] = useState("");
+  const [lockTimeout, setLockTimeout] = useState(getSessionTimeout());
+  const [biometricAvail, setBiometricAvail] = useState(false);
+  const [biometricOn, setBiometricOn] = useState(isBiometricEnabled());
+  const pinInputRef = useRef(null);
+
+  // Check biometric availability
+  useEffect(() => {
+    isBiometricAvailable().then(setBiometricAvail);
+  }, []);
+
   // Load archive when switching to archive tab
   useEffect(() => {
     if (activeTab === "archive" && onLoadArchive) {
       onLoadArchive();
     }
     if (activeTab === "templates") {
-      setSnippets(snippetService.ensureDefaults());
+      snippetService.ensureDefaults(activeDb).then(setSnippets);
     }
     if (activeTab === "tags") {
       setPredefinedTags(tagManager.getPredefinedTags());
@@ -151,6 +169,7 @@ function SettingsPanel({
       <div className="settings-body">
         {/* ─── General Tab ─── */}
         {activeTab === "general" && (
+          <>
           <div className="settings-section">
             <h3 className="settings-section-title">Appearance</h3>
             <label className="settings-toggle-row">
@@ -169,7 +188,9 @@ function SettingsPanel({
                 <span className="settings-switch-thumb" />
               </button>
             </label>
+          </div>
 
+          <div className="settings-section">
             <h3 className="settings-section-title">Editor</h3>
             <label className="settings-toggle-row">
               <div className="settings-toggle-info">
@@ -223,7 +244,9 @@ function SettingsPanel({
                 <span className="settings-switch-thumb" />
               </button>
             </label>
+          </div>
 
+          <div className="settings-section">
             <h3 className="settings-section-title">Device Profile</h3>
             <div className="settings-toggle-row" style={{ cursor: "default" }}>
               <div className="settings-toggle-info">
@@ -242,6 +265,278 @@ function SettingsPanel({
               />
             </div>
           </div>
+
+          <div className="settings-section">
+            <h3 className="settings-section-title">Security</h3>
+
+            {/* PIN Lock toggle */}
+            <label className="settings-toggle-row">
+              <div className="settings-toggle-info">
+                <span className="settings-toggle-label">
+                  <Lock size={16} />
+                  PIN Lock
+                </span>
+                <span className="settings-toggle-hint">Require a PIN to access your notes on this device</span>
+              </div>
+              <button
+                className={`settings-switch ${pinEnabled ? "settings-switch-on" : ""}`}
+                onClick={() => {
+                  if (pinEnabled) {
+                    // Turning off: require current PIN
+                    setShowPinForm("remove");
+                    setPinCurrentValue("");
+                    setPinError("");
+                    setTimeout(() => pinInputRef.current?.focus(), 50);
+                  } else {
+                    // Turning on: set new PIN
+                    setShowPinForm("set");
+                    setPinValue("");
+                    setPinConfirm("");
+                    setPinError("");
+                    setTimeout(() => pinInputRef.current?.focus(), 50);
+                  }
+                }}
+                role="switch"
+                aria-checked={pinEnabled}
+              >
+                <span className="settings-switch-thumb" />
+              </button>
+            </label>
+
+            {/* Set PIN form */}
+            {showPinForm === "set" && (
+              <div className="settings-pin-form">
+                <input
+                  ref={pinInputRef}
+                  type="password"
+                  className="settings-input"
+                  value={pinValue}
+                  onChange={(e) => { setPinValue(e.target.value); setPinError(""); }}
+                  placeholder="Enter new PIN (4+ characters)"
+                  autoComplete="off"
+                  maxLength={32}
+                />
+                <input
+                  type="password"
+                  className="settings-input"
+                  value={pinConfirm}
+                  onChange={(e) => { setPinConfirm(e.target.value); setPinError(""); }}
+                  placeholder="Confirm PIN"
+                  autoComplete="off"
+                  maxLength={32}
+                  onKeyDown={(e) => { if (e.key === "Enter") document.getElementById("pin-save-btn")?.click(); }}
+                />
+                {pinError && <p className="settings-pin-error">{pinError}</p>}
+                <div className="settings-pin-actions">
+                  <button
+                    id="pin-save-btn"
+                    className="settings-btn-sm settings-btn-primary"
+                    onClick={async () => {
+                      if (pinValue.length < 4) { setPinError("PIN must be at least 4 characters"); return; }
+                      if (pinValue !== pinConfirm) { setPinError("PINs do not match"); return; }
+                      await setPin(pinValue);
+                      setPinEnabled(true);
+                      setShowPinForm(false);
+                      setPinValue("");
+                      setPinConfirm("");
+                    }}
+                  >
+                    <Check size={14} /> Enable
+                  </button>
+                  <button className="settings-btn-sm" onClick={() => { setShowPinForm(false); setPinValue(""); setPinConfirm(""); setPinError(""); }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Remove PIN form */}
+            {showPinForm === "remove" && (
+              <div className="settings-pin-form">
+                <input
+                  ref={pinInputRef}
+                  type="password"
+                  className="settings-input"
+                  value={pinCurrentValue}
+                  onChange={(e) => { setPinCurrentValue(e.target.value); setPinError(""); }}
+                  placeholder="Enter current PIN to disable"
+                  autoComplete="off"
+                  maxLength={32}
+                  onKeyDown={(e) => { if (e.key === "Enter") document.getElementById("pin-remove-btn")?.click(); }}
+                />
+                {pinError && <p className="settings-pin-error">{pinError}</p>}
+                <div className="settings-pin-actions">
+                  <button
+                    id="pin-remove-btn"
+                    className="settings-btn-sm settings-btn-danger"
+                    onClick={async () => {
+                      const valid = await verifyPin(pinCurrentValue);
+                      if (!valid) { setPinError("Incorrect PIN"); setPinCurrentValue(""); return; }
+                      removePin();
+                      setPinEnabled(false);
+                      setBiometricOn(false);
+                      setShowPinForm(false);
+                      setPinCurrentValue("");
+                      setLockTimeout(0);
+                    }}
+                  >
+                    <Trash2 size={14} /> Disable
+                  </button>
+                  <button className="settings-btn-sm" onClick={() => { setShowPinForm(false); setPinCurrentValue(""); setPinError(""); }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Change PIN */}
+            {pinEnabled && !showPinForm && (
+              <div className="settings-toggle-row" style={{ cursor: "default" }}>
+                <div className="settings-toggle-info">
+                  <span className="settings-toggle-label">
+                    Change PIN
+                  </span>
+                  <span className="settings-toggle-hint">Update your current PIN</span>
+                </div>
+                <button
+                  className="settings-btn-sm"
+                  onClick={() => {
+                    setShowPinForm("change");
+                    setPinCurrentValue("");
+                    setPinValue("");
+                    setPinConfirm("");
+                    setPinError("");
+                    setTimeout(() => pinInputRef.current?.focus(), 50);
+                  }}
+                >
+                  Change
+                </button>
+              </div>
+            )}
+
+            {/* Change PIN form */}
+            {showPinForm === "change" && (
+              <div className="settings-pin-form">
+                <input
+                  ref={pinInputRef}
+                  type="password"
+                  className="settings-input"
+                  value={pinCurrentValue}
+                  onChange={(e) => { setPinCurrentValue(e.target.value); setPinError(""); }}
+                  placeholder="Current PIN"
+                  autoComplete="off"
+                  maxLength={32}
+                />
+                <input
+                  type="password"
+                  className="settings-input"
+                  value={pinValue}
+                  onChange={(e) => { setPinValue(e.target.value); setPinError(""); }}
+                  placeholder="New PIN (4+ characters)"
+                  autoComplete="off"
+                  maxLength={32}
+                />
+                <input
+                  type="password"
+                  className="settings-input"
+                  value={pinConfirm}
+                  onChange={(e) => { setPinConfirm(e.target.value); setPinError(""); }}
+                  placeholder="Confirm new PIN"
+                  autoComplete="off"
+                  maxLength={32}
+                  onKeyDown={(e) => { if (e.key === "Enter") document.getElementById("pin-change-btn")?.click(); }}
+                />
+                {pinError && <p className="settings-pin-error">{pinError}</p>}
+                <div className="settings-pin-actions">
+                  <button
+                    id="pin-change-btn"
+                    className="settings-btn-sm settings-btn-primary"
+                    onClick={async () => {
+                      const valid = await verifyPin(pinCurrentValue);
+                      if (!valid) { setPinError("Current PIN is incorrect"); setPinCurrentValue(""); return; }
+                      if (pinValue.length < 4) { setPinError("New PIN must be at least 4 characters"); return; }
+                      if (pinValue !== pinConfirm) { setPinError("New PINs do not match"); return; }
+                      await setPin(pinValue);
+                      setShowPinForm(false);
+                      setPinValue("");
+                      setPinConfirm("");
+                      setPinCurrentValue("");
+                    }}
+                  >
+                    <Check size={14} /> Update PIN
+                  </button>
+                  <button className="settings-btn-sm" onClick={() => { setShowPinForm(false); setPinValue(""); setPinConfirm(""); setPinCurrentValue(""); setPinError(""); }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Session timeout */}
+            {pinEnabled && (
+              <div className="settings-toggle-row" style={{ cursor: "default" }}>
+                <div className="settings-toggle-info">
+                  <span className="settings-toggle-label">
+                    <Clock size={16} />
+                    Lock After
+                  </span>
+                  <span className="settings-toggle-hint">Re-lock after a period of inactivity or when switching tabs</span>
+                </div>
+                <select
+                  className="settings-input"
+                  style={{ maxWidth: 160, flex: "none" }}
+                  value={lockTimeout}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setLockTimeout(val);
+                    setSessionTimeout(val);
+                  }}
+                >
+                  <option value={0}>Tab close only</option>
+                  <option value={-1}>On tab switch</option>
+                  <option value={60000}>1 minute</option>
+                  <option value={300000}>5 minutes</option>
+                  <option value={900000}>15 minutes</option>
+                  <option value={1800000}>30 minutes</option>
+                  <option value={3600000}>1 hour</option>
+                </select>
+              </div>
+            )}
+
+            {/* Biometric unlock */}
+            {pinEnabled && biometricAvail && (
+              <label className="settings-toggle-row">
+                <div className="settings-toggle-info">
+                  <span className="settings-toggle-label">
+                    <Fingerprint size={16} />
+                    Biometric Unlock
+                  </span>
+                  <span className="settings-toggle-hint">Use fingerprint or Face ID to unlock instead of PIN</span>
+                </div>
+                <button
+                  className={`settings-switch ${biometricOn ? "settings-switch-on" : ""}`}
+                  onClick={async () => {
+                    if (biometricOn) {
+                      removeBiometric();
+                      setBiometricOn(false);
+                    } else {
+                      try {
+                        await registerBiometric();
+                        setBiometricOn(true);
+                      } catch {
+                        setPinError("Biometric registration failed");
+                      }
+                    }
+                  }}
+                  role="switch"
+                  aria-checked={biometricOn}
+                >
+                  <span className="settings-switch-thumb" />
+                </button>
+              </label>
+            )}
+          </div>
+          </>
         )}
 
         {/* ─── Workspaces Tab ─── */}
@@ -544,17 +839,17 @@ function SettingsPanel({
                   <button
                     className="settings-btn-sm settings-btn-primary"
                     disabled={!snippetName.trim() || !snippetContent.trim()}
-                    onClick={() => {
+                    onClick={async () => {
                       if (editingSnippet === "new") {
-                        snippetService.addSnippet(snippetName, snippetContent, snippetCategory);
+                        await snippetService.addSnippet(snippetName, snippetContent, snippetCategory, activeDb);
                       } else {
-                        snippetService.updateSnippet(editingSnippet, {
+                        await snippetService.updateSnippet(editingSnippet, {
                           name: snippetName,
                           content: snippetContent,
                           category: snippetCategory,
-                        });
+                        }, activeDb);
                       }
-                      setSnippets(snippetService.getSnippets());
+                      setSnippets(await snippetService.getSnippets(activeDb));
                       setEditingSnippet(null);
                     }}
                   >
@@ -588,9 +883,9 @@ function SettingsPanel({
                       <button
                         className="icon-btn icon-btn-danger"
                         title="Delete"
-                        onClick={() => {
-                          snippetService.deleteSnippet(s.id);
-                          setSnippets(snippetService.getSnippets());
+                        onClick={async () => {
+                          await snippetService.deleteSnippet(s.id, activeDb);
+                          setSnippets(await snippetService.getSnippets(activeDb));
                         }}
                       >
                         <Trash2 size={13} />
@@ -747,8 +1042,9 @@ function SettingsPanel({
 
         {/* ─── Sync Tab ─── */}
         {activeTab === "sync" && (
+          <>
           <div className="settings-section">
-            <h3 className="settings-section-title">GitHub Gist Sync</h3>
+            <h3 className="settings-section-title">Connection</h3>
             <p className="settings-hint">
               Sync your notes to a private GitHub Gist for backup and cross-device access.
               Requires a <a href="https://github.com/settings/tokens/new?scopes=gist&description=NoteApp+Sync" target="_blank" rel="noopener noreferrer" style={{ color: "#0969da" }}>GitHub Personal Access Token</a> with <code>gist</code> scope.
@@ -798,9 +1094,13 @@ function SettingsPanel({
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="settings-section">
+            <h3 className="settings-section-title">Sync Settings</h3>
 
             {/* Enable sync toggle */}
-            <label className="settings-toggle-row" style={{ marginTop: 16 }}>
+            <label className="settings-toggle-row">
               <div className="settings-toggle-info">
                 <span className="settings-toggle-label">
                   <Cloud size={16} />
@@ -824,15 +1124,19 @@ function SettingsPanel({
             </label>
 
             {/* Auto-sync interval */}
-            <div className="settings-sync-field" style={{ marginTop: 16 }}>
-              <label className="settings-toggle-label" style={{ marginBottom: 6, fontSize: 13 }}>
-                Auto-Sync Interval
-              </label>
+            <div className="settings-toggle-row" style={{ cursor: "default" }}>
+              <div className="settings-toggle-info">
+                <span className="settings-toggle-label">
+                  <RefreshCw size={16} />
+                  Auto-Sync Interval
+                </span>
+                <span className="settings-toggle-hint">Pauses when the tab is hidden to save API calls</span>
+              </div>
               <select
                 className="settings-input"
                 value={syncInterval || 0}
                 onChange={(e) => onSyncIntervalChange && onSyncIntervalChange(Number(e.target.value))}
-                style={{ maxWidth: 200 }}
+                style={{ maxWidth: 180 }}
               >
                 <option value={0}>Off (manual only)</option>
                 <option value={60000}>Every 1 minute</option>
@@ -840,11 +1144,14 @@ function SettingsPanel({
                 <option value={900000}>Every 15 minutes</option>
                 <option value={1800000}>Every 30 minutes</option>
               </select>
-              <p className="settings-hint" style={{ marginTop: 4 }}>Pauses when the tab is hidden to save API calls.</p>
             </div>
+          </div>
+
+          <div className="settings-section">
+            <h3 className="settings-section-title">Actions</h3>
 
             {/* Sync actions */}
-            <div className="settings-sync-actions" style={{ marginTop: 20 }}>
+            <div className="settings-sync-actions">
               <button
                 className="settings-btn-sm settings-btn-primary"
                 disabled={!syncToken.trim() || syncStatus === "syncing"}
@@ -893,10 +1200,11 @@ function SettingsPanel({
                 Last synced: {new Date(gistSync.getLastSync(activeDb)).toLocaleString()}
               </div>
             )}
+          </div>
 
             {/* Link existing Gist */}
             {!gistSync.getGistId(activeDb) && (
-              <div style={{ marginTop: 24 }}>
+              <div className="settings-section">
                 <h3 className="settings-section-title">Link Existing Gist</h3>
                 <p className="settings-hint">Already have a NoteApp Gist? Paste the Gist ID to link it.</p>
                 <div className="settings-inline-form">
@@ -929,7 +1237,7 @@ function SettingsPanel({
                 </div>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
 

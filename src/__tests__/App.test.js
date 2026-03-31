@@ -103,6 +103,10 @@ jest.mock("../services/notesDB", () => {
     deleteWorkspaceDB: jest.fn(() => Promise.resolve()),
     addPin: jest.fn(() => Promise.resolve()),
     removePin: jest.fn(() => Promise.resolve()),
+    getAllSnippets: jest.fn(() => Promise.resolve([])),
+    addSnippet: jest.fn(() => Promise.resolve()),
+    updateSnippet: jest.fn(() => Promise.resolve()),
+    deleteSnippet: jest.fn(() => Promise.resolve()),
   };
 });
 

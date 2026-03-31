@@ -22,6 +22,7 @@ import * as gistSync from "./services/gistSync";
 import { Menu, FilePlus, Search, Moon, Sun, Settings, Trash2, Download, FileDown, RefreshCw, Keyboard, Home } from "lucide-react";
 import QuickSwitcher from "./QuickSwitcher";
 import CommandPalette from "./CommandPalette";
+import LockScreen, { isPinSet, getSessionTimeout } from "./LockScreen";
 
 // Slugify a note title for URL hash
 function slugify(title) {
@@ -94,6 +95,7 @@ class App extends Component {
       syncStatus: { state: "idle", message: "", lastSync: gistSync.getLastSync(db.getActiveWorkspace()) },
       swUpdateAvailable: false,
       isOffline: !navigator.onLine,
+      locked: isPinSet(),
     };
     this.handleSaveNote = this.handleSaveNote.bind(this);
     this.handleDownloadNote = this.handleDownloadNote.bind(this);
@@ -160,6 +162,27 @@ class App extends Component {
 
     // Register periodic background sync if available
     this._registerPeriodicSync();
+
+    // Session timeout: re-lock after inactivity or tab switch
+    this._setupLockTimeout();
+    this._handleVisibilityChange = () => {
+      if (document.hidden && isPinSet() && !this.state.locked) {
+        const timeout = getSessionTimeout();
+        if (timeout === -1) {
+          // Lock immediately on tab switch
+          this.setState({ locked: true });
+        } else if (timeout > 0) {
+          // Start countdown when tab is hidden
+          this._lockOnHideTimer = setTimeout(() => {
+            if (isPinSet()) this.setState({ locked: true });
+          }, timeout);
+        }
+      } else if (!document.hidden && this._lockOnHideTimer) {
+        clearTimeout(this._lockOnHideTimer);
+        this._lockOnHideTimer = null;
+      }
+    };
+    document.addEventListener("visibilitychange", this._handleVisibilityChange);
   }
 
   componentWillUnmount() {
@@ -173,11 +196,52 @@ class App extends Component {
     }
     if (this._darkModeMedia) this._darkModeMedia.removeEventListener("change", this._handleColorSchemeChange);
     if (this._syncInterval) clearInterval(this._syncInterval);
+    if (this._lockTimer) clearTimeout(this._lockTimer);
+    if (this._lockOnHideTimer) clearTimeout(this._lockOnHideTimer);
+    this._teardownLockTimeout();
+    document.removeEventListener("visibilitychange", this._handleVisibilityChange);
   }
 
   _handleSWUpdate = (e) => {
     this._swRegistration = e.detail?.registration;
     this.setState({ swUpdateAvailable: true });
+  };
+
+  _setupLockTimeout = () => {
+    if (this._lockTimer) clearTimeout(this._lockTimer);
+    const timeout = getSessionTimeout();
+    // timeout > 0 means inactivity-based lock; reset on user interaction
+    if (timeout > 0 && isPinSet()) {
+      const resetTimer = () => {
+        if (this._lockTimer) clearTimeout(this._lockTimer);
+        if (this.state.locked) return;
+        this._lockTimer = setTimeout(() => {
+          if (isPinSet()) this.setState({ locked: true });
+        }, timeout);
+      };
+      this._lockResetHandler = resetTimer;
+      ["mousedown", "keydown", "touchstart", "scroll"].forEach((evt) =>
+        document.addEventListener(evt, resetTimer, { passive: true })
+      );
+      resetTimer();
+    }
+  };
+
+  _teardownLockTimeout = () => {
+    if (this._lockTimer) clearTimeout(this._lockTimer);
+    if (this._lockResetHandler) {
+      ["mousedown", "keydown", "touchstart", "scroll"].forEach((evt) =>
+        document.removeEventListener(evt, this._lockResetHandler)
+      );
+      this._lockResetHandler = null;
+    }
+  };
+
+  _handleUnlock = () => {
+    this.setState({ locked: false }, () => {
+      this._teardownLockTimeout();
+      this._setupLockTimeout();
+    });
   };
 
   _handleOnline = () => {
@@ -1332,11 +1396,17 @@ handleUnpinNote = async (noteid) => {
       zip.file(title, note.body);
     });
 
-    zip.generateAsync({ type: "blob" }).then((content) => {
-      const wsName = ((this.state.workspaces || []).find(w => w.dbName === this.state.activeDb) || {}).name || "default";
-      const profile = this.state.profileName || "backup";
-      const date = new Date().toISOString().slice(0, 10);
-      saveAs(content, `noteapp_${profile}_${wsName}_${date}.zip`);
+    // Include snippets/templates as JSON
+    db.getAllSnippets(this.state.activeDb).then((snippets) => {
+      if (snippets.length > 0) {
+        zip.file("_templates.json", JSON.stringify(snippets, null, 2));
+      }
+      zip.generateAsync({ type: "blob" }).then((content) => {
+        const wsName = ((this.state.workspaces || []).find(w => w.dbName === this.state.activeDb) || {}).name || "default";
+        const profile = this.state.profileName || "backup";
+        const date = new Date().toISOString().slice(0, 10);
+        saveAs(content, `noteapp_${profile}_${wsName}_${date}.zip`);
+      });
     });
   }
 
@@ -1456,8 +1526,24 @@ handleUnpinNote = async (noteid) => {
         );
       }
 
+      // Import templates if present
+      let templateCount = 0;
+      if (zip.files["_templates.json"]) {
+        try {
+          const tplJson = await zip.files["_templates.json"].async("text");
+          const templates = JSON.parse(tplJson);
+          if (Array.isArray(templates)) {
+            const { importSnippets } = await import("./services/snippets");
+            templateCount = await importSnippets(templates, this.state.activeDb);
+          }
+        } catch {
+          // ignore invalid template JSON
+        }
+      }
+
       const parts = [];
       if (importedNotes.length > 0) parts.push(`Imported ${importedNotes.length} note${importedNotes.length !== 1 ? "s" : ""}`);
+      if (templateCount > 0) parts.push(`${templateCount} template${templateCount !== 1 ? "s" : ""}`);
       if (skippedCount > 0) parts.push(`skipped ${skippedCount} duplicate${skippedCount !== 1 ? "s" : ""}`);
       this.showAlert("Import Complete", parts.join(", ") + ".");
     } catch {
@@ -1678,6 +1764,14 @@ handleUnpinNote = async (noteid) => {
         </>
     );
 
+
+    if (this.state.locked) {
+      return (
+        <div className={`app-container ${this.state.darkMode ? "dark" : ""}`}>
+          <LockScreen onUnlock={this._handleUnlock} />
+        </div>
+      );
+    }
 
     return (
       <div className={`app-container ${this.state.darkMode ? "dark" : ""}`}>

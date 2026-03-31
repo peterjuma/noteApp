@@ -2387,14 +2387,28 @@ a:hover { text-decoration: underline; }
 .settings-body {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 24px 32px;
 }
-.settings-section {}
+.settings-section {
+  width: 100%;
+  max-width: 100%;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.dark .settings-section {
+  background: #1f2937;
+  border-color: #374151;
+}
 .settings-section-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: #374151;
-  margin-bottom: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2421,12 +2435,13 @@ a:hover { text-decoration: underline; }
 }
 .settings-toggle-row {
   display: flex;
-  align-items: flex-start;
-  padding: 12px 0;
+  align-items: center;
+  padding: 10px 0;
   border-bottom: 1px solid #f3f4f6;
   cursor: pointer;
   gap: 12px;
 }
+.settings-toggle-row:last-child { border-bottom: none; }
 .dark .settings-toggle-row { border-color: #1f2937; }
 .settings-toggle-info {
   flex: 1;
@@ -2530,12 +2545,16 @@ a:hover { text-decoration: underline; }
 .dark .settings-input { border-color: #4b5563; color: #d1d5db; }
 .settings-input:focus { border-color: #0969da; }
 .settings-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 5px 12px;
   font-size: 12px;
   border-radius: 6px;
   background: #f3f4f6;
   color: #374151;
   transition: all 0.1s;
+  white-space: nowrap;
 }
 .settings-btn-sm:hover { background: #e5e7eb; }
 .dark .settings-btn-sm { background: #374151; color: #d1d5db; }
@@ -3936,4 +3955,160 @@ html, body {
   margin-left: 8px;
   flex-shrink: 0;
 }
+
+/* ─── Lock Screen ─── */
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+  z-index: 9999;
+}
+.dark .lock-screen { background: #111827; }
+.lock-screen-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 36px 32px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  width: 340px;
+  max-width: 90vw;
+}
+.dark .lock-screen-card { background: #1f2937; box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+.lock-screen-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #0969da;
+  margin-bottom: 16px;
+}
+.dark .lock-screen-icon { background: #1e3a5f; color: #4493f8; }
+.lock-screen-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 4px;
+}
+.dark .lock-screen-title { color: #f3f4f6; }
+.lock-screen-hint {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 20px;
+}
+.dark .lock-screen-hint { color: #9ca3af; }
+.lock-screen-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lock-screen-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+.lock-screen-input {
+  width: 100%;
+  padding: 10px 40px 10px 14px;
+  font-size: 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f2937;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.lock-screen-input:focus { border-color: #0969da; }
+.dark .lock-screen-input { background: #111827; border-color: #4b5563; color: #f3f4f6; }
+.dark .lock-screen-input:focus { border-color: #4493f8; }
+.lock-screen-toggle-vis {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+}
+.lock-screen-toggle-vis:hover { color: #6b7280; }
+.dark .lock-screen-toggle-vis:hover { color: #d1d5db; }
+.lock-screen-error {
+  font-size: 13px;
+  color: #dc2626;
+  margin: 0;
+  text-align: center;
+}
+.lock-screen-btn {
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  background: #0969da;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.lock-screen-btn:hover { background: #0550ae; }
+.dark .lock-screen-btn { background: #4493f8; }
+.dark .lock-screen-btn:hover { background: #2f81f7; }
+.lock-screen-biometric-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  background: transparent;
+  color: #0969da;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.lock-screen-biometric-btn:hover { background: #eff6ff; border-color: #0969da; }
+.dark .lock-screen-biometric-btn { color: #4493f8; border-color: #4b5563; }
+.dark .lock-screen-biometric-btn:hover { background: #1e3a5f; border-color: #4493f8; }
+.lock-screen-divider {
+  text-align: center;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* ─── PIN form in Settings ─── */
+.settings-pin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0 4px;
+}
+.settings-pin-error {
+  font-size: 12px;
+  color: #dc2626;
+  margin: 0;
+}
+.settings-pin-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.settings-btn-danger {
+  background: #fef2f2;
+  color: #dc2626;
+}
+.settings-btn-danger:hover { background: #fee2e2; }
+.dark .settings-btn-danger { background: #451a1a; color: #fca5a5; }
+.dark .settings-btn-danger:hover { background: #5c1d1d; }
 
