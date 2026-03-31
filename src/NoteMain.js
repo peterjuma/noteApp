@@ -261,19 +261,10 @@ function NoteMain(props) {
           ></h1>
         )}
 
-        {/* Tags section — not selectable/copyable */}
-        {notesData.action !== "homepage" && (
+        {/* Tag suggestions — only for notes without tags */}
+        {props.tagSuggestEnabled !== false && notesData.action !== "homepage" && (!notesData.tags || notesData.tags.length === 0) && (
           <div className="note-tags-section">
-            {notesData.tags && notesData.tags.length > 0 && (
-              <div className="note-tags-applied">
-                {notesData.tags.map((tag) => (
-                  <span key={tag} className="tag" onClick={() => props.onTagClick && props.onTagClick(tag)}>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-            {props.tagSuggestEnabled !== false && (!notesData.tags || notesData.tags.length === 0) && !showSuggestions && (
+            {!showSuggestions && (
               <button onClick={handleSuggestTags} className="tag-suggest-btn" title="Suggest tags using AI">
                 <Wand2 size={14} /> Suggest Tags
               </button>
@@ -291,7 +282,7 @@ function NoteMain(props) {
                   <X size={14} />
                 </button>
               </div>
-            ) : showSuggestions && (!notesData.tags || notesData.tags.length === 0) ? (
+            ) : showSuggestions ? (
               <span className="tag-suggest-label" style={{ fontSize: "12px", color: "#9ca3af" }}>No suggestions — note may need more content</span>
             ) : null}
           </div>

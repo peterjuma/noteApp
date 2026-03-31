@@ -1561,11 +1561,40 @@ a:hover { text-decoration: underline; }
   -webkit-user-select: none;
   user-select: none;
 }
-.note-tags-applied {
+
+/* Note tag status bar (mirrors sidebar sort bar) */
+.note-tag-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  -webkit-user-select: none;
+  user-select: none;
+  overflow-x: auto;
+}
+.dark .note-tag-bar {
+  background: #111827;
+  border-color: #374151;
+}
+.note-tag-bar-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+.note-tag-bar-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 5px;
+  align-items: center;
+}
+.note-tag-bar .tag {
+  font-size: 11px;
+  padding: 1px 8px;
+  cursor: pointer;
 }
 .tag-suggest-btn {
   display: inline-flex;

@@ -1765,6 +1765,7 @@ handleUnpinNote = async (noteid) => {
               localStorage.setItem("noteapp_dark_mode", next);
               return { darkMode: next };
             })}
+
           />
 
           {!this.state.showSettings && !this.state.showTableConverter && (
@@ -1829,29 +1830,7 @@ handleUnpinNote = async (noteid) => {
           />
           )}
 
-          {/* Sync status indicator */}
-          {gistSync.isSyncEnabled() && (
-            <div
-              className={`sync-indicator sync-${this.state.syncStatus.state}`}
-              onClick={() => {
-                if (this.state.syncStatus.state === "error") this._doFullSync();
-              }}
-              title={this.state.syncStatus.state === "error" ? "Click to retry" : this.state.syncStatus.message}
-            >
-              {this.state.syncStatus.state === "syncing" && <RefreshCw size={12} className="spin" />}
-              {this.state.syncStatus.state === "success" && <span style={{ color: "#16a34a" }}>✓</span>}
-              {this.state.syncStatus.state === "error" && <span style={{ color: "#dc2626" }}>✕</span>}
-              {this.state.syncStatus.state === "idle" && <span style={{ opacity: 0.5 }}>☁</span>}
-              <span className="sync-indicator-text">
-                {this.state.syncStatus.state === "syncing" ? "Syncing…"
-                  : this.state.syncStatus.state === "success" ? this.state.syncStatus.message
-                  : this.state.syncStatus.state === "error" ? "Sync failed"
-                  : this.state.syncStatus.lastSync
-                    ? `Synced ${this._relativeTime(this.state.syncStatus.lastSync)}`
-                    : "Not synced yet"}
-              </span>
-            </div>
-          )}
+
         </div>
 
         {/* Resize handle */}
@@ -2011,6 +1990,24 @@ handleUnpinNote = async (noteid) => {
               <div className="main-split-primary">
                 {RightNavbar}
                 {ActivePage}
+                {this.state.action !== "homepage" && this.state.activepage === "viewnote" && (() => {
+                  const cn = allnotes.find(n => n.noteid === this.state.noteid);
+                  const tags = (cn && cn.tags) || [];
+                  return tags.length > 0 ? (
+                    <div className="note-tag-bar">
+                      <span className="note-tag-bar-label">Tags:</span>
+                      <div className="note-tag-bar-tags">
+                        {tags.map(tag => (
+                          <span key={tag} className="tag" onClick={() => {
+                            this.setState({ searchQuery: `tag:${tag}` }, () => {
+                              this.handleSearchNotes({ target: { value: `tag:${tag}` } });
+                            });
+                          }}>{tag}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </div>
             {this.state.showVersionHistory && this.state.noteid && (

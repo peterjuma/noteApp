@@ -81,8 +81,17 @@ export function formatHtmlForCopy(rawHtml) {
 
   // Walk all elements and apply inline styles
   const elements = root.querySelectorAll("*");
+
+  // First pass: remove UI elements by class before classes are stripped
+  root.querySelectorAll(".copy-code-button, .code-lang-label, button").forEach(
+    (el) => el.remove()
+  );
+
   for (const el of elements) {
     const tag = el.tagName.toLowerCase();
+
+    // Skip removed elements
+    if (!el.parentNode) continue;
 
     // Remove classes and data attributes that won't survive paste anyway
     el.removeAttribute("class");
@@ -115,10 +124,16 @@ export function formatHtmlForCopy(rawHtml) {
     }
   }
 
-  // Remove copy-code-button and lang labels that may have been cloned
-  root.querySelectorAll(".copy-code-button, .code-lang-label, button").forEach(
-    (el) => el.remove()
-  );
+  // Insert <br> between adjacent block elements so spacing survives
+  // in editors (like Zendesk) that strip margins on paste
+  const BLOCK_TAGS = new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "PRE", "BLOCKQUOTE", "UL", "OL", "TABLE", "HR"]);
+  const blocks = root.querySelectorAll("p, h1, h2, h3, h4, h5, h6, pre, blockquote, ul, ol, table, hr");
+  for (const block of blocks) {
+    const next = block.nextElementSibling;
+    if (next && BLOCK_TAGS.has(next.tagName)) {
+      block.parentNode.insertBefore(doc.createElement("br"), next);
+    }
+  }
 
   return root.innerHTML;
 }

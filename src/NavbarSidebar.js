@@ -228,6 +228,7 @@ function NavbarSidebar(props) {
         {props.darkMode ? <Sun size={15} /> : <Moon size={15} />}
         <span>{props.darkMode ? "Light Mode" : "Dark Mode"}</span>
       </button>
+
     </div>
   );
 
