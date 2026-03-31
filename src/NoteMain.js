@@ -3,6 +3,7 @@ import DOMPurify from "dompurify";
 import { md2html } from "./useMarkDown";
 import * as noteDB from "./services/notesDB";
 import { suggestTags } from "./services/tagSuggester";
+import { getPredefinedTags } from "./services/tagManager";
 import { Wand2, Check, X, Link2, ChevronDown, ChevronRight } from "lucide-react";
 
 // Lazy-load mermaid only when needed
@@ -92,8 +93,9 @@ function NoteMain(props) {
       });
   })();
 
-  const handleSuggestTags = () => {
-    const suggested = suggestTags(notesData.notetitle, notesData.notebody, notesData.tags);
+  const handleSuggestTags = async () => {
+    const predefined = await getPredefinedTags(noteDB.getActiveWorkspace());
+    const suggested = suggestTags(notesData.notetitle, notesData.notebody, notesData.tags, predefined);
     setSuggestions(suggested);
     setShowSuggestions(true);
   };

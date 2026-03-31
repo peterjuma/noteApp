@@ -107,18 +107,26 @@ jest.mock("../services/notesDB", () => {
     addSnippet: jest.fn(() => Promise.resolve()),
     updateSnippet: jest.fn(() => Promise.resolve()),
     deleteSnippet: jest.fn(() => Promise.resolve()),
+    getAllTags: jest.fn(() => Promise.resolve([])),
+    putTag: jest.fn(() => Promise.resolve()),
+    deleteTag: jest.fn(() => Promise.resolve()),
+    clearTags: jest.fn(() => Promise.resolve()),
+    getSetting: jest.fn(() => Promise.resolve(undefined)),
+    setSetting: jest.fn(() => Promise.resolve()),
+    deleteSetting: jest.fn(() => Promise.resolve()),
+    getAllSettings: jest.fn(() => Promise.resolve({})),
   };
 });
 
 // Mock gistSync
 jest.mock("../services/gistSync", () => ({
-  isSyncEnabled: jest.fn(() => false),
+  isSyncEnabled: jest.fn(() => Promise.resolve(false)),
   push: jest.fn(() => Promise.resolve()),
-  getToken: jest.fn(() => ""),
-  getLastSync: jest.fn(() => null),
-  getGistId: jest.fn(() => null),
-  getSyncInterval: jest.fn(() => 0),
-  setSyncInterval: jest.fn(),
+  getToken: jest.fn(() => Promise.resolve("")),
+  getLastSync: jest.fn(() => Promise.resolve(null)),
+  getGistId: jest.fn(() => Promise.resolve(null)),
+  getSyncInterval: jest.fn(() => Promise.resolve(0)),
+  setSyncInterval: jest.fn(() => Promise.resolve()),
 }));
 
 // Mock README.md import (CRA treats it as a file URL)

@@ -42,7 +42,6 @@ function SettingsPanel({
   onSyncNow,
   showConfirm,
   onClose,
-  syncInterval,
   onSyncIntervalChange,
   allNotes,
 }) {
@@ -56,15 +55,18 @@ function SettingsPanel({
   const [newTagName, setNewTagName] = useState("");
   const [editingTag, setEditingTag] = useState(null);
   const [editTagName, setEditTagName] = useState("");
-  const [autoHarvest, setAutoHarvest] = useState(tagManager.isAutoHarvestEnabled());
+  const [autoHarvest, setAutoHarvest] = useState(true);
   const newTagInputRef = useRef(null);
   const [snippets, setSnippets] = useState([]);
   const [editingSnippet, setEditingSnippet] = useState(null); // null | "new" | snippet id
   const [snippetName, setSnippetName] = useState("");
   const [snippetContent, setSnippetContent] = useState("");
   const [snippetCategory, setSnippetCategory] = useState("zendesk");
-  const [syncEnabled, setSyncEnabled] = useState(gistSync.isSyncEnabled());
-  const [syncToken, setSyncToken] = useState(gistSync.getToken());
+  const [syncEnabled, setSyncEnabled] = useState(false);
+  const [syncToken, setSyncToken] = useState("");
+  const [gistId, setGistId] = useState(null);
+  const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [localSyncInterval, setLocalSyncInterval] = useState(0);
   const [syncStatus, setSyncStatus] = useState(null); // null | "syncing" | "success" | "error"
   const [syncMessage, setSyncMessage] = useState("");
   const [syncUser, setSyncUser] = useState(null);
@@ -99,15 +101,21 @@ function SettingsPanel({
       snippetService.ensureDefaults(activeDb).then(setSnippets);
     }
     if (activeTab === "tags") {
-      setPredefinedTags(tagManager.getPredefinedTags());
+      tagManager.getPredefinedTags(activeDb).then(setPredefinedTags);
+      tagManager.isAutoHarvestEnabled(activeDb).then(setAutoHarvest);
     }
-    if (activeTab === "sync" && syncToken) {
-      gistSync.validateToken().then((result) => {
-        if (result.valid) setSyncUser(result);
-        else setSyncUser(null);
+    if (activeTab === "sync") {
+      gistSync.getToken(activeDb).then((t) => { setSyncToken(t); return t; }).then((t) => {
+        if (t) gistSync.validateToken(activeDb).then((result) => {
+          if (result.valid) setSyncUser(result);
+        });
       });
+      gistSync.isSyncEnabled(activeDb).then(setSyncEnabled);
+      gistSync.getGistId(activeDb).then(setGistId);
+      gistSync.getLastSync(activeDb).then(setLastSyncTime);
+      gistSync.getSyncInterval(activeDb).then(setLocalSyncInterval);
     }
-  }, [activeTab, onLoadArchive, syncToken]);
+  }, [activeTab, activeDb, onLoadArchive]);
 
   // Focus workspace name input
   useEffect(() => {
@@ -922,7 +930,7 @@ function SettingsPanel({
                   onChange={(e) => setNewTagName(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && newTagName.trim()) {
-                      setPredefinedTags(tagManager.addPredefinedTag(newTagName));
+                      tagManager.addPredefinedTag(newTagName, null, activeDb).then(setPredefinedTags);
                       setNewTagName("");
                     }
                   }}
@@ -931,7 +939,7 @@ function SettingsPanel({
                   className="tag-mgmt-add-btn"
                   disabled={!newTagName.trim()}
                   onClick={() => {
-                    setPredefinedTags(tagManager.addPredefinedTag(newTagName));
+                    tagManager.addPredefinedTag(newTagName, null, activeDb).then(setPredefinedTags);
                     setNewTagName("");
                     if (newTagInputRef.current) newTagInputRef.current.focus();
                   }}
@@ -946,7 +954,7 @@ function SettingsPanel({
                   checked={autoHarvest}
                   onChange={() => {
                     const next = !autoHarvest;
-                    tagManager.setAutoHarvest(next);
+                    tagManager.setAutoHarvest(next, activeDb);
                     setAutoHarvest(next);
                   }}
                 />
@@ -972,14 +980,14 @@ function SettingsPanel({
                             onChange={(e) => setEditTagName(e.target.value)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && editTagName.trim()) {
-                                setPredefinedTags(tagManager.renamePredefinedTag(t.name, editTagName));
+                                tagManager.renamePredefinedTag(t.name, editTagName, activeDb).then(setPredefinedTags);
                                 setEditingTag(null);
                               }
                               if (e.key === "Escape") setEditingTag(null);
                             }}
                           />
                           <button className="icon-btn" onClick={() => {
-                            if (editTagName.trim()) setPredefinedTags(tagManager.renamePredefinedTag(t.name, editTagName));
+                            if (editTagName.trim()) tagManager.renamePredefinedTag(t.name, editTagName, activeDb).then(setPredefinedTags);
                             setEditingTag(null);
                           }}><Check size={13} /></button>
                           <button className="icon-btn" onClick={() => setEditingTag(null)}><X size={13} /></button>
@@ -1004,7 +1012,7 @@ function SettingsPanel({
                                   key={i}
                                   className={`tag-mgmt-color-dot ${t.color === c ? "tag-mgmt-color-dot-active" : ""}`}
                                   style={{ background: c || (darkMode ? "#4b5563" : "#d1d5db") }}
-                                  onClick={() => setPredefinedTags(tagManager.updateTagColor(t.name, c))}
+                                  onClick={() => tagManager.updateTagColor(t.name, c, activeDb).then(setPredefinedTags)}
                                   aria-label={c ? `Color ${c}` : "No color"}
                                 />
                               ))}
@@ -1015,10 +1023,10 @@ function SettingsPanel({
                             <button className="icon-btn icon-btn-danger" title="Remove" onClick={() => {
                               if (showConfirm) {
                                 showConfirm(`Remove tag "${t.name}" from the predefined list? This does not remove it from notes.`, () => {
-                                  setPredefinedTags(tagManager.removePredefinedTag(t.name));
+                                  tagManager.removePredefinedTag(t.name, activeDb).then(setPredefinedTags);
                                 });
                               } else {
-                                setPredefinedTags(tagManager.removePredefinedTag(t.name));
+                                tagManager.removePredefinedTag(t.name, activeDb).then(setPredefinedTags);
                               }
                             }}>
                               <Trash2 size={12} />
@@ -1067,9 +1075,9 @@ function SettingsPanel({
                 />
                 <button
                   className="settings-btn-sm settings-btn-primary"
-                  onClick={() => {
-                    gistSync.setToken(syncToken);
-                    gistSync.validateToken().then((result) => {
+                  onClick={async () => {
+                    await gistSync.setToken(syncToken, activeDb);
+                    gistSync.validateToken(activeDb).then((result) => {
                       if (result.valid) {
                         setSyncUser(result);
                         setSyncMessage("Token verified");
@@ -1110,9 +1118,9 @@ function SettingsPanel({
               </div>
               <button
                 className={`settings-switch ${syncEnabled ? "settings-switch-on" : ""}`}
-                onClick={() => {
+                onClick={async () => {
                   const next = !syncEnabled;
-                  gistSync.setSyncEnabled(next);
+                  await gistSync.setSyncEnabled(next, activeDb);
                   setSyncEnabled(next);
                 }}
                 role="switch"
@@ -1134,8 +1142,12 @@ function SettingsPanel({
               </div>
               <select
                 className="settings-input"
-                value={syncInterval || 0}
-                onChange={(e) => onSyncIntervalChange && onSyncIntervalChange(Number(e.target.value))}
+                value={localSyncInterval}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setLocalSyncInterval(val);
+                  if (onSyncIntervalChange) onSyncIntervalChange(val);
+                }}
                 style={{ maxWidth: 180 }}
               >
                 <option value={0}>Off (manual only)</option>
@@ -1173,9 +1185,9 @@ function SettingsPanel({
                 {syncStatus === "syncing" ? "Syncing..." : "Sync Now"}
               </button>
 
-              {gistSync.getGistId(activeDb) && (
+              {gistId && (
                 <a
-                  href={`https://gist.github.com/${gistSync.getGistId(activeDb)}`}
+                  href={`https://gist.github.com/${gistId}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="settings-btn-sm"
@@ -1195,15 +1207,15 @@ function SettingsPanel({
             )}
 
             {/* Last sync info */}
-            {gistSync.getLastSync(activeDb) && (
+            {lastSyncTime && (
               <div className="settings-sync-meta">
-                Last synced: {new Date(gistSync.getLastSync(activeDb)).toLocaleString()}
+                Last synced: {new Date(lastSyncTime).toLocaleString()}
               </div>
             )}
           </div>
 
             {/* Link existing Gist */}
-            {!gistSync.getGistId(activeDb) && (
+            {!gistId && (
               <div className="settings-section">
                 <h3 className="settings-section-title">Link Existing Gist</h3>
                 <p className="settings-hint">Already have a NoteApp Gist? Paste the Gist ID to link it.</p>

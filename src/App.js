@@ -92,7 +92,7 @@ class App extends Component {
       lastSelectedNoteId: null,
       showQuickSwitcher: false,
       showCommandPalette: false,
-      syncStatus: { state: "idle", message: "", lastSync: gistSync.getLastSync(db.getActiveWorkspace()) },
+      syncStatus: { state: "idle", message: "", lastSync: null },
       swUpdateAvailable: false,
       isOffline: !navigator.onLine,
       locked: isPinSet(),
@@ -247,7 +247,7 @@ class App extends Component {
   _handleOnline = () => {
     this.setState({ isOffline: false });
     // Retry sync when coming back online
-    if (gistSync.isSyncEnabled()) this._doFullSync();
+    gistSync.isSyncEnabled(this.state.activeDb).then((enabled) => { if (enabled) this._doFullSync(); });
   };
 
   _handleOffline = () => this.setState({ isOffline: true });
@@ -329,10 +329,10 @@ class App extends Component {
   _handleSWMessage = (event) => {
     if (!event.data) return;
     if (event.data.type === "BACKGROUND_SYNC" && event.data.tag === "noteapp-gist-sync") {
-      if (gistSync.isSyncEnabled()) this._doFullSync();
+      gistSync.isSyncEnabled(this.state.activeDb).then((enabled) => { if (enabled) this._doFullSync(); });
     }
     if (event.data.type === "PERIODIC_SYNC" && event.data.tag === "noteapp-periodic-sync") {
-      if (gistSync.isSyncEnabled()) this._doFullSync();
+      gistSync.isSyncEnabled(this.state.activeDb).then((enabled) => { if (enabled) this._doFullSync(); });
     }
   };
 
@@ -439,7 +439,7 @@ class App extends Component {
       if (this.state.noteid) this.handleDeleteNote(null, { noteid: this.state.noteid, notetitle: this.state.notetitle });
     }},
     { id: "sync-now", label: "Sync Now (Gist)", shortcut: "", icon: RefreshCw, action: () => {
-      if (gistSync.isSyncEnabled()) this._scheduleSyncAfterSave();
+      gistSync.isSyncEnabled(this.state.activeDb).then((enabled) => { if (enabled) this._scheduleSyncAfterSave(); });
     }},
   ];
     
@@ -1217,33 +1217,36 @@ handleUnpinNote = async (noteid) => {
   }
 
   _scheduleSyncAfterSave() {
-    if (!gistSync.isSyncEnabled()) return;
-    // If offline, defer to Background Sync API
-    if (!navigator.onLine) {
-      this._requestBackgroundSync();
-      return;
-    }
-    if (this._syncTimer) clearTimeout(this._syncTimer);
-    this._syncTimer = setTimeout(async () => {
-      this.setState({ syncStatus: { state: "syncing", message: "Syncing…", lastSync: this.state.syncStatus.lastSync } });
-      try {
-        const wsName = (this.state.workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default";
-        await gistSync.push(this.state.activeDb, wsName, this.state.allnotes);
-        const now = Date.now();
-        this.setState({ syncStatus: { state: "success", message: "Synced", lastSync: now } });
-        setTimeout(() => {
-          this.setState((s) => s.syncStatus.state === "success" ? { syncStatus: { ...s.syncStatus, state: "idle" } } : null);
-        }, 5000);
-      } catch (err) {
-        this.setState({ syncStatus: { state: "error", message: err.message || "Sync failed", lastSync: this.state.syncStatus.lastSync } });
+    gistSync.isSyncEnabled(this.state.activeDb).then((enabled) => {
+      if (!enabled) return;
+      // If offline, defer to Background Sync API
+      if (!navigator.onLine) {
+        this._requestBackgroundSync();
+        return;
       }
-    }, 10000);
+      if (this._syncTimer) clearTimeout(this._syncTimer);
+      this._syncTimer = setTimeout(async () => {
+        this.setState({ syncStatus: { state: "syncing", message: "Syncing…", lastSync: this.state.syncStatus.lastSync } });
+        try {
+          const wsName = (this.state.workspaces.find(w => w.dbName === this.state.activeDb) || {}).name || "Default";
+          await gistSync.push(this.state.activeDb, wsName, this.state.allnotes);
+          const now = Date.now();
+          this.setState({ syncStatus: { state: "success", message: "Synced", lastSync: now } });
+          setTimeout(() => {
+            this.setState((s) => s.syncStatus.state === "success" ? { syncStatus: { ...s.syncStatus, state: "idle" } } : null);
+          }, 5000);
+        } catch (err) {
+          this.setState({ syncStatus: { state: "error", message: err.message || "Sync failed", lastSync: this.state.syncStatus.lastSync } });
+        }
+      }, 10000);
+    });
   }
 
-  _startSyncInterval = () => {
+  _startSyncInterval = async () => {
     if (this._syncInterval) clearInterval(this._syncInterval);
-    const ms = gistSync.getSyncInterval();
-    if (!ms || !gistSync.isSyncEnabled()) return;
+    const ms = await gistSync.getSyncInterval(this.state.activeDb);
+    const enabled = await gistSync.isSyncEnabled(this.state.activeDb);
+    if (!ms || !enabled) return;
     this._syncInterval = setInterval(() => {
       if (document.visibilityState === "hidden") return; // skip when tab hidden
       if (this.state.syncStatus.state === "syncing") return; // skip if already syncing
@@ -2064,11 +2067,10 @@ handleUnpinNote = async (noteid) => {
               }}
               showConfirm={this.showConfirm}
               onSyncNow={() => this._doFullSync()}
-              onSyncIntervalChange={(ms) => {
-                gistSync.setSyncInterval(ms);
+              onSyncIntervalChange={async (ms) => {
+                await gistSync.setSyncInterval(ms, this.state.activeDb);
                 this._startSyncInterval();
               }}
-              syncInterval={gistSync.getSyncInterval()}
               onClose={() => this.setState({ showSettings: false })}
               allNotes={allnotes}
             />

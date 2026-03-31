@@ -1,6 +1,6 @@
 import { openDB } from "idb/with-async-ittr.js";
 
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 const dbConnections = new Map();
 const MAX_VERSIONS_PER_NOTE = 50;
 
@@ -35,6 +35,14 @@ async function getDB(dbName) {
       if (!db.objectStoreNames.contains("snippets")) {
         const sStore = db.createObjectStore("snippets", { keyPath: "id" });
         sStore.createIndex("category", "category");
+      }
+      // Predefined tags store (v6)
+      if (!db.objectStoreNames.contains("tags")) {
+        db.createObjectStore("tags", { keyPath: "name" });
+      }
+      // Key-value settings store (v6) — for sync config, etc.
+      if (!db.objectStoreNames.contains("settings")) {
+        db.createObjectStore("settings", { keyPath: "key" });
       }
     },
   });
@@ -130,6 +138,54 @@ export async function moveNote(noteid, fromDb, toDb) {
   await toConn.put("notes", note);
   await fromConn.delete("notes", noteid);
   return note;
+}
+
+// ===== Predefined Tags =====
+export async function getAllTags(dbName = "notesdb") {
+  const db = await getDB(dbName);
+  return db.getAll("tags");
+}
+
+export async function putTag(tag, dbName = "notesdb") {
+  const db = await getDB(dbName);
+  return db.put("tags", tag);
+}
+
+export async function deleteTag(name, dbName = "notesdb") {
+  const db = await getDB(dbName);
+  return db.delete("tags", name);
+}
+
+export async function clearTags(dbName = "notesdb") {
+  const db = await getDB(dbName);
+  const tx = db.transaction("tags", "readwrite");
+  await tx.store.clear();
+  await tx.done;
+}
+
+// ===== Key-Value Settings =====
+export async function getSetting(key, dbName = "notesdb") {
+  const db = await getDB(dbName);
+  const row = await db.get("settings", key);
+  return row ? row.value : undefined;
+}
+
+export async function setSetting(key, value, dbName = "notesdb") {
+  const db = await getDB(dbName);
+  return db.put("settings", { key, value });
+}
+
+export async function deleteSetting(key, dbName = "notesdb") {
+  const db = await getDB(dbName);
+  return db.delete("settings", key);
+}
+
+export async function getAllSettings(dbName = "notesdb") {
+  const db = await getDB(dbName);
+  const rows = await db.getAll("settings");
+  const obj = {};
+  for (const row of rows) obj[row.key] = row.value;
+  return obj;
 }
 
 // ===== Workspaces =====
@@ -293,11 +349,13 @@ export async function deleteSnippet(id, dbName = "notesdb") {
 // Purge all notes in a specific workspace (keeps the workspace itself)
 export async function purgeWorkspace(dbName) {
   const db = await getDB(dbName);
-  const tx = db.transaction(["notes", "pinnedNotes", "images", "snippets"], "readwrite");
+  const tx = db.transaction(["notes", "pinnedNotes", "images", "snippets", "tags", "settings"], "readwrite");
   await tx.objectStore("notes").clear();
   await tx.objectStore("pinnedNotes").clear();
   await tx.objectStore("images").clear();
   await tx.objectStore("snippets").clear();
+  await tx.objectStore("tags").clear();
+  await tx.objectStore("settings").clear();
   await tx.done;
 }
 

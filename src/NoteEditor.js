@@ -131,6 +131,7 @@ function NoteEditor(props) {
   const [tagInput, setTagInput] = useState("");
   const [tagSuggestions, setTagSuggestions] = useState([]);
   const [tagSuggestionIndex, setTagSuggestionIndex] = useState(-1);
+  const [predefinedTagsCache, setPredefinedTagsCache] = useState([]);
   const tagInputRef = useRef(null);
   const [noteAction, setNoteAction] = useState(note.action);
   const autoSave = props.autoSave;
@@ -152,6 +153,11 @@ function NoteEditor(props) {
   const viewRef = useRef(null);
   const insertMarkdownRef = useRef(null);
   const autosaveTimerRef = useRef(null);
+
+  // Load predefined tags on mount
+  useEffect(() => {
+    getPredefinedTags(getActiveWorkspace()).then(setPredefinedTagsCache);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Word/character count
   const wordCount = bodytxt.trim() ? bodytxt.trim().split(/\s+/).length : 0;
@@ -1205,8 +1211,7 @@ function NoteEditor(props) {
               const val = e.target.value;
               setTagInput(val);
               if (val.trim()) {
-                const predefined = getPredefinedTags();
-                const filtered = predefined
+                const filtered = predefinedTagsCache
                   .filter((t) => t.name.includes(val.trim().toLowerCase()) && !tags.includes(t.name))
                   .slice(0, 8);
                 setTagSuggestions(filtered);
@@ -1217,9 +1222,9 @@ function NoteEditor(props) {
               }
             }}
             onFocus={() => {
+              getPredefinedTags(getActiveWorkspace()).then(setPredefinedTagsCache);
               if (tagInput.trim()) {
-                const predefined = getPredefinedTags();
-                const filtered = predefined
+                const filtered = predefinedTagsCache
                   .filter((t) => t.name.includes(tagInput.trim().toLowerCase()) && !tags.includes(t.name))
                   .slice(0, 8);
                 setTagSuggestions(filtered);
@@ -1260,7 +1265,7 @@ function NoteEditor(props) {
                 if (!tags.includes(newTag)) {
                   setTags([...tags, newTag]);
                   setIsDirty(true);
-                  harvestTags([newTag]);
+                  harvestTags([newTag], getActiveWorkspace());
                 }
                 setTagInput("");
                 setTagSuggestions([]);
@@ -1304,7 +1309,10 @@ function NoteEditor(props) {
           {/* Suggest tags — show when new note has title + body but no tags */}
           {props.tagSuggestEnabled !== false && tags.length === 0 && title.trim() && bodytxt.trim() && editorSuggestions.length === 0 && (
             <button
-              onClick={() => setEditorSuggestions(suggestTags(title, bodytxt, tags))}
+              onClick={async () => {
+                const pt = await getPredefinedTags(getActiveWorkspace());
+                setEditorSuggestions(suggestTags(title, bodytxt, tags, pt));
+              }}
               className="tag-suggest-btn"
               style={{ marginLeft: "4px" }}
               title="Suggest tags"

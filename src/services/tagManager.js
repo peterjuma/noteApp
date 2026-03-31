@@ -1,60 +1,87 @@
-// Tag Manager — localStorage-based global tag registry
+// Tag Manager — IndexedDB-based per-workspace tag registry
 // Tags stored as: [{ name: "api", color: "#..." }, ...]
 
-const STORAGE_KEY = "noteapp_predefined_tags";
-const AUTO_HARVEST_KEY = "noteapp_tag_auto_harvest";
+import * as db from "./notesDB";
 
-export function getPredefinedTags() {
+const LEGACY_KEY = "noteapp_predefined_tags";
+const LEGACY_HARVEST_KEY = "noteapp_tag_auto_harvest";
+
+// Migrate legacy localStorage tags to IndexedDB (once per workspace)
+async function migrateLegacy(dbName) {
+  const migKey = `noteapp_tags_migrated_${dbName}`;
+  if (localStorage.getItem(migKey)) return;
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const stored = localStorage.getItem(LEGACY_KEY);
+    if (stored) {
+      const tags = JSON.parse(stored);
+      for (const t of tags) {
+        await db.putTag(t, dbName);
+      }
+    }
+    // Migrate auto-harvest setting
+    const harvest = localStorage.getItem(LEGACY_HARVEST_KEY);
+    if (harvest !== null) {
+      await db.setSetting("tag_auto_harvest", harvest !== "false", dbName);
+    }
   } catch {
-    return [];
+    // ignore
+  }
+  localStorage.setItem(migKey, "1");
+}
+
+export async function getPredefinedTags(dbName = "notesdb") {
+  await migrateLegacy(dbName);
+  return db.getAllTags(dbName);
+}
+
+export async function savePredefinedTags(tags, dbName = "notesdb") {
+  await db.clearTags(dbName);
+  for (const t of tags) {
+    await db.putTag(t, dbName);
   }
 }
 
-export function savePredefinedTags(tags) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tags));
-}
-
-export function addPredefinedTag(name, color = null) {
-  const tags = getPredefinedTags();
+export async function addPredefinedTag(name, color = null, dbName = "notesdb") {
   const normalized = name.trim().toLowerCase();
-  if (!normalized || tags.some((t) => t.name === normalized)) return tags;
-  const updated = [...tags, { name: normalized, color }];
-  savePredefinedTags(updated);
-  return updated;
+  if (!normalized) return getPredefinedTags(dbName);
+  const tags = await getPredefinedTags(dbName);
+  if (tags.some((t) => t.name === normalized)) return tags;
+  await db.putTag({ name: normalized, color }, dbName);
+  return [...tags, { name: normalized, color }];
 }
 
-export function removePredefinedTag(name) {
-  const tags = getPredefinedTags().filter((t) => t.name !== name);
-  savePredefinedTags(tags);
-  return tags;
+export async function removePredefinedTag(name, dbName = "notesdb") {
+  await db.deleteTag(name, dbName);
+  return getPredefinedTags(dbName);
 }
 
-export function renamePredefinedTag(oldName, newName) {
+export async function renamePredefinedTag(oldName, newName, dbName = "notesdb") {
   const normalized = newName.trim().toLowerCase();
-  if (!normalized) return getPredefinedTags();
-  const tags = getPredefinedTags().map((t) =>
-    t.name === oldName ? { ...t, name: normalized } : t
-  );
-  savePredefinedTags(tags);
-  return tags;
+  if (!normalized) return getPredefinedTags(dbName);
+  const tags = await getPredefinedTags(dbName);
+  await db.deleteTag(oldName, dbName);
+  const oldTag = tags.find((t) => t.name === oldName);
+  await db.putTag({ name: normalized, color: oldTag?.color || null }, dbName);
+  return tags.map((t) => t.name === oldName ? { ...t, name: normalized } : t);
 }
 
-export function updateTagColor(name, color) {
-  const tags = getPredefinedTags().map((t) =>
-    t.name === name ? { ...t, color } : t
-  );
-  savePredefinedTags(tags);
-  return tags;
+export async function updateTagColor(name, color, dbName = "notesdb") {
+  const tags = await getPredefinedTags(dbName);
+  const tag = tags.find((t) => t.name === name);
+  if (tag) {
+    await db.putTag({ ...tag, color }, dbName);
+  }
+  return tags.map((t) => t.name === name ? { ...t, color } : t);
 }
 
-export function isAutoHarvestEnabled() {
-  return localStorage.getItem(AUTO_HARVEST_KEY) !== "false";
+export async function isAutoHarvestEnabled(dbName = "notesdb") {
+  await migrateLegacy(dbName);
+  const val = await db.getSetting("tag_auto_harvest", dbName);
+  return val !== false; // default true
 }
 
-export function setAutoHarvest(enabled) {
-  localStorage.setItem(AUTO_HARVEST_KEY, String(enabled));
+export async function setAutoHarvest(enabled, dbName = "notesdb") {
+  await db.setSetting("tag_auto_harvest", enabled, dbName);
 }
 
 // Collect all unique tags used across notes (for usage counts)
@@ -69,20 +96,18 @@ export function getTagUsageCounts(allNotes) {
 }
 
 // Auto-harvest: add any new tags from a note to the global list
-export function harvestTags(tags) {
-  if (!isAutoHarvestEnabled()) return;
-  const predefined = getPredefinedTags();
+export async function harvestTags(tags, dbName = "notesdb") {
+  const enabled = await isAutoHarvestEnabled(dbName);
+  if (!enabled) return;
+  const predefined = await getPredefinedTags(dbName);
   const names = new Set(predefined.map((t) => t.name));
-  let changed = false;
   for (const tag of tags) {
     const normalized = tag.trim().toLowerCase();
     if (normalized && !names.has(normalized)) {
-      predefined.push({ name: normalized, color: null });
+      await db.putTag({ name: normalized, color: null }, dbName);
       names.add(normalized);
-      changed = true;
     }
   }
-  if (changed) savePredefinedTags(predefined);
 }
 
 // Preset color palette for tags

@@ -1,89 +1,110 @@
 // GitHub Gist Sync Service
 // Syncs workspace notes to/from a GitHub Gist
+// Config stored in IndexedDB settings store per workspace
 
-const TOKEN_KEY = "noteapp_gist_token";
-const GIST_IDS_KEY = "noteapp_gist_ids"; // { workspaceDbName: gistId }
-const LAST_SYNC_KEY = "noteapp_last_sync";
-const SYNC_ENABLED_KEY = "noteapp_sync_enabled";
-const SYNC_INTERVAL_KEY = "noteapp_sync_interval";
+import * as db from "./notesDB";
 
 const API_BASE = "https://api.github.com";
 
+// Legacy localStorage keys for migration
+const LEGACY_KEYS = {
+  token: "noteapp_gist_token",
+  gistIds: "noteapp_gist_ids",
+  lastSync: "noteapp_last_sync",
+  syncEnabled: "noteapp_sync_enabled",
+  syncInterval: "noteapp_sync_interval",
+};
+
+// Migrate legacy localStorage sync config (once per workspace)
+async function migrateLegacy(dbName) {
+  const migKey = `noteapp_sync_migrated_${dbName}`;
+  if (localStorage.getItem(migKey)) return;
+  try {
+    const token = localStorage.getItem(LEGACY_KEYS.token);
+    if (token) await db.setSetting("sync_token", token, dbName);
+
+    const enabled = localStorage.getItem(LEGACY_KEYS.syncEnabled);
+    if (enabled) await db.setSetting("sync_enabled", enabled === "true", dbName);
+
+    const interval = localStorage.getItem(LEGACY_KEYS.syncInterval);
+    if (interval) await db.setSetting("sync_interval", parseInt(interval) || 0, dbName);
+
+    try {
+      const gistIds = JSON.parse(localStorage.getItem(LEGACY_KEYS.gistIds) || "{}");
+      if (gistIds[dbName]) await db.setSetting("gist_id", gistIds[dbName], dbName);
+    } catch { /* ignore */ }
+
+    try {
+      const syncs = JSON.parse(localStorage.getItem(LEGACY_KEYS.lastSync) || "{}");
+      if (syncs[dbName]) await db.setSetting("last_sync", syncs[dbName], dbName);
+    } catch { /* ignore */ }
+  } catch {
+    // ignore
+  }
+  localStorage.setItem(migKey, "1");
+}
+
 // ─── Token Management ───
 
-export function getToken() {
-  return localStorage.getItem(TOKEN_KEY) || "";
+export async function getToken(dbName = "notesdb") {
+  await migrateLegacy(dbName);
+  return (await db.getSetting("sync_token", dbName)) || "";
 }
 
-export function setToken(token) {
-  localStorage.setItem(TOKEN_KEY, token.trim());
+export async function setToken(token, dbName = "notesdb") {
+  await db.setSetting("sync_token", token.trim(), dbName);
 }
 
-export function clearToken() {
-  localStorage.removeItem(TOKEN_KEY);
+export async function clearToken(dbName = "notesdb") {
+  await db.deleteSetting("sync_token", dbName);
 }
 
-export function isSyncEnabled() {
-  return localStorage.getItem(SYNC_ENABLED_KEY) === "true" && !!getToken();
+export async function isSyncEnabled(dbName = "notesdb") {
+  await migrateLegacy(dbName);
+  const enabled = await db.getSetting("sync_enabled", dbName);
+  const token = await db.getSetting("sync_token", dbName);
+  return enabled === true && !!token;
 }
 
-export function setSyncEnabled(enabled) {
-  localStorage.setItem(SYNC_ENABLED_KEY, enabled ? "true" : "false");
+export async function setSyncEnabled(enabled, dbName = "notesdb") {
+  await db.setSetting("sync_enabled", enabled, dbName);
 }
 
-export function getSyncInterval() {
-  return parseInt(localStorage.getItem(SYNC_INTERVAL_KEY)) || 0; // ms, 0 = off
+export async function getSyncInterval(dbName = "notesdb") {
+  await migrateLegacy(dbName);
+  return (await db.getSetting("sync_interval", dbName)) || 0;
 }
 
-export function setSyncInterval(ms) {
-  localStorage.setItem(SYNC_INTERVAL_KEY, String(ms));
+export async function setSyncInterval(ms, dbName = "notesdb") {
+  await db.setSetting("sync_interval", ms, dbName);
 }
 
 // ─── Gist ID Management ───
 
-function getGistIds() {
-  try {
-    return JSON.parse(localStorage.getItem(GIST_IDS_KEY) || "{}");
-  } catch {
-    return {};
-  }
+export async function getGistId(dbName = "notesdb") {
+  await migrateLegacy(dbName);
+  return (await db.getSetting("gist_id", dbName)) || null;
 }
 
-function setGistId(dbName, gistId) {
-  const ids = getGistIds();
-  ids[dbName] = gistId;
-  localStorage.setItem(GIST_IDS_KEY, JSON.stringify(ids));
-}
-
-export function getGistId(dbName) {
-  return getGistIds()[dbName] || null;
+async function setGistId(dbName, gistId) {
+  await db.setSetting("gist_id", gistId, dbName);
 }
 
 // ─── Last Sync Tracking ───
 
-export function getLastSync(dbName) {
-  try {
-    const syncs = JSON.parse(localStorage.getItem(LAST_SYNC_KEY) || "{}");
-    return syncs[dbName] || null;
-  } catch {
-    return null;
-  }
+export async function getLastSync(dbName = "notesdb") {
+  await migrateLegacy(dbName);
+  return (await db.getSetting("last_sync", dbName)) || null;
 }
 
-function setLastSync(dbName) {
-  try {
-    const syncs = JSON.parse(localStorage.getItem(LAST_SYNC_KEY) || "{}");
-    syncs[dbName] = Date.now();
-    localStorage.setItem(LAST_SYNC_KEY, JSON.stringify(syncs));
-  } catch {
-    localStorage.setItem(LAST_SYNC_KEY, JSON.stringify({ [dbName]: Date.now() }));
-  }
+async function setLastSync(dbName) {
+  await db.setSetting("last_sync", Date.now(), dbName);
 }
 
 // ─── API Helpers ───
 
-async function gistFetch(path, options = {}) {
-  const token = getToken();
+async function gistFetch(path, options = {}, dbName = "notesdb") {
+  const token = await getToken(dbName);
   if (!token) throw new Error("No GitHub token configured");
 
   const res = await fetch(`${API_BASE}${path}`, {
@@ -106,11 +127,11 @@ async function gistFetch(path, options = {}) {
 
 // ─── Validate Token ───
 
-export async function validateToken() {
-  const token = getToken();
+export async function validateToken(dbName = "notesdb") {
+  const token = await getToken(dbName);
   if (!token) return { valid: false, error: "No token" };
   try {
-    const user = await gistFetch("/user");
+    const user = await gistFetch("/user", {}, dbName);
     return { valid: true, username: user.login, avatar: user.avatar_url };
   } catch (err) {
     return { valid: false, error: err.message };
@@ -165,7 +186,7 @@ function parseGistData(gist, dbName) {
 // ─── Push (Upload Local → Gist) ───
 
 export async function push(dbName, workspaceName, notes) {
-  const gistId = getGistId(dbName);
+  const gistId = await getGistId(dbName);
   const payload = buildGistPayload(dbName, workspaceName, notes);
 
   let gist;
@@ -174,31 +195,31 @@ export async function push(dbName, workspaceName, notes) {
     gist = await gistFetch(`/gists/${gistId}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
-    });
+    }, dbName);
   } else {
     // Create new Gist (secret, not public)
     gist = await gistFetch("/gists", {
       method: "POST",
       body: JSON.stringify({ ...payload, public: false }),
-    });
-    setGistId(dbName, gist.id);
+    }, dbName);
+    await setGistId(dbName, gist.id);
   }
 
-  setLastSync(dbName);
+  await setLastSync(dbName);
   return { gistId: gist.id, url: gist.html_url };
 }
 
 // ─── Pull (Download Gist → Local) ───
 
 export async function pull(dbName) {
-  const gistId = getGistId(dbName);
+  const gistId = await getGistId(dbName);
   if (!gistId) return null;
 
-  const gist = await gistFetch(`/gists/${gistId}`);
+  const gist = await gistFetch(`/gists/${gistId}`, {}, dbName);
   const data = parseGistData(gist, dbName);
   if (!data || !data.notes) return null;
 
-  setLastSync(dbName);
+  await setLastSync(dbName);
   return data;
 }
 
@@ -285,11 +306,11 @@ export async function sync(dbName, workspaceName, localNotes, saveCallback) {
 
 export async function linkGist(dbName, gistId) {
   // Validate the gist exists and has our data
-  const gist = await gistFetch(`/gists/${gistId}`);
+  const gist = await gistFetch(`/gists/${gistId}`, {}, dbName);
   const data = parseGistData(gist, dbName);
   if (!data) {
     throw new Error(`Gist does not contain NoteApp data for workspace "${dbName}"`);
   }
-  setGistId(dbName, gistId);
+  await setGistId(dbName, gistId);
   return data;
 }

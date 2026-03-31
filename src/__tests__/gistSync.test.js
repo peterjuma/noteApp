@@ -9,61 +9,72 @@ import {
   mergeNotes,
 } from "../services/gistSync";
 
+const mockSettings = { data: {} };
+
+jest.mock("../services/notesDB", () => ({
+  getSetting: (key) => Promise.resolve(mockSettings.data[key]),
+  setSetting: (key, value) => { mockSettings.data[key] = value; return Promise.resolve(); },
+  deleteSetting: (key) => { delete mockSettings.data[key]; return Promise.resolve(); },
+  getActiveWorkspace: () => "notesdb",
+}));
+
 beforeEach(() => {
+  mockSettings.data = {};
   localStorage.clear();
+  localStorage.setItem("noteapp_sync_migrated_notesdb", "1");
 });
 
 describe("gistSync service", () => {
   describe("token management", () => {
-    test("getToken returns empty string when not set", () => {
-      expect(getToken()).toBe("");
+    test("getToken returns empty string when not set", async () => {
+      expect(await getToken("notesdb")).toBe("");
     });
 
-    test("setToken stores and retrieves token", () => {
-      setToken("ghp_test123");
-      expect(getToken()).toBe("ghp_test123");
+    test("setToken stores and retrieves token", async () => {
+      await setToken("ghp_test123", "notesdb");
+      expect(await getToken("notesdb")).toBe("ghp_test123");
     });
 
-    test("setToken trims whitespace", () => {
-      setToken("  ghp_test123  ");
-      expect(getToken()).toBe("ghp_test123");
+    test("setToken trims whitespace", async () => {
+      await setToken("  ghp_test123  ", "notesdb");
+      expect(await getToken("notesdb")).toBe("ghp_test123");
     });
 
-    test("clearToken removes the token", () => {
-      setToken("ghp_test123");
-      clearToken();
-      expect(getToken()).toBe("");
+    test("clearToken removes the token", async () => {
+      await setToken("ghp_test123", "notesdb");
+      await clearToken("notesdb");
+      expect(await getToken("notesdb")).toBe("");
     });
   });
 
   describe("sync enabled", () => {
-    test("isSyncEnabled returns false when no token", () => {
-      setSyncEnabled(true);
-      expect(isSyncEnabled()).toBe(false);
+    test("isSyncEnabled returns false when no token", async () => {
+      await setSyncEnabled(true, "notesdb");
+      expect(await isSyncEnabled("notesdb")).toBe(false);
     });
 
-    test("isSyncEnabled returns true when enabled with token", () => {
-      setToken("ghp_test123");
-      setSyncEnabled(true);
-      expect(isSyncEnabled()).toBe(true);
+    test("isSyncEnabled returns true when enabled with token", async () => {
+      await setToken("ghp_test123", "notesdb");
+      await setSyncEnabled(true, "notesdb");
+      expect(await isSyncEnabled("notesdb")).toBe(true);
     });
 
-    test("isSyncEnabled returns false when disabled", () => {
-      setToken("ghp_test123");
-      setSyncEnabled(false);
-      expect(isSyncEnabled()).toBe(false);
+    test("isSyncEnabled returns false when disabled", async () => {
+      await setToken("ghp_test123", "notesdb");
+      await setSyncEnabled(false, "notesdb");
+      expect(await isSyncEnabled("notesdb")).toBe(false);
     });
   });
 
   describe("gist ID management", () => {
-    test("getGistId returns null for unknown workspace", () => {
-      expect(getGistId("notesdb")).toBeNull();
+    test("getGistId returns null for unknown workspace", async () => {
+      expect(await getGistId("notesdb")).toBeNull();
     });
   });
 
   describe("last sync", () => {
-    test("getLastSync returns null when never synced", () => {
-      expect(getLastSync("notesdb")).toBeNull();
+    test("getLastSync returns null when never synced", async () => {
+      expect(await getLastSync("notesdb")).toBeNull();
     });
   });
 
