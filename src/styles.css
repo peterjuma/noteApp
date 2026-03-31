@@ -1555,9 +1555,17 @@ a:hover { text-decoration: underline; }
 .dark .tag-input { color: #d1d5db; }
 .dark .tag-input::placeholder { color: #6b7280; }
 
-/* Tag suggestions */
-.tag-suggest-area {
+/* Tag section (non-selectable) */
+.note-tags-section {
   margin-bottom: 12px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.note-tags-applied {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 .tag-suggest-btn {
   display: inline-flex;

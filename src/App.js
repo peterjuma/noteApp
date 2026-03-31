@@ -1224,8 +1224,8 @@ handleUnpinNote = async (noteid) => {
         for (var i = 0, len = sel.rangeCount; i < len; ++i) {
           container.appendChild(sel.getRangeAt(i).cloneContents());
         }
-        // Remove copy buttons and metadata from the cloned content
-        container.querySelectorAll(".copy-code-button, .note-meta").forEach(el => el.remove());
+        // Remove copy buttons, metadata, and tag elements from the cloned content
+        container.querySelectorAll(".copy-code-button, .code-lang-label, .note-meta, .note-tags-section").forEach(el => el.remove());
         copiedContent = container.innerHTML;
       }
     } else if (typeof document.selection !== "undefined") {

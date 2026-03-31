@@ -17,6 +17,7 @@ const SidebarIcon = ({ size = 16, collapsed, ...rest }) => (
 import { useState, useRef, useEffect, useCallback } from "react";
 import DOMPurify from "dompurify";
 import { md2html } from "./useMarkDown";
+import { copyNoteToClipboard } from "./services/copyFormatter";
 
 function NavbarMain(props) {
   var isActive = props.display;

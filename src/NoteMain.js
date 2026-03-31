@@ -261,14 +261,24 @@ function NoteMain(props) {
           ></h1>
         )}
 
-        {/* Tag suggestions — only show for notes without tags when enabled */}
-        {props.tagSuggestEnabled !== false && notesData.action !== "homepage" && (!notesData.tags || notesData.tags.length === 0) && (
-          <div className="tag-suggest-area">
-            {!showSuggestions ? (
+        {/* Tags section — not selectable/copyable */}
+        {notesData.action !== "homepage" && (
+          <div className="note-tags-section">
+            {notesData.tags && notesData.tags.length > 0 && (
+              <div className="note-tags-applied">
+                {notesData.tags.map((tag) => (
+                  <span key={tag} className="tag" onClick={() => props.onTagClick && props.onTagClick(tag)}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            {props.tagSuggestEnabled !== false && (!notesData.tags || notesData.tags.length === 0) && !showSuggestions && (
               <button onClick={handleSuggestTags} className="tag-suggest-btn" title="Suggest tags using AI">
                 <Wand2 size={14} /> Suggest Tags
               </button>
-            ) : suggestions.length > 0 ? (
+            )}
+            {showSuggestions && suggestions.length > 0 ? (
               <div className="tag-suggestions">
                 <span className="tag-suggest-label">Suggested:</span>
                 {suggestions.map((tag) => (
@@ -281,9 +291,9 @@ function NoteMain(props) {
                   <X size={14} />
                 </button>
               </div>
-            ) : (
+            ) : showSuggestions && (!notesData.tags || notesData.tags.length === 0) ? (
               <span className="tag-suggest-label" style={{ fontSize: "12px", color: "#9ca3af" }}>No suggestions — note may need more content</span>
-            )}
+            ) : null}
           </div>
         )}
         <div
@@ -293,20 +303,7 @@ function NoteMain(props) {
           onCopy={(e) => props.handleCopyEvent(e)}
         ></div>
 
-        {/* Bottom tag bar */}
-        {notesData.action !== "homepage" && (
-          <div className="note-bottom-tags">
-            {notesData.tags && notesData.tags.length > 0 ? (
-              notesData.tags.map((tag) => (
-                <span key={tag} className="tag" onClick={() => props.onTagClick && props.onTagClick(tag)}>
-                  {tag}
-                </span>
-              ))
-            ) : (
-              <span className="note-bottom-tags-empty">No tags</span>
-            )}
-          </div>
-        )}
+
 
         {/* Backlinks panel */}
         {backlinks.length > 0 && (
