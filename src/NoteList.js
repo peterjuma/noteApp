@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Pin, PinOff, GripVertical, Trash2 } from "lucide-react";
+import { Pin, PinOff, GripVertical, Trash2, PencilLine, Download, FileText, Clock, FolderOutput, ChevronRight } from "lucide-react";
 
 function NoteList(props) {
   const {
@@ -10,9 +10,10 @@ function NoteList(props) {
   } = props;
 
   const [contextMenu, setContextMenu] = useState(null);
+  const [moveSubmenuOpen, setMoveSubmenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  const closeMenu = useCallback(() => setContextMenu(null), []);
+  const closeMenu = useCallback(() => { setContextMenu(null); setMoveSubmenuOpen(false); }, []);
 
   // Highlight matching text in title
   const highlightTitle = (title, query) => {
@@ -74,15 +75,9 @@ function NoteList(props) {
   };
 
   const handleContextMenu = (e) => {
-    // Only show bulk-delete context menu when there's a selection
-    if (selectedCount === 0 && !isSelected) return;
     e.preventDefault();
-    // If right-clicking an unselected note while others are selected, add it to selection
+    // Multi-select context: if right-clicking an unselected note while others are selected, add it
     if (!isSelected && selectedCount > 0) {
-      handleToggleSelectNote(note.noteid);
-    }
-    // If right-clicking a single unselected note with no selection, select it first
-    if (!isSelected && selectedCount === 0) {
       handleToggleSelectNote(note.noteid);
     }
     setContextMenu({ x: e.clientX, y: e.clientY });
@@ -178,17 +173,68 @@ function NoteList(props) {
           className="note-context-menu"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
-          <button
-            className="note-context-menu-item note-context-menu-danger"
-            onClick={(e) => {
-              e.stopPropagation();
-              closeMenu();
-              handleBulkDeleteNotes();
-            }}
-          >
-            <Trash2 size={14} />
-            Delete {selectedCount > 1 ? `${selectedCount} notes` : "note"}
-          </button>
+          {/* Multi-select mode: only show bulk delete */}
+          {selectedCount > 1 ? (
+            <button
+              className="note-context-menu-item note-context-menu-danger"
+              onClick={(e) => { e.stopPropagation(); closeMenu(); handleBulkDeleteNotes(); }}
+            >
+              <Trash2 size={14} />
+              Delete {selectedCount} notes
+            </button>
+          ) : (
+            <>
+              <button className="note-context-menu-item" onClick={(e) => { e.stopPropagation(); closeMenu(); props.handleEditNoteBtn(e, note); }}>
+                <PencilLine size={14} /> Edit
+              </button>
+              <button className="note-context-menu-item" onClick={(e) => {
+                e.stopPropagation(); closeMenu();
+                if (isPinned) handleUnpinNote(note.noteid);
+                else handlePinNote(note.noteid);
+              }}>
+                {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+                {isPinned ? "Unpin" : "Pin to top"}
+              </button>
+              <div className="note-context-menu-divider" />
+              <button className="note-context-menu-item" onClick={(e) => { e.stopPropagation(); closeMenu(); if (props.handleDownloadPdf) props.handleDownloadPdf(note); }}>
+                <FileText size={14} /> Download PDF
+              </button>
+              <button className="note-context-menu-item" onClick={(e) => { e.stopPropagation(); closeMenu(); props.handleDownloadNote(note); }}>
+                <Download size={14} /> Download Markdown
+              </button>
+              {(() => {
+                const otherWs = (props.workspaces || []).filter(w => w.dbName !== props.activeDb);
+                if (otherWs.length === 0) return null;
+                return (
+                  <div
+                    className="note-context-menu-item note-context-submenu-trigger"
+                    onMouseEnter={() => setMoveSubmenuOpen(true)}
+                    onMouseLeave={() => setMoveSubmenuOpen(false)}
+                    onClick={(e) => { e.stopPropagation(); setMoveSubmenuOpen(v => !v); }}
+                  >
+                    <FolderOutput size={14} /> Move to...
+                    <ChevronRight size={12} style={{ marginLeft: "auto" }} />
+                    {moveSubmenuOpen && (
+                      <ul className="note-context-submenu">
+                        {otherWs.map((w) => (
+                          <li key={w.dbName} className="note-context-menu-item" onClick={(e) => { e.stopPropagation(); closeMenu(); if (props.handleMoveNote) props.handleMoveNote(note, w.dbName); }}>
+                            {w.name}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })()}
+              <button className="note-context-menu-item" onClick={(e) => { e.stopPropagation(); closeMenu(); if (props.onShowHistory) props.onShowHistory(); }}>
+                <Clock size={14} /> Version History
+              </button>
+              <div className="note-context-menu-divider" />
+              <button className="note-context-menu-item note-context-menu-danger" onClick={(e) => { e.stopPropagation(); closeMenu(); props.handleDeleteNote(e, note); }}>
+                <Trash2 size={14} /> Delete
+              </button>
+            </>
+          )}
         </div>
       )}
     </li>

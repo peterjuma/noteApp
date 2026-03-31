@@ -62,7 +62,9 @@ function NavbarMain(props) {
   };
 
   const handleCopy = () => {
-    const html = DOMPurify.sanitize(md2html.render(note.notebody || ""));
+    const rawHtml = DOMPurify.sanitize(md2html.render(note.notebody || ""));
+    // Wrap in styled container so paragraphs, line breaks, and spacing survive paste into rich editors
+    const html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #24292f;">${rawHtml}</div>`;
     const plainText = note.notebody || "";
     const item = new ClipboardItem({
       "text/html": new Blob([html], { type: "text/html" }),

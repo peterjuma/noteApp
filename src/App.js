@@ -1234,9 +1234,15 @@ handleUnpinNote = async (noteid) => {
     }
     if (copiedContent) {
       e.preventDefault();
-      navigator.clipboard
-        .writeText(html2md.turndown(copiedContent))
-        .catch(() => {});
+      // Write both HTML and plain text so rich editors (Zendesk) get formatted content
+      const htmlBlob = new Blob([copiedContent], { type: "text/html" });
+      const textBlob = new Blob([html2md.turndown(copiedContent)], { type: "text/plain" });
+      navigator.clipboard.write([
+        new ClipboardItem({ "text/html": htmlBlob, "text/plain": textBlob })
+      ]).catch(() => {
+        // Fallback: plain text only
+        navigator.clipboard.writeText(html2md.turndown(copiedContent)).catch(() => {});
+      });
     }
   }
 
@@ -1623,6 +1629,14 @@ handleUnpinNote = async (noteid) => {
                     handleBulkDeleteNotes={this.handleBulkDeleteNotes}
                     handleClearSelection={this.handleClearSelection}
                     onReorder={this.handleReorderNotes}
+                    handleEditNoteBtn={this.handleEditNoteBtn}
+                    handleDeleteNote={this.handleDeleteNote}
+                    handleDownloadNote={this.handleDownloadNote}
+                    handleDownloadPdf={this.handleDownloadPdf}
+                    handleMoveNote={this.handleMoveNote}
+                    onShowHistory={() => this.setState({ showVersionHistory: true })}
+                    workspaces={workspaces}
+                    activeDb={this.state.activeDb}
                 />
             ))}
         </>
@@ -1647,6 +1661,14 @@ handleUnpinNote = async (noteid) => {
                     handleBulkDeleteNotes={this.handleBulkDeleteNotes}
                     handleClearSelection={this.handleClearSelection}
                     onReorder={this.handleReorderNotes}
+                    handleEditNoteBtn={this.handleEditNoteBtn}
+                    handleDeleteNote={this.handleDeleteNote}
+                    handleDownloadNote={this.handleDownloadNote}
+                    handleDownloadPdf={this.handleDownloadPdf}
+                    handleMoveNote={this.handleMoveNote}
+                    onShowHistory={() => this.setState({ showVersionHistory: true })}
+                    workspaces={workspaces}
+                    activeDb={this.state.activeDb}
                 />
             ))}
         </>
