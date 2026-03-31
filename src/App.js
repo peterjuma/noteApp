@@ -1491,6 +1491,7 @@ handleUnpinNote = async (noteid) => {
 
     let ActivePage, RightNavbar;
     if (this.state.activepage === "viewnote") {
+      const currentNote = allnotes.find(n => n.noteid === this.state.noteid) || {};
       RightNavbar = (
         <NavbarMain
           display={this.state.action !== "homepage" && true}
@@ -1509,6 +1510,17 @@ handleUnpinNote = async (noteid) => {
           handleDownloadNote={this.handleDownloadNote}
           handleDownloadPdf={this.handleDownloadPdf}
           onShowHistory={() => this.setState({ showVersionHistory: true })}
+          sidebarCollapsed={this.state.sidebarCollapsed}
+          onToggleCollapse={() => this.setState((s) => {
+            const next = !s.sidebarCollapsed;
+            localStorage.setItem("noteapp_sidebar_collapsed", next);
+            return { sidebarCollapsed: next };
+          })}
+          isPinned={pinnedNotes.includes(this.state.noteid)}
+          onPinNote={this.handlePinNote}
+          onUnpinNote={this.handleUnpinNote}
+          noteCreatedAt={currentNote.created_at}
+          noteUpdatedAt={currentNote.updated_at}
         />
       );
       ActivePage = (
@@ -1685,7 +1697,9 @@ handleUnpinNote = async (noteid) => {
             handleEditNoteBtn={this.handleEditNoteBtn}
             handleSearchNotes={this.handleSearchNotes}
             searchResultCount={this.state.searchQuery ? this.state.filteredNotes.length : null}
+            allNotes={allnotes}
             onUploadNote={this.handleNotesUpload}
+            onClosePages={() => this.setState({ showSettings: false, showTableConverter: false })}
             darkMode={this.state.darkMode}
             showSettings={this.state.showSettings}
             showTableConverter={this.state.showTableConverter}
@@ -1722,6 +1736,11 @@ handleUnpinNote = async (noteid) => {
               });
             }}
             onAddWorkspace={this.handleAddWorkspace}
+            onToggleDarkMode={() => this.setState((s) => {
+              const next = !s.darkMode;
+              localStorage.setItem("noteapp_dark_mode", next);
+              return { darkMode: next };
+            })}
           />
 
           {!this.state.showSettings && !this.state.showTableConverter && (
@@ -1952,6 +1971,7 @@ handleUnpinNote = async (noteid) => {
               }}
               syncInterval={gistSync.getSyncInterval()}
               onClose={() => this.setState({ showSettings: false })}
+              allNotes={allnotes}
             />
           ) : this.state.showTableConverter ? (
             <div className="full-table-converter">

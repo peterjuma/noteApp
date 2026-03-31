@@ -1,3 +1,5 @@
+import { getPredefinedTags } from "./tagManager";
+
 // Intelligent tag suggestion engine — pure client-side keyword extraction
 
 const STOP_WORDS = new Set([
@@ -166,6 +168,15 @@ function getFrequentWords(words, minCount = 2, topN = 5) {
 export function suggestTags(title, body, existingTags = []) {
   const existing = new Set((existingTags || []).map(t => t.toLowerCase()));
   const suggestions = new Set();
+
+  // 0. Predefined tags — match against note content for priority suggestions
+  const predefined = getPredefinedTags();
+  const allText = `${(title || "")} ${(body || "").slice(0, 3000)}`.toLowerCase();
+  for (const pt of predefined) {
+    if (!existing.has(pt.name) && allText.includes(pt.name)) {
+      suggestions.add(pt.name);
+    }
+  }
 
   // 1. Title words (highest signal)
   const titleWords = splitTitle(title || "");

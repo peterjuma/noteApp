@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Plus, Search, ChevronsLeft, ChevronsRight, Settings, TableProperties, StickyNote, Upload, Layers, X } from "lucide-react";
+import { Menu, Plus, Search, Settings, TableProperties, StickyNote, Upload, Layers, X, Moon, Sun, ChevronRight, Home, SlidersHorizontal } from "lucide-react";
 
 function NavbarSidebar(props) {
   var note = {
@@ -11,43 +11,83 @@ function NavbarSidebar(props) {
   };
   const searchRef = React.useRef();
   const uploadRef = React.useRef();
-  const [searchVisible, setSearchVisible] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState("");
-  const [wsDropdownOpen, setWsDropdownOpen] = React.useState(false);
-  const wsDropdownRef = React.useRef();
+  const [tagFilterOpen, setTagFilterOpen] = React.useState(false);
+  const tagFilterRef = React.useRef();
+  const [tagAutoComplete, setTagAutoComplete] = React.useState([]);
+  const [tagACIndex, setTagACIndex] = React.useState(-1);
+  const [hamburgerOpen, setHamburgerOpen] = React.useState(false);
+  const [wsSubmenuOpen, setWsSubmenuOpen] = React.useState(false);
   const [showNewWs, setShowNewWs] = React.useState(false);
   const [newWsName, setNewWsName] = React.useState("");
   const newWsInputRef = React.useRef();
+  const hamburgerRef = React.useRef();
 
   const workspaces = props.workspaces || [];
 
-  // Keyboard shortcut: Cmd/Ctrl+K to toggle search
+  // Close tag filter when clicking outside
+  React.useEffect(() => {
+    if (!tagFilterOpen) return;
+    const handleClickOutside = (e) => {
+      if (tagFilterRef.current && !tagFilterRef.current.contains(e.target)) {
+        setTagFilterOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [tagFilterOpen]);
+
+  // Collect all unique tags from notes
+  const allTags = React.useMemo(() => {
+    if (!props.allNotes) return [];
+    const counts = {};
+    for (const n of props.allNotes) {
+      for (const t of n.tags || []) {
+        counts[t] = (counts[t] || 0) + 1;
+      }
+    }
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+  }, [props.allNotes]);
+
+  const closeHamburger = React.useCallback(() => {
+    setHamburgerOpen(false);
+    setWsSubmenuOpen(false);
+    setShowNewWs(false);
+    setNewWsName("");
+  }, []);
+
+  // Keyboard shortcut: Cmd/Ctrl+K to focus search
   React.useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setSearchVisible(v => {
-          const next = !v;
-          if (!next) {
-            setSearchValue("");
-            props.handleSearchNotes({ target: { value: "" } });
-          }
-          return next;
-        });
+        if (searchRef.current) searchRef.current.focus();
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [props.handleSearchNotes]);
-
-  // Auto-focus search input when it becomes visible
-  React.useEffect(() => {
-    if (searchVisible && searchRef.current) searchRef.current.focus();
-  }, [searchVisible]);
+  }, []);
 
   const handleSearchChange = (e) => {
-    setSearchValue(e.target.value);
+    const val = e.target.value;
+    setSearchValue(val);
     props.handleSearchNotes(e);
+
+    // Tag autocomplete: trigger when typing "tag:" prefix
+    const tagMatch = val.match(/^tag:(.*)$/i);
+    if (tagMatch !== null) {
+      const partial = tagMatch[1].toLowerCase();
+      const filtered = allTags
+        .filter((t) => t.name.includes(partial))
+        .slice(0, 10);
+      setTagAutoComplete(filtered);
+      setTagACIndex(-1);
+    } else {
+      setTagAutoComplete([]);
+      setTagACIndex(-1);
+    }
   };
 
   const clearSearch = () => {
@@ -57,26 +97,51 @@ function NavbarSidebar(props) {
   };
 
   const handleSearchKeyDown = (e) => {
+    // Tag autocomplete navigation
+    if (tagAutoComplete.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setTagACIndex((i) => Math.min(i + 1, tagAutoComplete.length - 1));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setTagACIndex((i) => Math.max(i - 1, -1));
+        return;
+      }
+      if (e.key === "Enter" && tagACIndex >= 0) {
+        e.preventDefault();
+        const selected = `tag:${tagAutoComplete[tagACIndex].name}`;
+        setSearchValue(selected);
+        props.handleSearchNotes({ target: { value: selected } });
+        setTagAutoComplete([]);
+        setTagACIndex(-1);
+        return;
+      }
+      if (e.key === "Escape") {
+        setTagAutoComplete([]);
+        setTagACIndex(-1);
+        return;
+      }
+    }
     if (e.key === "Escape") {
-      setSearchVisible(false);
       setSearchValue("");
       props.handleSearchNotes({ target: { value: "" } });
+      e.target.blur();
     }
   };
 
-  // Close dropdown when clicking outside
+  // Close hamburger when clicking outside
   React.useEffect(() => {
-    if (!wsDropdownOpen) return;
+    if (!hamburgerOpen) return;
     const handleClickOutside = (e) => {
-      if (wsDropdownRef.current && !wsDropdownRef.current.contains(e.target)) {
-        setWsDropdownOpen(false);
-        setShowNewWs(false);
-        setNewWsName("");
+      if (hamburgerRef.current && !hamburgerRef.current.contains(e.target)) {
+        closeHamburger();
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [wsDropdownOpen]);
+  }, [hamburgerOpen, closeHamburger]);
 
   // Focus the new-workspace input when shown
   React.useEffect(() => {
@@ -88,49 +153,68 @@ function NavbarSidebar(props) {
       props.onAddWorkspace(newWsName.trim());
       setNewWsName("");
       setShowNewWs(false);
-      setWsDropdownOpen(false);
+      closeHamburger();
     }
   };
 
   const isPageActive = props.showSettings || props.showTableConverter;
 
-  if (props.sidebarCollapsed) {
-    return (
-      <nav aria-label="Sidebar navigation" className="sidebar-collapsed-nav">
-        <button onClick={props.onToggleCollapse} className="icon-btn" title="Expand" aria-label="Expand sidebar">
-          <ChevronsRight size={18} />
-        </button>
-        <button onClick={(e) => props.handleClickHomeBtn(e)} className="icon-btn" title="Home" aria-label="Home">
-          <Home size={18} />
-        </button>
-        <button onClick={props.onOpenSettings} className={`icon-btn ${props.showSettings ? "icon-btn-active" : ""}`} title="Settings" aria-label="Settings">
-          <Settings size={16} />
-        </button>
-        <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title={props.showTableConverter ? "Back to Notes" : "Table Converter"} aria-label="Table Converter">
-          {props.showTableConverter ? <StickyNote size={16} /> : <TableProperties size={16} />}
-        </button>
-        <button onClick={() => uploadRef.current && uploadRef.current.click()} className="icon-btn" title="Upload .md" aria-label="Upload a markdown file" disabled={isPageActive}>
-          <Upload size={16} />
-        </button>
-        <input ref={uploadRef} type="file" accept=".md" style={{ display: "none" }} onChange={(e) => { if (props.onUploadNote) props.onUploadNote(e); e.target.value = ""; }} />
-        <div className="ws-switcher-wrapper" ref={wsDropdownRef}>
-          <button onClick={() => { setWsDropdownOpen(v => !v); setShowNewWs(false); setNewWsName(""); }} className={`icon-btn ${wsDropdownOpen ? "icon-btn-active" : ""}`} title="Workspaces" aria-label="Workspaces">
-            <Layers size={16} />
-          </button>
-          {wsDropdownOpen && (
-            <ul className="ws-switcher-dropdown">
+  const sidebarTitle = props.showSettings
+    ? "Settings"
+    : props.showTableConverter
+      ? "Table Converter"
+      : props.workspaceName && props.workspaceName !== "Default"
+        ? props.workspaceName
+        : "Notes";
+
+  // Hamburger menu content (shared between collapsed and expanded)
+  const hamburgerMenu = hamburgerOpen && (
+    <div className="sidebar-hamburger-menu" role="menu">
+      <button className="sidebar-hamburger-item" role="menuitem" onClick={(e) => { closeHamburger(); if (props.onClosePages) props.onClosePages(); props.handleClickHomeBtn(e); }}>
+        <Home size={15} />
+        <span>Home</span>
+      </button>
+      <div className="sidebar-hamburger-divider" role="separator" />
+      <button className="sidebar-hamburger-item" role="menuitem" onClick={() => { closeHamburger(); props.onOpenSettings(); }}>
+        <Settings size={15} />
+        <span>Settings</span>
+      </button>
+      <button className="sidebar-hamburger-item" role="menuitem" onClick={() => { closeHamburger(); props.onOpenTableConverter(); }}>
+        {props.showTableConverter ? <StickyNote size={15} /> : <TableProperties size={15} />}
+        <span>{props.showTableConverter ? "Back to Notes" : "Table Converter"}</span>
+      </button>
+      <button className="sidebar-hamburger-item" role="menuitem" onClick={() => { closeHamburger(); uploadRef.current && uploadRef.current.click(); }} disabled={isPageActive}>
+        <Upload size={15} />
+        <span>Upload .md</span>
+      </button>
+      <div className="sidebar-hamburger-divider" role="separator" />
+      {workspaces.length > 0 && (
+        <div
+          className="sidebar-hamburger-item sidebar-hamburger-submenu-trigger"
+          role="menuitem"
+          aria-haspopup="true"
+          aria-expanded={wsSubmenuOpen}
+          onMouseEnter={() => setWsSubmenuOpen(true)}
+          onMouseLeave={() => { setWsSubmenuOpen(false); setShowNewWs(false); setNewWsName(""); }}
+          onClick={() => setWsSubmenuOpen(v => !v)}
+        >
+          <Layers size={15} />
+          <span>Workspaces</span>
+          <ChevronRight size={13} className="sidebar-hamburger-submenu-arrow" />
+          {wsSubmenuOpen && (
+            <ul className="sidebar-hamburger-submenu" role="menu" onClick={(e) => e.stopPropagation()}>
               {workspaces.map((w) => (
-                <li key={w.dbName} className={`ws-switcher-item ${w.dbName === props.activeDb ? "ws-switcher-item-active" : ""}`} onClick={() => { props.onSwitchWorkspace(w.dbName); setWsDropdownOpen(false); }}>
+                <li key={w.dbName} className={`sidebar-hamburger-item ${w.dbName === props.activeDb ? "sidebar-hamburger-item-active" : ""}`} role="menuitem" onClick={() => { props.onSwitchWorkspace(w.dbName); closeHamburger(); }}>
                   {w.name}
                 </li>
               ))}
-              <li className="ws-switcher-divider" />
+              <li className="sidebar-hamburger-divider" role="separator" />
               {!showNewWs ? (
-                <li className="ws-switcher-item ws-switcher-create" onClick={() => setShowNewWs(true)}>
-                  <Plus size={13} style={{ marginRight: 6 }} />Create workspace
+                <li className="sidebar-hamburger-item" role="menuitem" onClick={(e) => { e.stopPropagation(); setShowNewWs(true); }}>
+                  <Plus size={13} style={{ marginRight: 4 }} />Create workspace
                 </li>
               ) : (
-                <li className="ws-switcher-inline-create">
+                <li className="sidebar-hamburger-inline-create" onClick={(e) => e.stopPropagation()}>
                   <input ref={newWsInputRef} type="text" className="ws-create-input" placeholder="Workspace name..." value={newWsName} onChange={(e) => setNewWsName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleCreateWorkspace(); if (e.key === "Escape") { setShowNewWs(false); setNewWsName(""); } }} />
                   <button className="ws-create-btn" onClick={handleCreateWorkspace} disabled={!newWsName.trim()}>Create</button>
                 </li>
@@ -138,12 +222,28 @@ function NavbarSidebar(props) {
             </ul>
           )}
         </div>
+      )}
+      <div className="sidebar-hamburger-divider" role="separator" />
+      <button className="sidebar-hamburger-item" role="menuitem" onClick={() => { closeHamburger(); if (props.onToggleDarkMode) props.onToggleDarkMode(); }}>
+        {props.darkMode ? <Sun size={15} /> : <Moon size={15} />}
+        <span>{props.darkMode ? "Light Mode" : "Dark Mode"}</span>
+      </button>
+    </div>
+  );
+
+  if (props.sidebarCollapsed) {
+    return (
+      <nav aria-label="Sidebar navigation" className="sidebar-collapsed-nav">
+        <div className="sidebar-hamburger-wrapper" ref={hamburgerRef}>
+          <button onClick={() => setHamburgerOpen(v => !v)} className={`icon-btn ${hamburgerOpen ? "icon-btn-active" : ""}`} title="Menu" aria-label="Menu" aria-expanded={hamburgerOpen} aria-haspopup="menu">
+            <Menu size={18} />
+          </button>
+          {hamburgerMenu}
+        </div>
+        <input ref={uploadRef} type="file" accept=".md" style={{ display: "none" }} onChange={(e) => { if (props.onUploadNote) props.onUploadNote(e); e.target.value = ""; }} />
         <span className="toolbar-divider" style={{ height: 1, width: 24, margin: "2px 0" }} />
-        <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="Add" aria-label="Add note" disabled={isPageActive}>
+        <button data-action="addnote" onClick={(e) => { if (isPageActive && props.onClosePages) props.onClosePages(); props.handleEditNoteBtn(e, note); }} className="icon-btn" title="New Note" aria-label="New note">
           <Plus size={18} style={{ pointerEvents: "none" }} />
-        </button>
-        <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search (⌘K)" aria-label="Toggle search" disabled={isPageActive}>
-          <Search size={16} />
         </button>
       </nav>
     );
@@ -151,84 +251,27 @@ function NavbarSidebar(props) {
 
   return (
     <nav aria-label="Sidebar navigation">
-      {/* Top bar: Home + Title + Collapse */}
+      {/* Header: Hamburger + Title + New Note */}
       <div className="sidebar-header">
-        <button onClick={(e) => props.handleClickHomeBtn(e)} className="icon-btn" title="Home" aria-label="Go to home page">
-          <Home size={18} />
-        </button>
-        <h4 className="sidebar-title">
-          {props.showSettings
-            ? "Settings"
-            : props.showTableConverter
-              ? "Table Converter"
-              : props.workspaceName && props.workspaceName !== "Default"
-                ? props.workspaceName
-                : "Notes"
-          }
-        </h4>
-        <button onClick={props.onToggleCollapse} className="icon-btn" title="Collapse" aria-label="Collapse sidebar">
-          <ChevronsLeft size={16} />
+        <div className="sidebar-hamburger-wrapper" ref={hamburgerRef}>
+          <button onClick={() => setHamburgerOpen(v => !v)} className={`icon-btn ${hamburgerOpen ? "icon-btn-active" : ""}`} title="Menu" aria-label="Menu" aria-expanded={hamburgerOpen} aria-haspopup="menu">
+            <Menu size={18} />
+          </button>
+          {hamburgerMenu}
+        </div>
+        <h4 className="sidebar-title">{sidebarTitle}</h4>
+        <button data-action="addnote" onClick={(e) => { if (isPageActive && props.onClosePages) props.onClosePages(); props.handleEditNoteBtn(e, note); }} className="icon-btn sidebar-new-note-btn" title="New Note (⌘⇧I)" aria-label="Create new note">
+          <Plus size={18} style={{ pointerEvents: "none" }} />
         </button>
       </div>
-      {/* Action bar: pages on left, actions on right */}
-      <div className="sidebar-actions">
-        <span className="toolbar-group">
-          <button onClick={props.onOpenSettings} className={`icon-btn ${props.showSettings ? "icon-btn-active" : ""}`} title="Settings" aria-label="Settings">
-            <Settings size={15} />
-          </button>
-          <button onClick={props.onOpenTableConverter} className={`icon-btn ${props.showTableConverter ? "icon-btn-active" : ""}`} title={props.showTableConverter ? "Back to Notes" : "Table Converter"} aria-label="Table Converter">
-            {props.showTableConverter ? <StickyNote size={15} /> : <TableProperties size={15} />}
-          </button>
-          <button onClick={() => uploadRef.current && uploadRef.current.click()} className="icon-btn" title="Upload .md" aria-label="Upload a markdown file" disabled={isPageActive}>
-            <Upload size={15} />
-          </button>
-          <input ref={uploadRef} type="file" accept=".md" style={{ display: "none" }} onChange={(e) => { if (props.onUploadNote) props.onUploadNote(e); e.target.value = ""; }} />
-          <div className="ws-switcher-wrapper" ref={wsDropdownRef}>
-            <button onClick={() => { setWsDropdownOpen(v => !v); setShowNewWs(false); setNewWsName(""); }} className={`icon-btn ${wsDropdownOpen ? "icon-btn-active" : ""}`} title="Workspaces" aria-label="Workspaces">
-              <Layers size={15} />
-            </button>
-            {wsDropdownOpen && (
-              <ul className="ws-switcher-dropdown">
-                {workspaces.map((w) => (
-                  <li key={w.dbName} className={`ws-switcher-item ${w.dbName === props.activeDb ? "ws-switcher-item-active" : ""}`} onClick={() => { props.onSwitchWorkspace(w.dbName); setWsDropdownOpen(false); }}>
-                    {w.name}
-                  </li>
-                ))}
-                <li className="ws-switcher-divider" />
-                {!showNewWs ? (
-                  <li className="ws-switcher-item ws-switcher-create" onClick={() => setShowNewWs(true)}>
-                    <Plus size={13} style={{ marginRight: 6 }} />Create workspace
-                  </li>
-                ) : (
-                  <li className="ws-switcher-inline-create">
-                    <input ref={newWsInputRef} type="text" className="ws-create-input" placeholder="Workspace name..." value={newWsName} onChange={(e) => setNewWsName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleCreateWorkspace(); if (e.key === "Escape") { setShowNewWs(false); setNewWsName(""); } }} />
-                    <button className="ws-create-btn" onClick={handleCreateWorkspace} disabled={!newWsName.trim()}>Create</button>
-                  </li>
-                )}
-              </ul>
-            )}
-          </div>
-        </span>
-        <span className="toolbar-divider" />
-        <span className="toolbar-group">
-          <button onClick={() => setSearchVisible(v => !v)} className={`icon-btn ${searchVisible ? "icon-btn-active" : ""}`} title="Search (⌘K)" aria-label="Toggle search" disabled={isPageActive}>
-            <Search size={15} />
-          </button>
-          <button data-action="addnote" onClick={(e) => props.handleEditNoteBtn(e, note)} className="icon-btn" title="New Note" aria-label="Create new note" disabled={isPageActive}>
-            <Plus size={16} style={{ pointerEvents: "none" }} />
-          </button>
-        </span>
-      </div>
-      {/* Search */}
-      {!isPageActive && searchVisible && (
+      {/* Always-visible search */}
       <div className="sidebar-search">
         <Search size={14} />
         <input
           type="search"
-          placeholder="Search notes… (title: body: tag:)"
+          placeholder="Search notes… ⌘K"
           ref={searchRef}
           aria-label="Search notes"
-          autoFocus
           value={searchValue}
           onChange={handleSearchChange}
           onKeyDown={handleSearchKeyDown}
@@ -243,8 +286,61 @@ function NavbarSidebar(props) {
             </button>
           </>
         )}
+        {allTags.length > 0 && (
+          <div className="tag-filter-wrapper" ref={tagFilterRef}>
+            <button
+              className={`tag-filter-btn ${tagFilterOpen ? "tag-filter-btn-active" : ""} ${searchValue.startsWith("tag:") ? "tag-filter-btn-filtering" : ""}`}
+              onClick={() => setTagFilterOpen(v => !v)}
+              title="Filter by tag"
+              aria-label="Filter by tag"
+            >
+              <SlidersHorizontal size={13} />
+            </button>
+            {tagFilterOpen && (
+              <ul className="tag-filter-dropdown">
+                {allTags.map((t) => (
+                  <li
+                    key={t.name}
+                    className={`tag-filter-item ${searchValue === `tag:${t.name}` ? "tag-filter-item-active" : ""}`}
+                    onClick={() => {
+                      const query = searchValue === `tag:${t.name}` ? "" : `tag:${t.name}`;
+                      setSearchValue(query);
+                      props.handleSearchNotes({ target: { value: query } });
+                      setTagFilterOpen(false);
+                    }}
+                  >
+                    <span className="tag-filter-item-name">{t.name}</span>
+                    <span className="tag-filter-item-count">{t.count}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
+      {/* Tag autocomplete dropdown — appears when typing tag: */}
+      {tagAutoComplete.length > 0 && (
+        <ul className="search-tag-autocomplete">
+          {tagAutoComplete.map((t, i) => (
+            <li
+              key={t.name}
+              className={`search-tag-ac-item ${i === tagACIndex ? "search-tag-ac-item-active" : ""}`}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const selected = `tag:${t.name}`;
+                setSearchValue(selected);
+                props.handleSearchNotes({ target: { value: selected } });
+                setTagAutoComplete([]);
+                setTagACIndex(-1);
+              }}
+            >
+              <span className="search-tag-ac-name">{t.name}</span>
+              <span className="search-tag-ac-count">{t.count}</span>
+            </li>
+          ))}
+        </ul>
       )}
+      <input ref={uploadRef} type="file" accept=".md" style={{ display: "none" }} onChange={(e) => { if (props.onUploadNote) props.onUploadNote(e); e.target.value = ""; }} />
     </nav>
   );
 }

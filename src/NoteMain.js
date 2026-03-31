@@ -3,7 +3,7 @@ import DOMPurify from "dompurify";
 import { md2html } from "./useMarkDown";
 import * as noteDB from "./services/notesDB";
 import { suggestTags } from "./services/tagSuggester";
-import { Sparkles, Check, X, Link2, ChevronDown, ChevronRight } from "lucide-react";
+import { Wand2, Check, X, Link2, ChevronDown, ChevronRight } from "lucide-react";
 
 // Lazy-load mermaid only when needed
 let mermaidModule = null;
@@ -260,27 +260,13 @@ function NoteMain(props) {
             }}
           ></h1>
         )}
-        {(notesData.created_at || notesData.updated_at) && (
-          <div className="note-meta">
-            {notesData.created_at && <span>Created {formatDate(notesData.created_at)}</span>}
-            {notesData.updated_at && <span>Modified {formatDate(notesData.updated_at)}</span>}
-          </div>
-        )}
-        {notesData.tags && notesData.tags.length > 0 && (
-          <div className="note-tags">
-            {notesData.tags.map((tag) => (
-              <span key={tag} className="tag" onClick={() => props.onTagClick && props.onTagClick(tag)}>
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
+
         {/* Tag suggestions — only show for notes without tags when enabled */}
         {props.tagSuggestEnabled !== false && notesData.action !== "homepage" && (!notesData.tags || notesData.tags.length === 0) && (
           <div className="tag-suggest-area">
             {!showSuggestions ? (
               <button onClick={handleSuggestTags} className="tag-suggest-btn" title="Suggest tags using AI">
-                <Sparkles size={14} /> Suggest Tags
+                <Wand2 size={14} /> Suggest Tags
               </button>
             ) : suggestions.length > 0 ? (
               <div className="tag-suggestions">
@@ -306,6 +292,21 @@ function NoteMain(props) {
           dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(notesData.notebody), PURIFY_OPTS) }}
           onCopy={(e) => props.handleCopyEvent(e)}
         ></div>
+
+        {/* Bottom tag bar */}
+        {notesData.action !== "homepage" && (
+          <div className="note-bottom-tags">
+            {notesData.tags && notesData.tags.length > 0 ? (
+              notesData.tags.map((tag) => (
+                <span key={tag} className="tag" onClick={() => props.onTagClick && props.onTagClick(tag)}>
+                  {tag}
+                </span>
+              ))
+            ) : (
+              <span className="note-bottom-tags-empty">No tags</span>
+            )}
+          </div>
+        )}
 
         {/* Backlinks panel */}
         {backlinks.length > 0 && (

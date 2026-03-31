@@ -2,11 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import {
   X, Plus, Check, Trash2, PencilLine, ArrowLeftRight,
   Upload, Download, FolderUp, RotateCcw, Archive,
-  Moon, Sun, Save, Sparkles, Settings, FileText,
-  RefreshCw, Cloud, CloudOff, Link2, ExternalLink, HardDrive, Star,
+  Moon, Sun, Save, Sparkles, Settings, FileText, Wand2,
+  RefreshCw, Cloud, CloudOff, Link2, ExternalLink, HardDrive, Star, Tag,
 } from "lucide-react";
 import * as snippetService from "./services/snippets";
 import * as gistSync from "./services/gistSync";
+import * as tagManager from "./services/tagManager";
 
 function SettingsPanel({
   darkMode,
@@ -42,12 +43,20 @@ function SettingsPanel({
   onClose,
   syncInterval,
   onSyncIntervalChange,
+  allNotes,
 }) {
   const [activeTab, setActiveTab] = useState("general");
   const [wsName, setWsName] = useState("");
   const [showNewWs, setShowNewWs] = useState(false);
   const [editingWs, setEditingWs] = useState(null);
   const [editName, setEditName] = useState("");
+  // Tag management state
+  const [predefinedTags, setPredefinedTags] = useState([]);
+  const [newTagName, setNewTagName] = useState("");
+  const [editingTag, setEditingTag] = useState(null);
+  const [editTagName, setEditTagName] = useState("");
+  const [autoHarvest, setAutoHarvest] = useState(tagManager.isAutoHarvestEnabled());
+  const newTagInputRef = useRef(null);
   const [snippets, setSnippets] = useState([]);
   const [editingSnippet, setEditingSnippet] = useState(null); // null | "new" | snippet id
   const [snippetName, setSnippetName] = useState("");
@@ -70,6 +79,9 @@ function SettingsPanel({
     }
     if (activeTab === "templates") {
       setSnippets(snippetService.ensureDefaults());
+    }
+    if (activeTab === "tags") {
+      setPredefinedTags(tagManager.getPredefinedTags());
     }
     if (activeTab === "sync" && syncToken) {
       gistSync.validateToken().then((result) => {
@@ -107,6 +119,7 @@ function SettingsPanel({
   const tabs = [
     { id: "general", label: "General", icon: Settings },
     { id: "workspaces", label: "Workspaces", icon: ArrowLeftRight },
+    { id: "tags", label: "Tags", icon: Tag },
     { id: "data", label: "Data", icon: HardDrive },
     { id: "archive", label: "Archive", icon: Archive },
     { id: "templates", label: "Templates", icon: FileText },
@@ -589,6 +602,144 @@ function SettingsPanel({
             ) : (
               <div className="settings-empty">
                 <p>No templates yet</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── Tags Tab ─── */}
+        {activeTab === "tags" && (
+          <div className="settings-section">
+            <h3 className="settings-section-title">Tag Management</h3>
+            <p className="settings-hint">
+              Pre-define tags to keep your notes organized. These appear as autocomplete suggestions when tagging notes.
+            </p>
+
+            {/* Add new tag + auto-harvest in a card */}
+            <div className="tag-mgmt-card">
+              <div className="tag-mgmt-add">
+                <input
+                  ref={newTagInputRef}
+                  type="text"
+                  className="tag-mgmt-input"
+                  placeholder="Enter a tag name…"
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newTagName.trim()) {
+                      setPredefinedTags(tagManager.addPredefinedTag(newTagName));
+                      setNewTagName("");
+                    }
+                  }}
+                />
+                <button
+                  className="tag-mgmt-add-btn"
+                  disabled={!newTagName.trim()}
+                  onClick={() => {
+                    setPredefinedTags(tagManager.addPredefinedTag(newTagName));
+                    setNewTagName("");
+                    if (newTagInputRef.current) newTagInputRef.current.focus();
+                  }}
+                >
+                  <Plus size={14} /> Add
+                </button>
+              </div>
+              <label className="tag-mgmt-harvest-toggle">
+                <input
+                  type="checkbox"
+                  className="toggle-input"
+                  checked={autoHarvest}
+                  onChange={() => {
+                    const next = !autoHarvest;
+                    tagManager.setAutoHarvest(next);
+                    setAutoHarvest(next);
+                  }}
+                />
+                <Wand2 size={13} />
+                <span>Auto-add new tags from notes</span>
+              </label>
+            </div>
+
+            {/* Tag list */}
+            {predefinedTags.length > 0 ? (() => {
+              const usageCounts = tagManager.getTagUsageCounts(allNotes || []);
+              return (
+                <div className="tag-mgmt-grid">
+                  {predefinedTags.map((t) => (
+                    <div key={t.name} className="tag-mgmt-chip">
+                      {editingTag === t.name ? (
+                        <div className="tag-mgmt-edit-row">
+                          <input
+                            type="text"
+                            className="tag-mgmt-input tag-mgmt-input-sm"
+                            value={editTagName}
+                            autoFocus
+                            onChange={(e) => setEditTagName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && editTagName.trim()) {
+                                setPredefinedTags(tagManager.renamePredefinedTag(t.name, editTagName));
+                                setEditingTag(null);
+                              }
+                              if (e.key === "Escape") setEditingTag(null);
+                            }}
+                          />
+                          <button className="icon-btn" onClick={() => {
+                            if (editTagName.trim()) setPredefinedTags(tagManager.renamePredefinedTag(t.name, editTagName));
+                            setEditingTag(null);
+                          }}><Check size={13} /></button>
+                          <button className="icon-btn" onClick={() => setEditingTag(null)}><X size={13} /></button>
+                        </div>
+                      ) : (
+                        <>
+                          <span
+                            className="tag-mgmt-chip-dot"
+                            style={{ background: t.color || (darkMode ? "#4b5563" : "#d1d5db") }}
+                          />
+                          <span className="tag-mgmt-chip-name" style={t.color ? { color: t.color } : undefined}>
+                            {t.name}
+                          </span>
+                          <span className="tag-mgmt-chip-count">
+                            {usageCounts[t.name] || 0}
+                          </span>
+                          <div className="tag-mgmt-chip-actions">
+                            {/* Color picker */}
+                            <div className="tag-mgmt-color-picker">
+                              {tagManager.TAG_COLORS.map((c, i) => (
+                                <button
+                                  key={i}
+                                  className={`tag-mgmt-color-dot ${t.color === c ? "tag-mgmt-color-dot-active" : ""}`}
+                                  style={{ background: c || (darkMode ? "#4b5563" : "#d1d5db") }}
+                                  onClick={() => setPredefinedTags(tagManager.updateTagColor(t.name, c))}
+                                  aria-label={c ? `Color ${c}` : "No color"}
+                                />
+                              ))}
+                            </div>
+                            <button className="icon-btn" title="Rename" onClick={() => { setEditingTag(t.name); setEditTagName(t.name); }}>
+                              <PencilLine size={12} />
+                            </button>
+                            <button className="icon-btn icon-btn-danger" title="Remove" onClick={() => {
+                              if (showConfirm) {
+                                showConfirm(`Remove tag "${t.name}" from the predefined list? This does not remove it from notes.`, () => {
+                                  setPredefinedTags(tagManager.removePredefinedTag(t.name));
+                                });
+                              } else {
+                                setPredefinedTags(tagManager.removePredefinedTag(t.name));
+                              }
+                            }}>
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })() : (
+              <div className="tag-mgmt-empty">
+                <Tag size={32} strokeWidth={1} />
+                <p>No predefined tags yet</p>
+                <p className="tag-mgmt-empty-hint">Add tags above or enable auto-harvest to build your list from notes automatically.</p>
               </div>
             )}
           </div>

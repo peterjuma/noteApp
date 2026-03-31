@@ -12,13 +12,14 @@ import { closeBrackets, closeBracketsKeymap, autocompletion } from "@codemirror/
 import { vim } from "@replit/codemirror-vim";
 import * as noteDB from "./services/notesDB";
 import { suggestTags } from "./services/tagSuggester";
+import { getPredefinedTags, harvestTags } from "./services/tagManager";
 import { ensureDefaults as loadSnippets } from "./services/snippets";
 import TableConverter from "./TableConverter";
 import TableEditor from "./TableEditor";
 import {
   Bold, Italic, Heading2, Link, ListOrdered, List, Quote, Paperclip, Image,
   Code, Braces, CheckSquare, Table, Strikethrough, Save, X,
-  Columns2, Maximize2, Eye, EyeOff, Minus, Sparkles, Check,
+  Columns2, Maximize2, Eye, EyeOff, Minus, Wand2, Check,
   Indent, Outdent, ChevronDown, Hash, Minus as MinusIcon, GitBranch, Sigma,
   FileText, Network, Workflow, PieChart, GitMerge, Footprints, AlertTriangle,
   TerminalSquare, Regex, Brackets, Superscript, Subscript, Highlighter,
@@ -127,6 +128,9 @@ function NoteEditor(props) {
   const [lastSaved, setLastSaved] = useState(null);
   const [tags, setTags] = useState(note.tags || []);
   const [tagInput, setTagInput] = useState("");
+  const [tagSuggestions, setTagSuggestions] = useState([]);
+  const [tagSuggestionIndex, setTagSuggestionIndex] = useState(-1);
+  const tagInputRef = useRef(null);
   const [noteAction, setNoteAction] = useState(note.action);
   const autoSave = props.autoSave;
   const [editorSuggestions, setEditorSuggestions] = useState([]);
@@ -1171,29 +1175,114 @@ function NoteEditor(props) {
               <button onClick={() => { setTags(tags.filter(t => t !== tag)); setIsDirty(true); }} aria-label={`Remove tag ${tag}`}>&times;</button>
             </span>
           ))}
+          <div className="tag-input-wrapper">
           <input
             type="text"
             className="tag-input"
             placeholder="Add tag..."
             value={tagInput}
+            ref={tagInputRef}
             aria-label="Add tag"
-            onChange={(e) => setTagInput(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setTagInput(val);
+              if (val.trim()) {
+                const predefined = getPredefinedTags();
+                const filtered = predefined
+                  .filter((t) => t.name.includes(val.trim().toLowerCase()) && !tags.includes(t.name))
+                  .slice(0, 8);
+                setTagSuggestions(filtered);
+                setTagSuggestionIndex(-1);
+              } else {
+                setTagSuggestions([]);
+                setTagSuggestionIndex(-1);
+              }
+            }}
+            onFocus={() => {
+              if (tagInput.trim()) {
+                const predefined = getPredefinedTags();
+                const filtered = predefined
+                  .filter((t) => t.name.includes(tagInput.trim().toLowerCase()) && !tags.includes(t.name))
+                  .slice(0, 8);
+                setTagSuggestions(filtered);
+              }
+            }}
+            onBlur={() => {
+              // Delay to allow click on suggestion
+              setTimeout(() => { setTagSuggestions([]); setTagSuggestionIndex(-1); }, 150);
+            }}
             onKeyDown={(e) => {
+              if (tagSuggestions.length > 0) {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setTagSuggestionIndex((i) => Math.min(i + 1, tagSuggestions.length - 1));
+                  return;
+                }
+                if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setTagSuggestionIndex((i) => Math.max(i - 1, -1));
+                  return;
+                }
+                if (e.key === "Enter" && tagSuggestionIndex >= 0) {
+                  e.preventDefault();
+                  const selected = tagSuggestions[tagSuggestionIndex].name;
+                  if (!tags.includes(selected)) {
+                    setTags([...tags, selected]);
+                    setIsDirty(true);
+                  }
+                  setTagInput("");
+                  setTagSuggestions([]);
+                  setTagSuggestionIndex(-1);
+                  return;
+                }
+              }
               if ((e.key === "Enter" || e.key === ",") && tagInput.trim()) {
                 e.preventDefault();
                 const newTag = tagInput.trim().toLowerCase();
                 if (!tags.includes(newTag)) {
                   setTags([...tags, newTag]);
                   setIsDirty(true);
+                  harvestTags([newTag]);
                 }
                 setTagInput("");
+                setTagSuggestions([]);
+                setTagSuggestionIndex(-1);
               }
               if (e.key === "Backspace" && !tagInput && tags.length > 0) {
                 setTags(tags.slice(0, -1));
                 setIsDirty(true);
               }
+              if (e.key === "Escape") {
+                setTagSuggestions([]);
+                setTagSuggestionIndex(-1);
+              }
             }}
           />
+          {tagSuggestions.length > 0 && (
+            <ul className="tag-autocomplete">
+              {tagSuggestions.map((t, i) => (
+                <li
+                  key={t.name}
+                  className={`tag-autocomplete-item ${i === tagSuggestionIndex ? "tag-autocomplete-item-active" : ""}`}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    if (!tags.includes(t.name)) {
+                      setTags([...tags, t.name]);
+                      setIsDirty(true);
+                    }
+                    setTagInput("");
+                    setTagSuggestions([]);
+                    setTagSuggestionIndex(-1);
+                    if (tagInputRef.current) tagInputRef.current.focus();
+                  }}
+                >
+                  {t.color && <span className="tag-autocomplete-dot" style={{ background: t.color }} />}
+                  {t.name}
+                </li>
+              ))}
+            </ul>
+          )}
+          </div>
           {/* Suggest tags — show when new note has title + body but no tags */}
           {props.tagSuggestEnabled !== false && tags.length === 0 && title.trim() && bodytxt.trim() && editorSuggestions.length === 0 && (
             <button
@@ -1202,7 +1291,7 @@ function NoteEditor(props) {
               style={{ marginLeft: "4px" }}
               title="Suggest tags"
             >
-              <Sparkles size={12} /> Suggest Tags
+              <Wand2 size={12} /> Suggest Tags
             </button>
           )}
           {editorSuggestions.length > 0 && editorSuggestions.map((s) => (
