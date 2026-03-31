@@ -180,21 +180,20 @@ export function getActiveWorkspace() {
 }
 
 export function setActiveWorkspace(dbName) {
+  const oldDb = localStorage.getItem(ACTIVE_WORKSPACE_KEY) || getDefaultWorkspace();
   localStorage.setItem(ACTIVE_WORKSPACE_KEY, dbName);
-  // Close current connection so next operation opens the new DB
-  if (dbInstance) {
-    dbInstance.close();
-    dbInstance = null;
-    currentDbName = null;
+  // Close old connection so next operation opens the new DB
+  if (oldDb && dbConnections.has(oldDb)) {
+    dbConnections.get(oldDb).close();
+    dbConnections.delete(oldDb);
   }
 }
 
 // Close DB (for cleanup)
 export function closeDB() {
-  if (dbInstance) {
-    dbInstance.close();
-    dbInstance = null;
-    currentDbName = null;
+  for (const [name, db] of dbConnections) {
+    db.close();
+    dbConnections.delete(name);
   }
 }
 
