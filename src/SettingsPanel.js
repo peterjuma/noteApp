@@ -1084,7 +1084,9 @@ function SettingsPanel({
                   value={syncToken}
                   onChange={(e) => setSyncToken(e.target.value)}
                   style={{ fontFamily: "monospace" }}
-                  autoComplete="off"
+                  autoComplete="new-password"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
                 />
                 <button
                   className="settings-btn-sm settings-btn-primary"

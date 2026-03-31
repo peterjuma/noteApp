@@ -274,6 +274,7 @@ function NavbarSidebar(props) {
           ref={searchRef}
           aria-label="Search notes"
           autoComplete="off"
+          name="noteapp-search"
           value={searchValue}
           onChange={handleSearchChange}
           onKeyDown={handleSearchKeyDown}
