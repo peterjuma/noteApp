@@ -43,6 +43,7 @@ function SettingsPanel({
   showConfirm,
   onClose,
   onSyncIntervalChange,
+  onLockTimeoutChange,
   allNotes,
 }) {
   const [activeTab, setActiveTab] = useState("general");
@@ -70,6 +71,7 @@ function SettingsPanel({
   const [syncStatus, setSyncStatus] = useState(null); // null | "syncing" | "success" | "error"
   const [syncMessage, setSyncMessage] = useState("");
   const [syncUser, setSyncUser] = useState(null);
+  const [linkGistInput, setLinkGistInput] = useState("");
   const wsInputRef = useRef(null);
   const renameInputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -498,6 +500,7 @@ function SettingsPanel({
                     const val = Number(e.target.value);
                     setLockTimeout(val);
                     setSessionTimeout(val);
+                    if (onLockTimeoutChange) onLockTimeoutChange();
                   }}
                 >
                   <option value={0}>Tab close only</option>
@@ -658,7 +661,10 @@ function SettingsPanel({
         {/* ─── Data & Archive Tab ─── */}
         {activeTab === "data" && (
           <div className="settings-section">
-            <h3 className="settings-section-title">Import & Export</h3>
+            <div className="settings-section-header">
+              <h3 className="settings-section-title">Import & Export</h3>
+              <span className="settings-ws-badge">{workspaces.find(w => w.dbName === activeDb)?.name || "Default"}</span>
+            </div>
             <div className="settings-actions-grid">
               <button className="settings-action-card" onClick={() => fileInputRef.current.click()}>
                 <Upload size={20} />
@@ -791,6 +797,7 @@ function SettingsPanel({
           <div className="settings-section">
             <div className="settings-section-header">
               <h3 className="settings-section-title">Response Templates</h3>
+              <span className="settings-ws-badge">{workspaces.find(w => w.dbName === activeDb)?.name || "Default"}</span>
               <button
                 className="settings-btn-sm"
                 onClick={() => {
@@ -913,7 +920,10 @@ function SettingsPanel({
         {/* ─── Tags Tab ─── */}
         {activeTab === "tags" && (
           <div className="settings-section">
-            <h3 className="settings-section-title">Tag Management</h3>
+            <div className="settings-section-header">
+              <h3 className="settings-section-title">Tag Management</h3>
+              <span className="settings-ws-badge">{workspaces.find(w => w.dbName === activeDb)?.name || "Default"}</span>
+            </div>
             <p className="settings-hint">
               Pre-define tags to keep your notes organized. These appear as autocomplete suggestions when tagging notes.
             </p>
@@ -1022,7 +1032,7 @@ function SettingsPanel({
                             </button>
                             <button className="icon-btn icon-btn-danger" title="Remove" onClick={() => {
                               if (showConfirm) {
-                                showConfirm(`Remove tag "${t.name}" from the predefined list? This does not remove it from notes.`, () => {
+                                showConfirm("Remove Tag", `Remove tag "${t.name}" from the predefined list? This does not remove it from notes.`, () => {
                                   tagManager.removePredefinedTag(t.name, activeDb).then(setPredefinedTags);
                                 });
                               } else {
@@ -1052,7 +1062,10 @@ function SettingsPanel({
         {activeTab === "sync" && (
           <>
           <div className="settings-section">
-            <h3 className="settings-section-title">Connection</h3>
+            <div className="settings-section-header">
+              <h3 className="settings-section-title">Connection</h3>
+              <span className="settings-ws-badge">{workspaces.find(w => w.dbName === activeDb)?.name || "Default"}</span>
+            </div>
             <p className="settings-hint">
               Sync your notes to a private GitHub Gist for backup and cross-device access.
               Requires a <a href="https://github.com/settings/tokens/new?scopes=gist&description=NoteApp+Sync" target="_blank" rel="noopener noreferrer" style={{ color: "#0969da" }}>GitHub Personal Access Token</a> with <code>gist</code> scope.
@@ -1224,16 +1237,19 @@ function SettingsPanel({
                     type="text"
                     className="settings-input"
                     placeholder="Gist ID (e.g. abc123def456)"
-                    id="link-gist-input"
+                    value={linkGistInput}
+                    onChange={(e) => setLinkGistInput(e.target.value)}
                   />
                   <button
                     className="settings-btn-sm settings-btn-primary"
+                    disabled={!linkGistInput.trim()}
                     onClick={async () => {
-                      const input = document.getElementById("link-gist-input");
-                      const gistId = input.value.trim();
-                      if (!gistId) return;
+                      const id = linkGistInput.trim();
+                      if (!id) return;
                       try {
-                        await gistSync.linkGist(activeDb, gistId);
+                        await gistSync.linkGist(activeDb, id);
+                        setGistId(id);
+                        setLinkGistInput("");
                         setSyncMessage("Gist linked successfully");
                         setSyncStatus("success");
                         setTimeout(() => setSyncStatus(null), 3000);

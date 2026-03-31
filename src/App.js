@@ -1395,14 +1395,30 @@ handleUnpinNote = async (noteid) => {
     const JSZip = require("jszip");
     const zip = new JSZip();
     this.state.allnotes.forEach((note) => {
-      const title = `${note.title.replace(/[^A-Z0-9]+/gi, "_") || "note"}.md`;
+      const title = `${(note.title || "note").replace(/[^A-Z0-9]+/gi, "_")}.md`;
       zip.file(title, note.body);
     });
 
-    // Include snippets/templates as JSON
-    db.getAllSnippets(this.state.activeDb).then((snippets) => {
+    // Include full note metadata (tags, timestamps) as JSON
+    const notesMeta = this.state.allnotes.map((n) => ({
+      noteid: n.noteid,
+      title: n.title,
+      tags: n.tags || [],
+      created_at: n.created_at,
+      updated_at: n.updated_at,
+    }));
+    zip.file("_notes.json", JSON.stringify(notesMeta, null, 2));
+
+    // Include snippets/templates and predefined tags
+    Promise.all([
+      db.getAllSnippets(this.state.activeDb),
+      db.getAllTags(this.state.activeDb),
+    ]).then(([snippets, tags]) => {
       if (snippets.length > 0) {
         zip.file("_templates.json", JSON.stringify(snippets, null, 2));
+      }
+      if (tags.length > 0) {
+        zip.file("_tags.json", JSON.stringify(tags, null, 2));
       }
       zip.generateAsync({ type: "blob" }).then((content) => {
         const wsName = ((this.state.workspaces || []).find(w => w.dbName === this.state.activeDb) || {}).name || "default";
@@ -1544,9 +1560,51 @@ handleUnpinNote = async (noteid) => {
         }
       }
 
+      // Import predefined tags if present
+      let tagCount = 0;
+      if (zip.files["_tags.json"]) {
+        try {
+          const tagsJson = await zip.files["_tags.json"].async("text");
+          const tags = JSON.parse(tagsJson);
+          if (Array.isArray(tags)) {
+            const existingTags = await db.getAllTags(this.state.activeDb);
+            const existingNames = new Set(existingTags.map((t) => t.name));
+            for (const t of tags) {
+              if (!existingNames.has(t.name)) {
+                await db.putTag(t, this.state.activeDb);
+                tagCount++;
+              }
+            }
+          }
+        } catch {
+          // ignore invalid tags JSON
+        }
+      }
+
+      // Restore per-note tags from metadata if present
+      if (zip.files["_notes.json"] && importedNotes.length > 0) {
+        try {
+          const metaJson = await zip.files["_notes.json"].async("text");
+          const notesMeta = JSON.parse(metaJson);
+          if (Array.isArray(notesMeta)) {
+            const metaMap = new Map(notesMeta.map((m) => [m.title, m]));
+            for (const note of importedNotes) {
+              const meta = metaMap.get(note.title);
+              if (meta && meta.tags && meta.tags.length > 0) {
+                note.tags = meta.tags;
+                await db.updateNote(note, this.state.activeDb);
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const parts = [];
       if (importedNotes.length > 0) parts.push(`Imported ${importedNotes.length} note${importedNotes.length !== 1 ? "s" : ""}`);
       if (templateCount > 0) parts.push(`${templateCount} template${templateCount !== 1 ? "s" : ""}`);
+      if (tagCount > 0) parts.push(`${tagCount} tag${tagCount !== 1 ? "s" : ""}`);
       if (skippedCount > 0) parts.push(`skipped ${skippedCount} duplicate${skippedCount !== 1 ? "s" : ""}`);
       this.showAlert("Import Complete", parts.join(", ") + ".");
     } catch {
@@ -1683,6 +1741,7 @@ handleUnpinNote = async (noteid) => {
           handleSortNotes={this.handleSortNotes}
           handleNoteListItemClick={this.handleNoteListItemClick}
           allNotes={allnotes}
+          activeDb={this.state.activeDb}
         />
       );
     }
@@ -2070,6 +2129,10 @@ handleUnpinNote = async (noteid) => {
               onSyncIntervalChange={async (ms) => {
                 await gistSync.setSyncInterval(ms, this.state.activeDb);
                 this._startSyncInterval();
+              }}
+              onLockTimeoutChange={() => {
+                this._teardownLockTimeout();
+                this._setupLockTimeout();
               }}
               onClose={() => this.setState({ showSettings: false })}
               allNotes={allnotes}

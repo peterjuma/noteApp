@@ -20,6 +20,7 @@ async function migrateLegacy(dbName) {
   } catch {
     // ignore parse errors
   }
+  localStorage.removeItem(LEGACY_KEY);
   localStorage.setItem(migKey, "1");
 }
 
@@ -66,24 +67,28 @@ export function getDefaultSnippets() {
       name: "Greeting",
       content: "Hi {{customer_name}},\n\nThank you for reaching out to us.\n\n",
       category: "zendesk",
+      created_at: Date.now(),
     },
     {
       id: "default-escalation",
       name: "Escalation",
       content: "I've escalated this to our engineering team for further investigation. Ticket reference: {{ticket_id}}.\n\nYou can expect an update within 24-48 hours.\n\n",
       category: "zendesk",
+      created_at: Date.now(),
     },
     {
       id: "default-closure",
       name: "Closure",
       content: "I'm glad we could resolve this for you. If you have any further questions, don't hesitate to reach out.\n\nBest regards",
       category: "zendesk",
+      created_at: Date.now(),
     },
     {
       id: "default-followup",
       name: "Follow Up",
       content: "Hi {{customer_name}},\n\nJust following up on our previous conversation regarding {{ticket_id}}.\n\nHave you had a chance to try the solution we suggested? Please let us know if you need any further assistance.\n\n",
       category: "zendesk",
+      created_at: Date.now(),
     },
   ];
 }

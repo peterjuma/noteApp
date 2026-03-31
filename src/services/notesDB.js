@@ -362,11 +362,10 @@ export async function purgeWorkspace(dbName) {
 // Delete a workspace entirely (remove DB + workspace entry)
 export async function deleteWorkspaceDB(dbName) {
   if (dbName === "notesdb") return; // Can't delete default
-  // Close connection if it's the active one
-  if (dbInstance && currentDbName === dbName) {
-    dbInstance.close();
-    dbInstance = null;
-    currentDbName = null;
+  // Close connection if open
+  if (dbConnections.has(dbName)) {
+    dbConnections.get(dbName).close();
+    dbConnections.delete(dbName);
   }
   // Delete the IndexedDB
   await new Promise((resolve, reject) => {

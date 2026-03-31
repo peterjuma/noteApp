@@ -26,6 +26,9 @@ async function migrateLegacy(dbName) {
   } catch {
     // ignore
   }
+  // Clean up legacy keys
+  localStorage.removeItem(LEGACY_KEY);
+  localStorage.removeItem(LEGACY_HARVEST_KEY);
   localStorage.setItem(migKey, "1");
 }
 

@@ -41,6 +41,10 @@ async function migrateLegacy(dbName) {
   } catch {
     // ignore
   }
+  // Clean up legacy keys after successful migration
+  for (const key of Object.values(LEGACY_KEYS)) {
+    localStorage.removeItem(key);
+  }
   localStorage.setItem(migKey, "1");
 }
 

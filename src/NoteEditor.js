@@ -154,10 +154,10 @@ function NoteEditor(props) {
   const insertMarkdownRef = useRef(null);
   const autosaveTimerRef = useRef(null);
 
-  // Load predefined tags on mount
+  // Load predefined tags on mount and when workspace changes
   useEffect(() => {
     getPredefinedTags(getActiveWorkspace()).then(setPredefinedTagsCache);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [props.activeDb]);
 
   // Word/character count
   const wordCount = bodytxt.trim() ? bodytxt.trim().split(/\s+/).length : 0;
