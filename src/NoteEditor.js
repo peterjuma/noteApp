@@ -682,12 +682,26 @@ function NoteEditor(props) {
           // Check if the HTML contains actual rich formatting tags (not just a text wrapper)
           const hasRichHtml = /<(?:p|div|span|br|h[1-6]|ul|ol|li|table|tr|td|th|a|img|pre|code|blockquote|strong|em|b|i|hr)\b/i.test(htmlContent);
           if (hasRichHtml) {
-            // Clean Zendesk quirks before conversion:
-            // Remove empty style attributes, data-* attributes, Zendesk wrapper divs
+            // Clean Zendesk/email quirks before conversion:
             let cleanedHtml = htmlContent
+              // Remove style attributes (inline styles from editors)
               .replace(/\s+style="[^"]*"/gi, "")
+              // Remove data-* attributes
               .replace(/\s+data-[a-z-]+="[^"]*"/gi, "")
-              .replace(/<\/?font[^>]*>/gi, "");
+              // Remove <font> tags (legacy email formatting)
+              .replace(/<\/?font[^>]*>/gi, "")
+              // Convert <br> inside <p>/<div> to newlines (Zendesk uses br heavily)
+              .replace(/<br\s*\/?>\s*<br\s*\/?>/gi, "</p><p>")
+              // Remove empty spans used for spacing
+              .replace(/<span[^>]*>\s*<\/span>/gi, "")
+              // Remove empty divs
+              .replace(/<div[^>]*>\s*<\/div>/gi, "")
+              // Normalize &nbsp; to regular space
+              .replace(/&nbsp;/gi, " ")
+              // Remove zero-width spaces
+              .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
+              // Remove class attributes (no use after paste)
+              .replace(/\s+class="[^"]*"/gi, "");
 
             html2md.keep(["pre", "code"]);
             let pasteData = html2md.turndown(cleanedHtml);

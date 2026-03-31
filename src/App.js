@@ -10,6 +10,7 @@ import ConfirmDialog from "./ConfirmDialog";
 import { html2md, md2html } from "./useMarkDown";
 import { saveAs } from "file-saver";
 import Fuse from "fuse.js";
+import { formatSelectionForCopy } from "./services/copyFormatter";
 import * as db from "./services/notesDB";
 import { computeContentHash, buildHashSet } from "./services/contentHash";
 
@@ -1234,8 +1235,9 @@ handleUnpinNote = async (noteid) => {
     }
     if (copiedContent) {
       e.preventDefault();
-      // Write both HTML and plain text so rich editors (Zendesk) get formatted content
-      const htmlBlob = new Blob([copiedContent], { type: "text/html" });
+      // Apply inline styles so formatting survives paste into rich editors
+      const styledHtml = formatSelectionForCopy(copiedContent);
+      const htmlBlob = new Blob([styledHtml], { type: "text/html" });
       const textBlob = new Blob([html2md.turndown(copiedContent)], { type: "text/plain" });
       navigator.clipboard.write([
         new ClipboardItem({ "text/html": htmlBlob, "text/plain": textBlob })
