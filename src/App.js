@@ -152,6 +152,9 @@ class App extends Component {
     this.initializeFuse();
     this._startSyncInterval();
 
+    // Request persistent storage to protect IndexedDB from cache eviction
+    this._requestPersistentStorage();
+
     // Handle PWA launch actions (share target, file handler, shortcuts)
     this._handleLaunchActions();
 
@@ -254,6 +257,17 @@ class App extends Component {
   _handleOffline = () => this.setState({ isOffline: true });
 
   // --- PWA Integration Methods ---
+
+  // Request persistent storage to protect data from browser eviction
+  _requestPersistentStorage = async () => {
+    if (navigator.storage && navigator.storage.persist) {
+      const granted = await navigator.storage.persist();
+      if (!granted) {
+        // Browser declined — data may be evicted under storage pressure
+        // This is common on first visit; PWAs installed to home screen get auto-granted
+      }
+    }
+  };
 
   // Update app badge with note count (Badging API)
   _updateBadge = () => {
