@@ -1441,7 +1441,13 @@ handleUnpinNote = async (noteid) => {
         const wsName = ((this.state.workspaces || []).find(w => w.dbName === this.state.activeDb) || {}).name || "default";
         const profile = this.state.profileName || "backup";
         const date = new Date().toISOString().slice(0, 10);
-        saveAs(content, `noteapp_${profile}_${wsName}_${date}.zip`);
+        const filename = `noteapp_${profile}_${wsName}_${date}.zip`;
+        saveAs(content, filename);
+
+        const exportParts = [`${this.state.allnotes.length} note${this.state.allnotes.length !== 1 ? "s" : ""}`];
+        if (snippets.length > 0) exportParts.push(`${snippets.length} template${snippets.length !== 1 ? "s" : ""}`);
+        if (tags.length > 0) exportParts.push(`${tags.length} tag${tags.length !== 1 ? "s" : ""}`);
+        this.showAlert("Export Complete", `Exported ${exportParts.join(", ")} to ${filename}`);
       });
     });
   }
@@ -1603,6 +1609,7 @@ handleUnpinNote = async (noteid) => {
       }
 
       // Restore per-note tags from metadata if present
+      let tagsRestoredCount = 0;
       if (zip.files["_notes.json"] && importedNotes.length > 0) {
         try {
           const metaJson = await zip.files["_notes.json"].async("text");
@@ -1613,6 +1620,7 @@ handleUnpinNote = async (noteid) => {
               const meta = metaMap.get(note.title);
               if (meta && meta.tags && meta.tags.length > 0) {
                 note.tags = meta.tags;
+                tagsRestoredCount += meta.tags.length;
                 await db.updateNote(note, this.state.activeDb);
               }
             }
@@ -1623,11 +1631,12 @@ handleUnpinNote = async (noteid) => {
       }
 
       const parts = [];
-      if (importedNotes.length > 0) parts.push(`Imported ${importedNotes.length} note${importedNotes.length !== 1 ? "s" : ""}`);
+      if (importedNotes.length > 0) parts.push(`${importedNotes.length} note${importedNotes.length !== 1 ? "s" : ""}`);
       if (templateCount > 0) parts.push(`${templateCount} template${templateCount !== 1 ? "s" : ""}`);
-      if (tagCount > 0) parts.push(`${tagCount} tag${tagCount !== 1 ? "s" : ""}`);
-      if (skippedCount > 0) parts.push(`skipped ${skippedCount} duplicate${skippedCount !== 1 ? "s" : ""}`);
-      this.showAlert("Import Complete", parts.join(", ") + ".");
+      if (tagCount > 0) parts.push(`${tagCount} predefined tag${tagCount !== 1 ? "s" : ""}`);
+      if (tagsRestoredCount > 0) parts.push(`${tagsRestoredCount} note tag${tagsRestoredCount !== 1 ? "s" : ""} restored`);
+      if (skippedCount > 0) parts.push(`${skippedCount} duplicate${skippedCount !== 1 ? "s" : ""} skipped`);
+      this.showAlert("Import Complete", `Imported ${parts.join(", ")}.`);
     } catch {
       this.showAlert("Import Failed", "Failed to read ZIP archive. Please ensure it's a valid .zip file.");
     }
