@@ -208,6 +208,7 @@ class App extends Component {
   };
 
   _setupLockTimeout = () => {
+    this._teardownLockTimeout();
     if (this._lockTimer) clearTimeout(this._lockTimer);
     const timeout = getSessionTimeout();
     // timeout > 0 means inactivity-based lock; reset on user interaction
@@ -910,16 +911,17 @@ handleUnpinNote = async (noteid) => {
     }
   
     const sortedNotes = [...pinnedNotes, ...unpinnedNotes];
+    const shouldAutoSelect = sortedNotes.length > 0 && !this.state.noteid && this.state.action !== "addnote" && this.state.action !== "updatenote";
   
     this.setState({
       sortby: sortValue,
       allnotes: sortedNotes,
-    }, () => this.initializeFuse());
-  
-    // Auto-select the first note only on initial load (no current note selected)
-    if (sortedNotes.length > 0 && !this.state.noteid && this.state.action !== "addnote" && this.state.action !== "updatenote") {
-      this.handleNoteListItemClick(null, sortedNotes[0]);
-    }
+    }, () => {
+      this.initializeFuse();
+      if (shouldAutoSelect) {
+        this.handleNoteListItemClick(null, sortedNotes[0]);
+      }
+    });
   };
 
   // Add a single suggested tag to a note
@@ -1053,24 +1055,25 @@ handleUnpinNote = async (noteid) => {
 
   _doBulkDelete = (noteIds) => {
     const idsSet = new Set(noteIds);
+    const activeDb = this.state.activeDb;
     this.setState(
       (prev) => ({
         allnotes: prev.allnotes.filter((n) => !idsSet.has(n.noteid)),
         selectedNotes: [],
         lastSelectedNoteId: null,
       }),
-      () => this.initializeFuse()
+      () => {
+        this.initializeFuse();
+        for (const id of noteIds) {
+          db.deleteNote(id, activeDb);
+        }
+        if (this.state.allnotes.length > 0) {
+          this.handleNoteListItemClick(null, this.state.allnotes[0]);
+        } else {
+          this.handleClickHomeBtn();
+        }
+      }
     );
-    for (const id of noteIds) {
-      db.deleteNote(id, this.state.activeDb);
-    }
-    // Navigate to remaining note or home
-    const remaining = this.state.allnotes;
-    if (remaining.length > 0) {
-      this.handleNoteListItemClick(null, remaining[0]);
-    } else {
-      this.handleClickHomeBtn();
-    }
   };
 
   handleDeleteNote = (e, note) => {
@@ -1091,7 +1094,7 @@ handleUnpinNote = async (noteid) => {
   };
 
   _doArchiveNote = async (note) => {
-    const noteObj = this.state.allnotes.find(n => n.noteid === (note.noteid || note.noteid));
+    const noteObj = this.state.allnotes.find(n => n.noteid === note.noteid);
     if (noteObj) {
       await db.archiveNote(noteObj, this.state.activeDb);
     }
@@ -1099,28 +1102,25 @@ handleUnpinNote = async (noteid) => {
   };
 
   _doDeleteNote(note) {
-    var index = this.state.allnotes.findIndex(
+    const currentNotes = this.state.allnotes;
+    const index = currentNotes.findIndex(
       (noteitem) => noteitem.noteid === note.noteid
     );
-    this.setState((prevState) => {
-      var updatedNotes = prevState.allnotes.filter(
+    const nextnote = currentNotes[index + 1] || currentNotes[index - 1] || null;
+    this.setState((prevState) => ({
+      allnotes: prevState.allnotes.filter(
         (noteitem) => noteitem.noteid !== note.noteid
-      );
-      return {
-        allnotes: updatedNotes,
-      };
-    }, () => this.initializeFuse());
+      ),
+    }), () => {
+      this.initializeFuse();
+      this._updateBadge();
+      if (nextnote) {
+        this.handleNoteListItemClick("", nextnote);
+      } else {
+        this.handleClickHomeBtn();
+      }
+    });
     db.deleteNote(note.noteid, this.state.activeDb);
-    // Update badge after deletion
-    setTimeout(() => this._updateBadge(), 0);
-    if (this.state.allnotes.length - 1 === 0) {
-      this.handleClickHomeBtn();
-    } else {
-      var nextnote = this.state.allnotes[index + 1]
-        ? this.state.allnotes[index + 1]
-        : this.state.allnotes[index - 1];
-      this.handleNoteListItemClick("", nextnote);
-    }
   }
 
   handleSaveNote(e, note) {
@@ -1135,10 +1135,12 @@ handleUnpinNote = async (noteid) => {
       // Check if this note already exists (e.g., from a previous autosave)
       const alreadyExists = this.state.allnotes.some(n => n.noteid === note.noteid);
       if (alreadyExists) {
-        // Treat as update instead
+        // Treat as update instead — fall through to update path
         note.action = "updatenote";
-        return this.handleSaveNote(e, note);
       }
+    }
+
+    if (note.action === "addnote") {
       const newNote = {
         noteid: note.noteid,
         title: notetitle,
@@ -1191,6 +1193,7 @@ handleUnpinNote = async (noteid) => {
       const existingNote = this.state.allnotes.find(
         (n) => n.noteid === note.noteid
       );
+      const activeDb = this.state.activeDb;
       db.updateNote({
         noteid: note.noteid,
         title: notetitle,
@@ -1198,14 +1201,14 @@ handleUnpinNote = async (noteid) => {
         tags: note.tags || [],
         created_at: existingNote ? existingNote.created_at : Date.now(),
         updated_at: Date.now(),
-      }, this.state.activeDb).then(() => {
+      }, activeDb).then(() => {
         // Save version snapshot after update
         db.saveVersion({
           noteid: note.noteid,
           title: notetitle,
           body: noteMarkdown,
           tags: note.tags || [],
-        }, this.state.activeDb);
+        }, activeDb);
       });
     }
 
@@ -1482,6 +1485,10 @@ handleUnpinNote = async (noteid) => {
         this.handleNoteListItemClick(null, newNote);
         this.initializeFuse();
     });
+    };
+    reader.onerror = () => {
+      this.showAlert("Import Failed", "Could not read file.");
+      event.target.value = "";
     };
     reader.readAsText(file);
   };

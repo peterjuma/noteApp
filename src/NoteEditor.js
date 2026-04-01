@@ -692,14 +692,15 @@ function NoteEditor(props) {
           // Check if the HTML contains actual rich formatting tags (not just a text wrapper)
           const hasRichHtml = /<(?:p|div|span|br|h[1-6]|ul|ol|li|table|tr|td|th|a|img|pre|code|blockquote|strong|em|b|i|hr)\b/i.test(htmlContent);
           if (hasRichHtml) {
-            // Clean Zendesk/email quirks before conversion:
-            let cleanedHtml = htmlContent
-              // Remove style attributes (inline styles from editors)
-              .replace(/\s+style="[^"]*"/gi, "")
-              // Remove data-* attributes
-              .replace(/\s+data-[a-z-]+="[^"]*"/gi, "")
-              // Remove <font> tags (legacy email formatting)
-              .replace(/<\/?font[^>]*>/gi, "")
+            // Sanitize HTML first to prevent XSS before conversion
+            let cleanedHtml = DOMPurify.sanitize(htmlContent, {
+              ALLOWED_TAGS: ["p", "div", "span", "br", "h1", "h2", "h3", "h4", "h5", "h6",
+                "ul", "ol", "li", "table", "tr", "td", "th", "thead", "tbody",
+                "a", "img", "pre", "code", "blockquote", "strong", "em", "b", "i", "hr", "sup", "sub"],
+              ALLOWED_ATTR: ["href", "src", "alt", "title"],
+            });
+            // Clean Zendesk/email quirks after sanitization:
+            cleanedHtml = cleanedHtml
               // Convert <br> inside <p>/<div> to newlines (Zendesk uses br heavily)
               .replace(/<br\s*\/?>\s*<br\s*\/?>/gi, "</p><p>")
               // Remove empty spans used for spacing
@@ -709,9 +710,7 @@ function NoteEditor(props) {
               // Normalize &nbsp; to regular space
               .replace(/&nbsp;/gi, " ")
               // Remove zero-width spaces
-              .replace(/[\u200B\u200C\u200D\uFEFF]/g, "")
-              // Remove class attributes (no use after paste)
-              .replace(/\s+class="[^"]*"/gi, "");
+              .replace(/[\u200B\u200C\u200D\uFEFF]/g, "");
 
             html2md.keep(["pre", "code"]);
             let pasteData = html2md.turndown(cleanedHtml);

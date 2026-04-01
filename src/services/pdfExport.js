@@ -64,22 +64,22 @@ export async function exportNoteToPdf(note) {
   });
   document.body.appendChild(iframe);
 
-  // Wait for iframe to be ready
-  await new Promise((resolve) => { iframe.onload = resolve; iframe.src = "about:blank"; });
+  try {
+    // Wait for iframe to be ready
+    await new Promise((resolve) => { iframe.onload = resolve; iframe.src = "about:blank"; });
 
-  const iframeDoc = iframe.contentDocument;
-  iframeDoc.open();
-  iframeDoc.write(`<!DOCTYPE html><html><head><style>${cssText}</style></head><body>
+    const iframeDoc = iframe.contentDocument;
+    iframeDoc.open();
+    iframeDoc.write(`<!DOCTYPE html><html><head><style>${cssText}</style></head><body>
     <h1 style="font-size:1.75rem;font-weight:600;margin:0 0 16px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;">${titleHtml}</h1>
     <div class="markdown-body">${bodyHtml}</div>
   </body></html>`);
-  iframeDoc.close();
+    iframeDoc.close();
 
-  // Let the iframe content lay out fully
-  iframe.style.height = iframeDoc.body.scrollHeight + "px";
-  await new Promise((resolve) => setTimeout(resolve, 100));
+    // Let the iframe content lay out fully
+    iframe.style.height = iframeDoc.body.scrollHeight + "px";
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
-  try {
     const canvas = await html2canvas(iframeDoc.body, {
       scale: 2,
       useCORS: true,
