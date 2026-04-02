@@ -243,7 +243,7 @@ function NavbarSidebar(props) {
         </div>
         <input ref={uploadRef} type="file" accept=".md" style={{ display: "none" }} onChange={(e) => { if (props.onUploadNote) props.onUploadNote(e); e.target.value = ""; }} />
         <span className="toolbar-divider" style={{ height: 1, width: 24, margin: "2px 0" }} />
-        {props.isHomePage ? (
+        {props.isHomePage || props.isEditing ? (
           <button onClick={props.onToggleCollapse} className="icon-btn" title="Expand sidebar" aria-label="Expand sidebar">
             <PanelLeftOpen size={18} />
           </button>
