@@ -36,6 +36,7 @@ function SettingsPanel({
   onBackup,
   onUploadNote,
   onZipImport,
+  onRestoreFromGist,
   onPurgeArchive,
   onPurgeWorkspace,
   onPurgeAllWorkspaces,
@@ -680,6 +681,11 @@ function SettingsPanel({
                 <Download size={20} />
                 <span className="settings-action-title">Download Backup</span>
                 <span className="settings-action-desc">Export all notes as .zip</span>
+              </button>
+              <button className="settings-action-card" onClick={onRestoreFromGist} disabled={!gistId}>
+                <Cloud size={20} />
+                <span className="settings-action-title">Restore from Gist</span>
+                <span className="settings-action-desc">{gistId ? "Pull all notes from linked Gist" : "Link a Gist in Sync tab first"}</span>
               </button>
             </div>
             <input ref={fileInputRef} type="file" accept=".md" className="hidden" onChange={onUploadNote} />

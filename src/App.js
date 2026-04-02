@@ -1513,6 +1513,36 @@ handleUnpinNote = async (noteid) => {
     reader.readAsText(file);
   };
 
+  handleRestoreFromGist = () => {
+    this.showConfirm(
+      "Restore from Gist",
+      "This will pull all notes from your linked Gist and merge them with your current notes. Newer versions win, duplicates are skipped. Continue?",
+      async () => {
+        try {
+          this.setState({ syncStatus: { state: "syncing", message: "Restoring from Gist…", lastSync: this.state.syncStatus.lastSync } });
+          const remoteData = await gistSync.pull(this.state.activeDb);
+          if (!remoteData || !remoteData.notes || remoteData.notes.length === 0) {
+            this.setState({ syncStatus: { ...this.state.syncStatus, state: "idle" } });
+            this.showAlert("No Notes Found", "The linked Gist contains no notes to restore.");
+            return;
+          }
+          const { notes: mergedNotes } = gistSync.mergeNotes(this.state.allnotes, remoteData.notes);
+          for (const note of mergedNotes) await db.updateNote(note, this.state.activeDb);
+          this.setState(
+            { allnotes: mergedNotes, syncStatus: { state: "success", message: `Restored ${remoteData.notes.length} notes from Gist`, lastSync: Date.now() } },
+            () => { this.handleSortNotes(this.state.sortby); this.initializeFuse(); }
+          );
+          this.showAlert("Restore Complete", `Merged ${remoteData.notes.length} note${remoteData.notes.length !== 1 ? "s" : ""} from Gist.`);
+          setTimeout(() => this.setState((s) => s.syncStatus.state === "success" ? { syncStatus: { ...s.syncStatus, state: "idle" } } : null), 5000);
+        } catch (err) {
+          this.setState({ syncStatus: { state: "error", message: err.message || "Restore failed", lastSync: this.state.syncStatus.lastSync } });
+          this.showAlert("Restore Failed", err.message || "Could not pull notes from Gist.");
+        }
+      },
+      { confirmText: "Restore" }
+    );
+  };
+
   handleZipImport = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -1953,7 +1983,8 @@ handleUnpinNote = async (noteid) => {
               localStorage.setItem("noteapp_dark_mode", next);
               return { darkMode: next };
             })}
-
+            isEditing={this.state.activepage === "editnote"}
+            isHomePage={this.state.action === "homepage"}
           />
 
           {!this.state.showSettings && !this.state.showTableConverter && (
@@ -2126,6 +2157,7 @@ handleUnpinNote = async (noteid) => {
               onBackup={this.handleNotesBackup}
               onUploadNote={this.handleNotesUpload}
               onZipImport={this.handleZipImport}
+              onRestoreFromGist={this.handleRestoreFromGist}
               onPurgeArchive={async () => {
                 await db.purgeArchive();
                 this.setState({ archivedNotes: [] });

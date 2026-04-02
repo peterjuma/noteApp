@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { convert, detectFormat } from "./services/tableConverter";
-import { X, Copy, Check } from "lucide-react";
+import { X, Copy, Check, Upload } from "lucide-react";
 
 const FORMATS = [
   { id: "csv", label: "CSV" },
@@ -17,9 +17,12 @@ function TableConverter({ onClose, onInsert, darkMode, fullPage }) {
   const [fromFormat, setFromFormat] = useState("csv");
   const [toFormat, setToFormat] = useState("markdown");
   const [copied, setCopied] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const fileInputRef = useRef(null);
 
   const handleInputChange = (val) => {
     setInput(val);
+    setFileName("");
     if (val.trim()) {
       const detected = detectFormat(val);
       setFromFormat(detected);
@@ -44,6 +47,30 @@ function TableConverter({ onClose, onInsert, darkMode, fullPage }) {
     });
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = "";
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File too large. Maximum size is 5 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const content = ev.target.result;
+      setFileName(file.name);
+      setInput(content);
+      if (content.trim()) {
+        const detected = detectFormat(content);
+        setFromFormat(detected);
+        const target = detected === "markdown" ? "csv" : "markdown";
+        setToFormat(target);
+        setOutput(convert(content, detected, target));
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const formatLabel = FORMATS.find(f => f.id === fromFormat)?.label || fromFormat;
 
   const content = (
@@ -59,11 +86,16 @@ function TableConverter({ onClose, onInsert, darkMode, fullPage }) {
           <div className="tc-panel-header">
             <span className="tc-label">
               Input
-              {input.trim() && <span className="tc-detected">Detected: {formatLabel}</span>}
+              {fileName && <span className="tc-detected">{fileName}</span>}
+              {!fileName && input.trim() && <span className="tc-detected">Detected: {formatLabel}</span>}
             </span>
+            <button className="btn-cancel" onClick={() => fileInputRef.current.click()} style={{ padding: "2px 8px", fontSize: "12px", marginRight: 4 }}>
+              <Upload size={12} /> Upload
+            </button>
             <select value={fromFormat} onChange={(e) => setFromFormat(e.target.value)} className="tc-select">
               {FORMATS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
             </select>
+            <input ref={fileInputRef} type="file" accept=".csv,.tsv,.json,.html,.sql,.md,.txt" style={{ display: "none" }} onChange={handleFileUpload} />
           </div>
           <textarea
             className="tc-textarea"

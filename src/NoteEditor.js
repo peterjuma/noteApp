@@ -1109,6 +1109,12 @@ function NoteEditor(props) {
             ref={titleRef}
             aria-label="Note title"
             onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+                e.preventDefault();
+                if (saveFnRef.current) saveFnRef.current();
+              }
+            }}
             className={`editor-title ${darkMode ? "editor-title-dark" : ""}`}
           />
         )}
@@ -1234,6 +1240,11 @@ function NoteEditor(props) {
               setTimeout(() => { setTagSuggestions([]); setTagSuggestionIndex(-1); }, 150);
             }}
             onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+                e.preventDefault();
+                if (saveFnRef.current) saveFnRef.current();
+                return;
+              }
               if (tagSuggestions.length > 0) {
                 if (e.key === "ArrowDown") {
                   e.preventDefault();

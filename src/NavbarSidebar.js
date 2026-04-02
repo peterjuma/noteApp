@@ -1,5 +1,5 @@
 import React from "react";
-import { Menu, Plus, Search, Settings, TableProperties, StickyNote, Upload, Layers, X, Moon, Sun, ChevronRight, Home, SlidersHorizontal } from "lucide-react";
+import { Menu, Plus, Search, Settings, TableProperties, StickyNote, Upload, Layers, X, Moon, Sun, ChevronRight, Home, SlidersHorizontal, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 function NavbarSidebar(props) {
   var note = {
@@ -243,9 +243,15 @@ function NavbarSidebar(props) {
         </div>
         <input ref={uploadRef} type="file" accept=".md" style={{ display: "none" }} onChange={(e) => { if (props.onUploadNote) props.onUploadNote(e); e.target.value = ""; }} />
         <span className="toolbar-divider" style={{ height: 1, width: 24, margin: "2px 0" }} />
-        <button data-action="addnote" onClick={(e) => { if (isPageActive && props.onClosePages) props.onClosePages(); props.handleEditNoteBtn(e, note); }} className="icon-btn" title="New Note" aria-label="New note">
-          <Plus size={18} style={{ pointerEvents: "none" }} />
-        </button>
+        {props.isHomePage ? (
+          <button onClick={props.onToggleCollapse} className="icon-btn" title="Expand sidebar" aria-label="Expand sidebar">
+            <PanelLeftOpen size={18} />
+          </button>
+        ) : (
+          <button data-action="addnote" onClick={(e) => { if (isPageActive && props.onClosePages) props.onClosePages(); props.handleEditNoteBtn(e, note); }} className="icon-btn" title="New Note" aria-label="New note">
+            <Plus size={18} style={{ pointerEvents: "none" }} />
+          </button>
+        )}
       </nav>
     );
   }
@@ -261,9 +267,15 @@ function NavbarSidebar(props) {
           {hamburgerMenu}
         </div>
         <h4 className="sidebar-title">{sidebarTitle}</h4>
-        <button data-action="addnote" onClick={(e) => { if (isPageActive && props.onClosePages) props.onClosePages(); props.handleEditNoteBtn(e, note); }} className="icon-btn sidebar-new-note-btn" title="New Note (⌘⇧I)" aria-label="Create new note">
-          <Plus size={18} style={{ pointerEvents: "none" }} />
-        </button>
+        {props.isEditing ? (
+          <button onClick={props.onToggleCollapse} className="icon-btn" title="Collapse sidebar" aria-label="Collapse sidebar">
+            <PanelLeftClose size={18} />
+          </button>
+        ) : (
+          <button data-action="addnote" onClick={(e) => { if (isPageActive && props.onClosePages) props.onClosePages(); props.handleEditNoteBtn(e, note); }} className="icon-btn sidebar-new-note-btn" title="New Note (⌘⇧I)" aria-label="Create new note">
+            <Plus size={18} style={{ pointerEvents: "none" }} />
+          </button>
+        )}
       </div>
       {/* Always-visible search */}
       <div className="sidebar-search">
