@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/noteApp/static/css/main.aa1a83da.css",
-    "main.js": "/noteApp/static/js/main.d339b0a4.js",
+    "main.js": "/noteApp/static/js/main.f20a8c26.js",
     "static/js/9649.8a943047.chunk.js": "/noteApp/static/js/9649.8a943047.chunk.js",
     "static/js/7230.ae6e2292.chunk.js": "/noteApp/static/js/7230.ae6e2292.chunk.js",
     "static/js/3169.fa3a6eda.chunk.js": "/noteApp/static/js/3169.fa3a6eda.chunk.js",
@@ -227,7 +227,7 @@
     "static/media/KaTeX_Size3-Regular.woff2": "/noteApp/static/media/KaTeX_Size3-Regular.e1951519f6f0596f7356.woff2",
     "index.html": "/noteApp/index.html",
     "main.aa1a83da.css.map": "/noteApp/static/css/main.aa1a83da.css.map",
-    "main.d339b0a4.js.map": "/noteApp/static/js/main.d339b0a4.js.map",
+    "main.f20a8c26.js.map": "/noteApp/static/js/main.f20a8c26.js.map",
     "9649.8a943047.chunk.js.map": "/noteApp/static/js/9649.8a943047.chunk.js.map",
     "7230.ae6e2292.chunk.js.map": "/noteApp/static/js/7230.ae6e2292.chunk.js.map",
     "3169.fa3a6eda.chunk.js.map": "/noteApp/static/js/3169.fa3a6eda.chunk.js.map",
@@ -386,6 +386,6 @@
   },
   "entrypoints": [
     "static/css/main.aa1a83da.css",
-    "static/js/main.d339b0a4.js"
+    "static/js/main.f20a8c26.js"
   ]
 }
