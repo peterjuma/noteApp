@@ -2447,7 +2447,7 @@ handleUnpinNote = async (noteid) => {
               initialTab={this.state.settingsTab}
               onTabChange={(tab) => {
                 this.setState({ settingsTab: tab });
-                window.history.replaceState(null, "", `#settings/${tab}`);
+                window.history.pushState(null, "", `#settings/${tab}`);
               }}
               allNotes={allnotes}
               onGdriveRestore={async (notes) => {
