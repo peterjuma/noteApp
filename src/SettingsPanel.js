@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import {
   X, Plus, Check, Trash2, PencilLine, ArrowLeftRight,
-  Upload, Download, FolderUp, RotateCcw, Archive,
+  Upload, Download, FolderUp, RotateCcw, Archive, Github,
   Moon, Sun, Save, Sparkles, Settings, FileText, Wand2,
   RefreshCw, Cloud, CloudOff, Link2, ExternalLink, HardDrive, Star, Tag, Lock, Fingerprint, Clock,
 } from "lucide-react";
 import * as snippetService from "./services/snippets";
+import * as googleDrive from "./services/googleDrive";
 import * as gistSync from "./services/gistSync";
 import * as tagManager from "./services/tagManager";
 import { isPinSet, setPin, removePin, verifyPin, getSessionTimeout, setSessionTimeout, isBiometricAvailable, isBiometricEnabled, registerBiometric, removeBiometric } from "./LockScreen";
@@ -36,7 +37,9 @@ function SettingsPanel({
   onBackup,
   onUploadNote,
   onZipImport,
+  onFullBackupImport,
   onRestoreFromGist,
+  onImportFromGist,
   onPurgeArchive,
   onPurgeWorkspace,
   onPurgeAllWorkspaces,
@@ -46,6 +49,7 @@ function SettingsPanel({
   onSyncIntervalChange,
   onLockTimeoutChange,
   allNotes,
+  onGdriveRestore,
 }) {
   const [activeTab, setActiveTab] = useState("general");
   const [wsName, setWsName] = useState("");
@@ -77,6 +81,11 @@ function SettingsPanel({
   const renameInputRef = useRef(null);
   const fileInputRef = useRef(null);
   const zipInputRef = useRef(null);
+  const fullBackupInputRef = useRef(null);
+  const [dataExportAll, setDataExportAll] = useState(false);
+  const [gistImportUrl, setGistImportUrl] = useState("");
+  const [gistImportBusy, setGistImportBusy] = useState(false);
+  const [showGistImportDialog, setShowGistImportDialog] = useState(false);
 
   // PIN lock state
   const [pinEnabled, setPinEnabled] = useState(isPinSet());
@@ -88,6 +97,12 @@ function SettingsPanel({
   const [lockTimeout, setLockTimeout] = useState(getSessionTimeout());
   const [biometricAvail, setBiometricAvail] = useState(false);
   const [biometricOn, setBiometricOn] = useState(isBiometricEnabled());
+  const [showAllArchive, setShowAllArchive] = useState(false);
+  const [gdriveClientId, setGdriveClientId] = useState(googleDrive.isConfigured() ? "configured" : "");
+  const [gdriveStatus, setGdriveStatus] = useState(null); // null | "busy" | "success" | "error"
+  const [gdriveMessage, setGdriveMessage] = useState("");
+  const [gdriveAuthorized, setGdriveAuthorized] = useState(false);
+  const [gdriveBackupInfo, setGdriveBackupInfo] = useState(null);
   const pinInputRef = useRef(null);
 
   // Check biometric availability
@@ -98,7 +113,7 @@ function SettingsPanel({
   // Load archive when switching to archive tab
   useEffect(() => {
     if (activeTab === "archive" && onLoadArchive) {
-      onLoadArchive();
+      onLoadArchive(showAllArchive);
     }
     if (activeTab === "templates") {
       snippetService.ensureDefaults(activeDb).then(setSnippets);
@@ -118,7 +133,7 @@ function SettingsPanel({
       gistSync.getLastSync(activeDb).then(setLastSyncTime);
       gistSync.getSyncInterval(activeDb).then(setLocalSyncInterval);
     }
-  }, [activeTab, activeDb, onLoadArchive]);
+  }, [activeTab, activeDb, onLoadArchive, showAllArchive]);
 
   // Focus workspace name input
   useEffect(() => {
@@ -661,53 +676,205 @@ function SettingsPanel({
 
         {/* ─── Data & Archive Tab ─── */}
         {activeTab === "data" && (
+          <>
+          {/* ── Backup ── */}
           <div className="settings-section">
             <div className="settings-section-header">
-              <h3 className="settings-section-title">Import & Export</h3>
-              <span className="settings-ws-badge">{workspaces.find(w => w.dbName === activeDb)?.name || "Default"}</span>
+              <h3 className="settings-section-title">Backup</h3>
+              {!dataExportAll && <span className="settings-ws-badge">{workspaces.find(w => w.dbName === activeDb)?.name || "Default"}</span>}
+              <div style={{ marginLeft: "auto" }}>
+                <label className="settings-toggle-label" style={{ fontSize: 12, gap: 6, cursor: "pointer" }}>
+                  <input type="checkbox" checked={dataExportAll} onChange={() => setDataExportAll(prev => !prev)} style={{ accentColor: "#4493f8" }} />
+                  All workspaces
+                </label>
+              </div>
             </div>
-            <div className="settings-actions-grid">
-              <button className="settings-action-card" onClick={() => fileInputRef.current.click()}>
-                <Upload size={20} />
-                <span className="settings-action-title">Upload Note</span>
-                <span className="settings-action-desc">Import a .md file</span>
-              </button>
-              <button className="settings-action-card" onClick={() => zipInputRef.current.click()}>
-                <FolderUp size={20} />
-                <span className="settings-action-title">Import Archive</span>
-                <span className="settings-action-desc">Import notes from .zip</span>
-              </button>
-              <button className="settings-action-card" onClick={onBackup}>
-                <Download size={20} />
-                <span className="settings-action-title">Download Backup</span>
-                <span className="settings-action-desc">Export all notes as .zip</span>
-              </button>
-              <button className="settings-action-card" onClick={onRestoreFromGist} disabled={!gistId}>
-                <Cloud size={20} />
-                <span className="settings-action-title">Restore from Gist</span>
-                <span className="settings-action-desc">{gistId ? "Pull all notes from linked Gist" : "Link a Gist in Sync tab first"}</span>
-              </button>
+            <div className="settings-data-group">
+              <div className="settings-data-row">
+                <div className="settings-data-info">
+                  <span className="settings-data-label"><Download size={14} /> Full Backup</span>
+                  <span className="settings-data-desc">{dataExportAll ? "Export all workspaces — notes, templates, tags, history, images, pins" : "Export current workspace — notes, templates, tags, history, images, pins"}</span>
+                </div>
+                <button className="settings-data-btn" onClick={() => onBackup(dataExportAll)}>Download .zip</button>
+              </div>
             </div>
-            <input ref={fileInputRef} type="file" accept=".md" className="hidden" onChange={onUploadNote} />
-            <input ref={zipInputRef} type="file" accept=".zip" className="hidden" onChange={onZipImport} />
+          </div>
 
-            {/* Danger Zone */}
-            <h3 className="settings-section-title settings-danger-title" style={{ marginTop: "32px" }}>
-              Danger Zone
-            </h3>
+          {/* ── Restore ── */}
+          <div className="settings-section">
+            <h3 className="settings-section-title">Restore</h3>
+            <div className="settings-data-group">
+              <div className="settings-data-row">
+                <div className="settings-data-info">
+                  <span className="settings-data-label"><FolderUp size={14} /> Restore Backup</span>
+                  <span className="settings-data-desc">Restore from a full backup .zip file</span>
+                </div>
+                <button className="settings-data-btn" onClick={() => fullBackupInputRef.current.click()}>Choose file</button>
+              </div>
+              <div className="settings-data-row">
+                <div className="settings-data-info">
+                  <span className="settings-data-label"><Cloud size={14} /> Restore from Sync</span>
+                  <span className="settings-data-desc">{gistId ? "Pull all notes from linked GitHub Gist" : "Link a Gist in the Sync tab first"}</span>
+                </div>
+                <button className="settings-data-btn" onClick={onRestoreFromGist} disabled={!gistId}>Restore</button>
+              </div>
+              {googleDrive.isConfigured() && (
+                <div className="settings-data-row">
+                  <div className="settings-data-info">
+                    <span className="settings-data-label"><HardDrive size={14} /> Restore from Google Drive</span>
+                    <span className="settings-data-desc">{gdriveAuthorized ? "Download notes from your Drive backup" : "Sign in via Sync tab to enable"}</span>
+                  </div>
+                  <button
+                    className="settings-data-btn"
+                    disabled={!gdriveAuthorized || gdriveStatus === "busy"}
+                    onClick={async () => {
+                      setGdriveStatus("busy");
+                      setGdriveMessage("Restoring...");
+                      try {
+                        const data = await googleDrive.restoreFromDrive();
+                        if (!data || !data.notes) {
+                          setGdriveMessage("No backup found on Google Drive");
+                          setGdriveStatus("error");
+                          setTimeout(() => setGdriveStatus(null), 5000);
+                          return;
+                        }
+                        showConfirm(
+                          "Restore from Google Drive",
+                          `Restore ${data.notes.length} note${data.notes.length !== 1 ? "s" : ""} from backup (${data.workspace || "unknown workspace"}, ${new Date(data.exportedAt).toLocaleDateString()})? Existing notes with the same ID will be overwritten.`,
+                          async () => {
+                            if (onGdriveRestore) {
+                              await onGdriveRestore(data.notes);
+                              setGdriveMessage(`Restored ${data.notes.length} notes`);
+                              setGdriveStatus("success");
+                            }
+                          },
+                          { confirmText: "Restore", danger: false }
+                        );
+                        setGdriveStatus(null);
+                      } catch (err) {
+                        setGdriveMessage(err.message);
+                        setGdriveStatus("error");
+                        setTimeout(() => setGdriveStatus(null), 5000);
+                      }
+                    }}
+                  >
+                    Restore
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Import Notes ── */}
+          <div className="settings-section">
+            <h3 className="settings-section-title">Import Notes</h3>
+            <div className="settings-data-group">
+              <div className="settings-data-row">
+                <div className="settings-data-info">
+                  <span className="settings-data-label"><Upload size={14} /> Upload Markdown</span>
+                  <span className="settings-data-desc">Import a single .md file as a new note</span>
+                </div>
+                <button className="settings-data-btn" onClick={() => fileInputRef.current.click()}>Choose file</button>
+              </div>
+              <div className="settings-data-row">
+                <div className="settings-data-info">
+                  <span className="settings-data-label"><FolderUp size={14} /> Import from ZIP</span>
+                  <span className="settings-data-desc">Import multiple notes from a .zip archive</span>
+                </div>
+                <button className="settings-data-btn" onClick={() => zipInputRef.current.click()}>Choose file</button>
+              </div>
+              <div className="settings-data-row">
+                <div className="settings-data-info">
+                  <span className="settings-data-label"><Github size={14} /> Import from Gist</span>
+                  <span className="settings-data-desc">Import markdown files from any public or private GitHub Gist</span>
+                </div>
+                <button
+                  className="settings-data-btn"
+                  disabled={gistImportBusy}
+                  onClick={() => {
+                    setShowGistImportDialog(true);
+                    setGistImportUrl("");
+                  }}
+                >
+                  {gistImportBusy ? "Importing…" : "Enter URL"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <input ref={fileInputRef} type="file" accept=".md" className="hidden" onChange={onUploadNote} />
+          <input ref={zipInputRef} type="file" accept=".zip" className="hidden" onChange={onZipImport} />
+          <input ref={fullBackupInputRef} type="file" accept=".zip" className="hidden" onChange={onFullBackupImport} />
+
+          {/* Gist URL dialog */}
+          {showGistImportDialog && (
+            <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowGistImportDialog(false); }}>
+              <div className={`modal-dialog ${darkMode ? "modal-dialog-dark" : ""}`} style={{ maxWidth: 480 }}>
+                <div className="modal-header">
+                  <h3 className="modal-title"><Github size={18} /> Import from Gist</h3>
+                  <button onClick={() => setShowGistImportDialog(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 4 }}><X size={18} /></button>
+                </div>
+                <div className="modal-body">
+                  <p className="settings-hint" style={{ marginBottom: 12 }}>
+                    Paste a GitHub Gist URL or ID. All markdown files in the gist will be imported as notes. Public gists work without a token.
+                  </p>
+                  <input
+                    type="text"
+                    className="settings-input"
+                    style={{ width: "100%" }}
+                    placeholder="https://gist.github.com/user/abc123"
+                    value={gistImportUrl}
+                    autoFocus
+                    onChange={(e) => setGistImportUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && gistImportUrl.trim() && !gistImportBusy) {
+                        e.preventDefault();
+                        setGistImportBusy(true);
+                        onImportFromGist(gistImportUrl).then((res) => {
+                          setGistImportBusy(false);
+                          if (res?.success) { setGistImportUrl(""); setShowGistImportDialog(false); }
+                        });
+                      }
+                      if (e.key === "Escape") setShowGistImportDialog(false);
+                    }}
+                  />
+                </div>
+                <div className="modal-footer">
+                  <button className="btn-cancel" onClick={() => setShowGistImportDialog(false)}>Cancel</button>
+                  <button
+                    className="btn-save"
+                    disabled={!gistImportUrl.trim() || gistImportBusy}
+                    onClick={() => {
+                      setGistImportBusy(true);
+                      onImportFromGist(gistImportUrl).then((res) => {
+                        setGistImportBusy(false);
+                        if (res?.success) { setGistImportUrl(""); setShowGistImportDialog(false); }
+                      });
+                    }}
+                  >
+                    {gistImportBusy ? <><RefreshCw size={13} className="spin" /> Importing…</> : <><Download size={13} /> Import</>}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Danger Zone */}
+          <div className="settings-section">
+            <h3 className="settings-section-title settings-danger-title">Danger Zone</h3>
             <div className="settings-danger-zone">
               <div className="settings-danger-item">
                 <div className="settings-danger-info">
                   <span className="settings-danger-label">Purge current workspace</span>
                   <span className="settings-danger-desc">
-                    Delete all notes, pins, and images in "{workspaces.find(w => w.dbName === activeDb)?.name || "Default"}" workspace
+                    Delete all notes, pins, images, templates, tags, and version history in &ldquo;{workspaces.find(w => w.dbName === activeDb)?.name || "Default"}&rdquo;
                   </span>
                 </div>
                 <button
                   className="settings-danger-btn"
                   onClick={() => showConfirm(
                     "Purge Workspace",
-                    `This will permanently delete ALL notes, pins, and images in the "${workspaces.find(w => w.dbName === activeDb)?.name || "Default"}" workspace. This cannot be undone.`,
+                    `This will permanently delete ALL data in the "${workspaces.find(w => w.dbName === activeDb)?.name || "Default"}" workspace — notes, pins, images, templates, tags, version history, and settings. This cannot be undone.`,
                     () => onPurgeWorkspace(activeDb),
                     { confirmText: "Purge Workspace", danger: true }
                   )}
@@ -727,7 +894,7 @@ function SettingsPanel({
                   className="settings-danger-btn"
                   onClick={() => showConfirm(
                     "Delete All Workspaces",
-                    "This will permanently delete ALL notes across ALL workspaces, remove all non-default workspaces, and reset to an empty Default workspace. This cannot be undone.",
+                    "This will permanently delete ALL data across ALL workspaces — notes, pins, images, templates, tags, version history, and settings. All non-default workspaces will be removed. This cannot be undone.",
                     onPurgeAllWorkspaces,
                     { confirmText: "Delete Everything", danger: true }
                   )}
@@ -737,6 +904,7 @@ function SettingsPanel({
               </div>
             </div>
           </div>
+          </>
         )}
 
         {/* ─── Archive Tab ─── */}
@@ -747,22 +915,31 @@ function SettingsPanel({
                 <Archive size={18} />
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Archive</h3>
                 <span className="bin-page-count">{archivedNotes.length} item{archivedNotes.length !== 1 ? "s" : ""}</span>
+                {!showAllArchive && <span className="settings-ws-badge">{workspaces.find(w => w.dbName === activeDb)?.name || "Default"}</span>}
               </div>
-              {archivedNotes.length > 0 && (
-                <button
-                  className="bin-purge-btn"
-                  onClick={() => showConfirm(
-                    "Purge Archive",
-                    `Permanently delete all ${archivedNotes.length} archived note${archivedNotes.length !== 1 ? "s" : ""}? This cannot be undone.`,
-                    onPurgeArchive,
-                    { confirmText: "Purge All", danger: true }
-                  )}
-                >
-                  Empty Archive
-                </button>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label className="settings-toggle-label" style={{ fontSize: 12, gap: 6, cursor: "pointer" }}>
+                  <input type="checkbox" checked={showAllArchive} onChange={() => setShowAllArchive(prev => !prev)} style={{ accentColor: "#4493f8" }} />
+                  All workspaces
+                </label>
+                {archivedNotes.length > 0 && (
+                  <button
+                    className="bin-purge-btn"
+                    onClick={() => showConfirm(
+                      showAllArchive ? "Purge All Archives" : "Purge Workspace Archive",
+                      showAllArchive
+                        ? `Permanently delete all ${archivedNotes.length} archived note${archivedNotes.length !== 1 ? "s" : ""} across all workspaces? This cannot be undone.`
+                        : `Permanently delete ${archivedNotes.length} archived note${archivedNotes.length !== 1 ? "s" : ""} from this workspace? This cannot be undone.`,
+                      () => onPurgeArchive(showAllArchive),
+                      { confirmText: "Purge All", danger: true }
+                    )}
+                  >
+                    Empty Archive
+                  </button>
+                )}
+              </div>
             </div>
-            <p className="settings-hint">Notes moved to archive can be restored or permanently deleted.</p>
+            <p className="settings-hint">Notes moved to archive can be restored or permanently deleted.{!showAllArchive && " Showing archive for the current workspace only."}</p>
 
             {archivedNotes.length > 0 ? (
               <div className="bin-page-list" style={{ overflow: "visible" }}>
@@ -1273,6 +1450,192 @@ function SettingsPanel({
                 </div>
               </div>
             )}
+
+          {/* ─── Google Drive Backup ─── */}
+          <div className="settings-section" style={{ marginTop: 24 }}>
+            <div className="settings-section-header">
+              <h3 className="settings-section-title">Google Drive Backup</h3>
+            </div>
+            <p className="settings-hint">
+              Back up your notes to Google Drive. Uses a hidden app folder — your files stay private.
+              {!googleDrive.isConfigured() && (
+                <> Requires a <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" style={{ color: "#0969da" }}>Google Cloud OAuth Client ID</a> with Drive API enabled.</>
+              )}
+            </p>
+
+            {/* Client ID setup */}
+            {!googleDrive.isConfigured() ? (
+              <div className="settings-sync-field">
+                <label className="settings-toggle-label" style={{ marginBottom: 6, fontSize: 13 }}>
+                  OAuth Client ID
+                </label>
+                <div className="settings-inline-form">
+                  <input
+                    type="text"
+                    className="settings-input"
+                    placeholder="xxxx.apps.googleusercontent.com"
+                    value={gdriveClientId === "configured" ? "" : gdriveClientId}
+                    onChange={(e) => setGdriveClientId(e.target.value)}
+                  />
+                  <button
+                    className="settings-btn-sm settings-btn-primary"
+                    disabled={!gdriveClientId.trim() || gdriveClientId === "configured"}
+                    onClick={() => {
+                      googleDrive.setClientId(gdriveClientId);
+                      setGdriveClientId("configured");
+                      setGdriveMessage("Client ID saved");
+                      setGdriveStatus("success");
+                      setTimeout(() => setGdriveStatus(null), 3000);
+                    }}
+                  >
+                    <Save size={12} /> Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="settings-sync-field" style={{ marginBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 13, color: "#3fb950" }}>
+                      <HardDrive size={14} /> Client ID configured
+                    </span>
+                    <button
+                      className="settings-btn-sm"
+                      style={{ color: "#dc2626", fontSize: 11 }}
+                      onClick={() => {
+                        googleDrive.setClientId("");
+                        setGdriveClientId("");
+                        setGdriveAuthorized(false);
+                        setGdriveBackupInfo(null);
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+
+                {/* Authorize / Disconnect */}
+                {!gdriveAuthorized ? (
+                  <button
+                    className="settings-btn-sm settings-btn-primary"
+                    disabled={gdriveStatus === "busy"}
+                    onClick={async () => {
+                      setGdriveStatus("busy");
+                      setGdriveMessage("Signing in...");
+                      try {
+                        await googleDrive.authorize();
+                        setGdriveAuthorized(true);
+                        setGdriveMessage("Signed in to Google");
+                        setGdriveStatus("success");
+                        // Fetch backup info
+                        const info = await googleDrive.getBackupInfo();
+                        setGdriveBackupInfo(info);
+                        setTimeout(() => setGdriveStatus(null), 3000);
+                      } catch (err) {
+                        setGdriveMessage(err.message);
+                        setGdriveStatus("error");
+                        setTimeout(() => setGdriveStatus(null), 5000);
+                      }
+                    }}
+                  >
+                    <Cloud size={12} /> Sign in with Google
+                  </button>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <button
+                        className="settings-btn-sm settings-btn-primary"
+                        disabled={gdriveStatus === "busy"}
+                        onClick={async () => {
+                          setGdriveStatus("busy");
+                          setGdriveMessage("Backing up...");
+                          try {
+                            const wsName = workspaces.find(w => w.dbName === activeDb)?.name || "Default";
+                            const result = await googleDrive.backupToDrive(allNotes || [], wsName);
+                            setGdriveMessage(`Backup saved (${new Date(result.modifiedTime).toLocaleString()})`);
+                            setGdriveStatus("success");
+                            setGdriveBackupInfo({ modifiedTime: result.modifiedTime });
+                            setTimeout(() => setGdriveStatus(null), 5000);
+                          } catch (err) {
+                            setGdriveMessage(err.message);
+                            setGdriveStatus("error");
+                            setTimeout(() => setGdriveStatus(null), 5000);
+                          }
+                        }}
+                      >
+                        <Upload size={12} /> Backup to Drive
+                      </button>
+                      <button
+                        className="settings-btn-sm"
+                        disabled={gdriveStatus === "busy"}
+                        onClick={async () => {
+                          setGdriveStatus("busy");
+                          setGdriveMessage("Restoring...");
+                          try {
+                            const data = await googleDrive.restoreFromDrive();
+                            if (!data || !data.notes) {
+                              setGdriveMessage("No backup found on Google Drive");
+                              setGdriveStatus("error");
+                            } else {
+                              showConfirm(
+                                "Restore from Google Drive",
+                                `Restore ${data.notes.length} note${data.notes.length !== 1 ? "s" : ""} from backup (${data.workspace || "unknown workspace"}, ${new Date(data.exportedAt).toLocaleDateString()})? Existing notes with the same ID will be overwritten.`,
+                                async () => {
+                                  if (onGdriveRestore) {
+                                    await onGdriveRestore(data.notes);
+                                    setGdriveMessage(`Restored ${data.notes.length} notes`);
+                                    setGdriveStatus("success");
+                                  }
+                                },
+                                { confirmText: "Restore", danger: false }
+                              );
+                              setGdriveStatus(null);
+                            }
+                            setTimeout(() => setGdriveStatus(null), 5000);
+                          } catch (err) {
+                            setGdriveMessage(err.message);
+                            setGdriveStatus("error");
+                            setTimeout(() => setGdriveStatus(null), 5000);
+                          }
+                        }}
+                      >
+                        <Download size={12} /> Restore from Drive
+                      </button>
+                      <button
+                        className="settings-btn-sm"
+                        style={{ color: "#dc2626" }}
+                        onClick={async () => {
+                          await googleDrive.disconnect();
+                          setGdriveAuthorized(false);
+                          setGdriveBackupInfo(null);
+                          setGdriveMessage("");
+                        }}
+                      >
+                        <CloudOff size={12} /> Disconnect
+                      </button>
+                    </div>
+
+                    {gdriveBackupInfo && (
+                      <p className="settings-hint" style={{ margin: 0 }}>
+                        Last backup: {new Date(gdriveBackupInfo.modifiedTime).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Status message */}
+                {gdriveStatus && (
+                  <p style={{
+                    fontSize: 12,
+                    marginTop: 8,
+                    color: gdriveStatus === "error" ? "#dc2626" : gdriveStatus === "success" ? "#3fb950" : "#8b949e",
+                  }}>
+                    {gdriveMessage}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
           </>
         )}
       </div>

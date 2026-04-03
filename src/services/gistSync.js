@@ -318,3 +318,92 @@ export async function linkGist(dbName, gistId) {
   await setGistId(dbName, gistId);
   return data;
 }
+
+// ─── Import Notes from Any Gist ───
+
+/**
+ * Fetch markdown files from any Gist (public or private).
+ * Accepts a Gist ID or full URL (e.g. https://gist.github.com/user/abc123).
+ * Public gists are fetched without authentication.
+ * Private gists use the configured token if available.
+ * Returns an array of { title, body } objects from .md files found in the gist.
+ */
+export async function fetchGistNotes(gistInput, dbName = "notesdb") {
+  // Extract gist ID from URL or use as-is
+  const gistId = extractGistId(gistInput);
+  if (!gistId) throw new Error("Invalid Gist URL or ID");
+
+  // Try with token first (for private gists), fall back to public API
+  let gist;
+  const token = await getToken(dbName).catch(() => "");
+
+  if (token) {
+    gist = await gistFetch(`/gists/${gistId}`, {}, dbName);
+  } else {
+    // Public fetch without authentication
+    const res = await fetch(`${API_BASE}/gists/${gistId}`, {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (res.status === 404) throw new Error("Gist not found — check the URL or ID, or it may be private");
+    if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+    gist = await res.json();
+  }
+
+  if (!gist.files || Object.keys(gist.files).length === 0) {
+    throw new Error("Gist contains no files");
+  }
+
+  const notes = [];
+  for (const [filename, file] of Object.entries(gist.files)) {
+    // Import markdown files and plain text files
+    if (!filename.endsWith(".md") && !filename.endsWith(".txt") && !filename.endsWith(".markdown")) {
+      continue;
+    }
+
+    // For truncated files, fetch the raw URL
+    let content = file.content;
+    if (file.truncated && file.raw_url) {
+      const rawRes = await fetch(file.raw_url);
+      if (rawRes.ok) content = await rawRes.text();
+    }
+
+    if (!content || !content.trim()) continue;
+
+    // Use leading H1 as title if present, otherwise use filename
+    let title;
+    let body = content;
+    const h1Match = content.match(/^#\s+(.+)$/m);
+    if (h1Match && content.trimStart().startsWith(h1Match[0])) {
+      title = h1Match[1].trim();
+      body = content.trimStart().slice(h1Match[0].length).trimStart();
+    } else {
+      title = filename.replace(/\.(md|txt|markdown)$/, "");
+    }
+
+    notes.push({ title, body });
+  }
+
+  if (notes.length === 0) {
+    throw new Error("No markdown files found in this Gist");
+  }
+
+  return { notes, description: gist.description || "", owner: gist.owner?.login || "anonymous" };
+}
+
+function extractGistId(input) {
+  if (!input || typeof input !== "string") return null;
+  const trimmed = input.trim();
+
+  // Full URL: https://gist.github.com/user/abc123 or https://gist.github.com/abc123
+  const urlMatch = trimmed.match(/gist\.github\.com\/(?:[^/]+\/)?([a-f0-9]+)/i);
+  if (urlMatch) return urlMatch[1];
+
+  // Raw gist URL: https://gist.githubusercontent.com/user/abc123/...
+  const rawMatch = trimmed.match(/gist\.githubusercontent\.com\/(?:[^/]+\/)([a-f0-9]+)/i);
+  if (rawMatch) return rawMatch[1];
+
+  // Bare hex ID
+  if (/^[a-f0-9]+$/i.test(trimmed) && trimmed.length >= 20) return trimmed;
+
+  return null;
+}

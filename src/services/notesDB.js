@@ -285,9 +285,12 @@ export async function archiveNote(note, sourceWorkspace) {
   await archiveDb.put("archived", archivedNote);
 }
 
-export async function getArchivedNotes() {
+export async function getArchivedNotes(workspaceFilter) {
   const archiveDb = await getArchiveDB();
-  const notes = await archiveDb.getAll("archived");
+  let notes = await archiveDb.getAll("archived");
+  if (workspaceFilter) {
+    notes = notes.filter(n => (n.sourceWorkspace || "notesdb") === workspaceFilter);
+  }
   return notes.sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0));
 }
 
@@ -312,17 +315,31 @@ export async function permanentlyDeleteArchived(noteid) {
   await archiveDb.delete("archived", noteid);
 }
 
-export async function getArchiveCount() {
+export async function getArchiveCount(workspaceFilter) {
   const archiveDb = await getArchiveDB();
-  return (await archiveDb.getAll("archived")).length;
+  const all = await archiveDb.getAll("archived");
+  if (workspaceFilter) {
+    return all.filter(n => (n.sourceWorkspace || "notesdb") === workspaceFilter).length;
+  }
+  return all.length;
 }
 
-// Purge all archived notes
-export async function purgeArchive() {
+// Purge archived notes (optionally scoped to a workspace)
+export async function purgeArchive(workspaceFilter) {
   const archiveDb = await getArchiveDB();
-  const tx = archiveDb.transaction("archived", "readwrite");
-  await tx.store.clear();
-  await tx.done;
+  if (!workspaceFilter) {
+    const tx = archiveDb.transaction("archived", "readwrite");
+    await tx.store.clear();
+    await tx.done;
+  } else {
+    const all = await archiveDb.getAll("archived");
+    const toDelete = all.filter(n => (n.sourceWorkspace || "notesdb") === workspaceFilter);
+    const tx = archiveDb.transaction("archived", "readwrite");
+    for (const note of toDelete) {
+      await tx.store.delete(note.noteid);
+    }
+    await tx.done;
+  }
 }
 
 // ===== Snippets/Templates =====
@@ -349,10 +366,11 @@ export async function deleteSnippet(id, dbName = "notesdb") {
 // Purge all notes in a specific workspace (keeps the workspace itself)
 export async function purgeWorkspace(dbName) {
   const db = await getDB(dbName);
-  const tx = db.transaction(["notes", "pinnedNotes", "images", "snippets", "tags", "settings"], "readwrite");
+  const tx = db.transaction(["notes", "pinnedNotes", "images", "versions", "snippets", "tags", "settings"], "readwrite");
   await tx.objectStore("notes").clear();
   await tx.objectStore("pinnedNotes").clear();
   await tx.objectStore("images").clear();
+  await tx.objectStore("versions").clear();
   await tx.objectStore("snippets").clear();
   await tx.objectStore("tags").clear();
   await tx.objectStore("settings").clear();
@@ -468,4 +486,116 @@ export async function deleteVersions(noteid, dbName = "notesdb") {
     cursor = await cursor.continue();
   }
   await tx.done;
+}
+
+// ===== Full Workspace Export/Import =====
+
+// Sensitive settings keys that should NOT be exported (credentials, tokens)
+const CREDENTIAL_KEYS = new Set([
+  "gist_token", "gist_id", "sync_enabled", "sync_interval",
+]);
+
+/**
+ * Export all data from a single workspace (excluding credentials).
+ * Returns a JSON-serializable object.
+ */
+export async function exportWorkspaceData(dbName = "notesdb") {
+  const database = await getDB(dbName);
+  const notes = await database.getAll("notes");
+  const pins = await database.getAll("pinnedNotes");
+  const tags = await database.getAll("tags");
+  const snippets = await database.getAll("snippets");
+  const versions = await database.getAll("versions");
+  const allSettings = await database.getAll("settings");
+  const settings = allSettings.filter(s => !CREDENTIAL_KEYS.has(s.key));
+
+  // Images: store as base64 since blobs aren't JSON-serializable
+  const rawImages = await database.getAll("images");
+  const images = [];
+  for (const img of rawImages) {
+    if (img.blob instanceof Blob) {
+      const buf = await img.blob.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(buf).reduce((data, byte) => data + String.fromCharCode(byte), "")
+      );
+      images.push({
+        id: img.id,
+        name: img.name,
+        type: img.type || img.blob.type,
+        size: img.size || img.blob.size,
+        created_at: img.created_at,
+        base64,
+      });
+    }
+  }
+
+  return { notes, pins, tags, snippets, versions, settings, images };
+}
+
+/**
+ * Import full workspace data into a workspace (merges, doesn't wipe first).
+ * Returns counts of what was imported.
+ */
+export async function importWorkspaceData(data, dbName = "notesdb") {
+  const database = await getDB(dbName);
+  const counts = { notes: 0, pins: 0, tags: 0, snippets: 0, versions: 0, settings: 0, images: 0 };
+
+  if (data.notes) {
+    for (const note of data.notes) {
+      await database.put("notes", note);
+      counts.notes++;
+    }
+  }
+  if (data.pins) {
+    for (const pin of data.pins) {
+      await database.put("pinnedNotes", pin);
+      counts.pins++;
+    }
+  }
+  if (data.tags) {
+    for (const tag of data.tags) {
+      await database.put("tags", tag);
+      counts.tags++;
+    }
+  }
+  if (data.snippets) {
+    for (const snippet of data.snippets) {
+      await database.put("snippets", snippet);
+      counts.snippets++;
+    }
+  }
+  if (data.versions) {
+    for (const version of data.versions) {
+      await database.put("versions", version);
+      counts.versions++;
+    }
+  }
+  if (data.settings) {
+    for (const setting of data.settings) {
+      if (!CREDENTIAL_KEYS.has(setting.key)) {
+        await database.put("settings", setting);
+        counts.settings++;
+      }
+    }
+  }
+  if (data.images) {
+    for (const img of data.images) {
+      // Convert base64 back to blob
+      const binary = atob(img.base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: img.type || "image/png" });
+      await database.put("images", {
+        id: img.id,
+        blob,
+        name: img.name || img.id,
+        type: img.type,
+        size: img.size || blob.size,
+        created_at: img.created_at || Date.now(),
+      });
+      counts.images++;
+    }
+  }
+
+  return counts;
 }

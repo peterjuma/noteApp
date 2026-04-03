@@ -61,6 +61,7 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 - **Sort** — By title (A-Z, Z-A), created date, modified date, or manual drag-to-reorder
 - **Fuzzy search** — Fuse.js-powered search with weighted scoring across title (0.4), body (0.3), and tags (0.3), with `title:`, `body:`, `tag:` scope prefixes
 - **Cached search index** — Fuse.js instances (default + 3 prefix-scoped variants) are cached and rebuilt only when notes change, eliminating per-keystroke index creation for instant results
+- **Find & Replace** — In-editor search panel (Ctrl/Cmd+F to find, Ctrl/Cmd+H to replace) with match highlighting, regex support, and case-sensitive toggle — powered by CodeMirror's built-in search extension
 - **Note metadata** — Created and modified timestamps displayed on each note
 - **Drag & drop reorder** — Manual ordering with visual drag handles and drop zone feedback
 - **Keyboard navigation** — Arrow keys, Enter, Space to navigate and select notes in the list
@@ -80,17 +81,20 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 
 ### Archive
 - **Archive instead of delete** — Choose to archive notes rather than permanently delete them
-- **Archive management** — Browse, restore, and permanently delete archived notes from Settings > Data & Archive
-- **Purge archive** — Bulk delete all archived notes
+- **Workspace-scoped archive** — Archive view defaults to showing notes from the current workspace, with an "All workspaces" toggle to see everything
+- **Archive management** — Browse, restore, and permanently delete archived notes from Settings > Archive
+- **Purge archive** — Bulk delete archived notes for the current workspace or all workspaces
 - **Archive metadata** — Tracks source workspace and archive timestamp
 
 ### Settings
-- **Tabbed interface** — General, Workspaces, Data & Archive, and Templates tabs
-- **General** — Dark mode, auto-save, tag suggestions, and Vim keybindings toggles
-- **Workspaces** — Full workspace CRUD with inline rename
-- **Data & Archive** — Import/export, archive management, and Danger Zone
+- **Tabbed interface** — General, Workspaces, Data & Archive, Archive, Templates, Tags, and Sync tabs
+- **General** — Dark mode, auto-save, tag suggestions, Vim keybindings, and profile name
+- **Workspaces** — Full workspace CRUD with inline rename and default workspace selection
+- **Data & Archive** — Backup, Restore, and Import Notes sections with compact row layout; full backup/restore, Gist import, Google Drive restore, and Danger Zone
+- **Workspace-scoped data** — "All workspaces" toggle on backup to export across all workspaces in a single archive
+- **Full backup format** — Exports include notes, templates, tags, version history, images, pins, and settings (excluding credentials)
 - **Templates** — Create, edit, delete response templates with category filtering
-- **Danger Zone** — Purge current workspace, delete all workspaces (with confirmation dialogs)
+- **Danger Zone** — Purge current workspace or delete all workspaces (with confirmation dialogs)
 
 ### Table Converter
 - **6 formats** — Convert between CSV, TSV, Markdown, HTML, SQL, and JSON
@@ -100,8 +104,12 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 - **Format tabs** — Switch output format with tab buttons
 
 ### Import & Export
+- **Full backup** — Export all workspace data (notes, templates, tags, version history, images, pins, settings) as a single .zip archive — excluding credentials
+- **All-workspaces export** — Toggle "All workspaces" to create a unified backup of every workspace in one archive
+- **Full restore** — Import a full backup .zip to restore all data stores; auto-detects single-workspace vs multi-workspace format
+- **Import from Gist** — Import markdown notes from any GitHub Gist by pasting a URL or ID; public gists work without authentication, private gists use the configured token
 - **Upload** — Import single `.md` files
-- **ZIP import** — Bulk import from `.zip` archives
+- **ZIP import** — Bulk import from legacy `.zip` archives (notes + optional metadata)
 - **ZIP backup** — Download all notes as a `.zip` archive
 - **Download** — Export individual notes as `.md` files
 - **Print / PDF** — Clean print layout with page-break-aware formatting; use browser "Save as PDF"
@@ -118,6 +126,15 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 - **Live sync status** — Header indicator shows sync state (idle/syncing/success/error) with relative timestamps ("just now", "5m ago"), spinner animation, and color-coded feedback
 - **Auto-sync on reconnect** — Automatically triggers a full sync when the browser comes back online
 - **Privacy** — Notes stored as JSON in your own GitHub account; no third-party servers
+
+### Google Drive Backup
+- **One-click backup** — Back up all workspace notes to Google Drive with a single button click
+- **Session-aware authorization** — Uses Google Identity Services (GIS) Token Model; if already signed into Google in the browser, the consent popup pre-fills the account — just click "Allow"
+- **Client-side only** — No backend server required; OAuth tokens are managed per-session in the browser
+- **Private storage** — Notes are stored in Drive's hidden `appDataFolder`, invisible in the user's normal Drive UI
+- **Restore from Drive** — Download and restore notes from the most recent Google Drive backup
+- **Per-workspace backups** — Each backup records the workspace name and export timestamp
+- **Configurable** — Requires a free Google Cloud OAuth Client ID (one-time setup in Settings > Sync)
 
 ### App
 - **Dark / Light mode** — Full theme toggle with GitHub-style syntax highlighting in both modes
@@ -136,6 +153,7 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 ### Sidebar
 - **Page toggles** — Table Converter and Settings icons on the left (page navigation)
 - **Action buttons** — Search and New Note on the right (tools)
+- **Import Note submenu** — Hamburger menu "Import Note" item with flyout: "From File" (.md upload) and "From Gist" (opens URL dialog)
 - **Collapsed mode** — Compact vertical icon strip with full functionality
 - **Visual harmony** — Aligned bar heights (44px header, 36px actions) matching main content
 
@@ -157,6 +175,7 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 | `Ctrl/Cmd + Z` | Undo |
 | `Ctrl/Cmd + Y` | Redo |
 | `Ctrl/Cmd + F` | Find in editor |
+| `Ctrl/Cmd + H` | Find & Replace in editor |
 | `Ctrl/Cmd + P` | Quick Switcher — fuzzy search and jump to any note |
 | `Ctrl/Cmd + Shift + P` | Command Palette — access 11 app commands with shortcuts |
 | `Ctrl/Cmd + N` | Create new note |
@@ -360,6 +379,7 @@ Type emoji shortcodes: `:fire:` :fire: `:rocket:` :rocket: `:star:` :star: `:hea
 | Math | KaTeX |
 | Search | Fuse.js (fuzzy search) |
 | Storage | IndexedDB (via idb) + localStorage |
+| Cloud Backup | Google Drive API (appDataFolder via GIS Token Model) |
 | Sanitization | DOMPurify |
 | Build | Create React App |
 | Deploy | GitHub Pages |

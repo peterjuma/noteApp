@@ -7,7 +7,7 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { oneDark } from "@codemirror/theme-one-dark";
-import { searchKeymap } from "@codemirror/search";
+import { searchKeymap, search, highlightSelectionMatches, openSearchPanel } from "@codemirror/search";
 import { closeBrackets, closeBracketsKeymap, autocompletion } from "@codemirror/autocomplete";
 import { vim } from "@replit/codemirror-vim";
 import * as noteDB from "./services/notesDB";
@@ -19,7 +19,7 @@ import TableConverter from "./TableConverter";
 import TableEditor from "./TableEditor";
 import {
   Bold, Italic, Heading2, Link, ListOrdered, List, Quote, Paperclip, Image,
-  Code, Braces, CheckSquare, Table, Strikethrough, Save, X,
+  Code, Braces, CheckSquare, Table, Strikethrough, Save, X, Search,
   Columns2, Maximize2, Eye, EyeOff, Minus, Wand2, Check,
   Indent, Outdent, ChevronDown, Hash, Minus as MinusIcon, GitBranch, Sigma,
   FileText, Network, Workflow, PieChart, GitMerge, Footprints, AlertTriangle,
@@ -765,6 +765,8 @@ function NoteEditor(props) {
       markdownKeymap,
       pasteHandler,
       keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
+      search({ top: true }),
+      highlightSelectionMatches(),
       updateListener,
       placeholder("Write your note in Markdown..."),
       EditorView.lineWrapping,
@@ -1028,6 +1030,16 @@ function NoteEditor(props) {
           <div className="toolbar-spacer" />
 
           <div className="toolbar-right">
+            <button
+              onClick={() => {
+                const view = viewRef.current;
+                if (view) openSearchPanel(view);
+              }}
+              className={`toolbar-btn ${darkMode ? "toolbar-btn-dark" : ""}`}
+              title="Find & Replace (Ctrl+H)"
+            >
+              <Search size={15} />
+            </button>
             <button
               onClick={() => {
                 // Save current doc before toggling preview

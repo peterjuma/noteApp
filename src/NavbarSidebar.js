@@ -1,5 +1,5 @@
 import React from "react";
-import { Menu, Plus, Search, Settings, TableProperties, StickyNote, Upload, Layers, X, Moon, Sun, ChevronRight, Home, SlidersHorizontal, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Menu, Plus, Search, Settings, TableProperties, StickyNote, Upload, Layers, X, Moon, Sun, ChevronRight, Home, SlidersHorizontal, PanelLeftClose, PanelLeftOpen, Github, FileUp } from "lucide-react";
 
 function NavbarSidebar(props) {
   var note = {
@@ -18,6 +18,10 @@ function NavbarSidebar(props) {
   const [tagACIndex, setTagACIndex] = React.useState(-1);
   const [hamburgerOpen, setHamburgerOpen] = React.useState(false);
   const [wsSubmenuOpen, setWsSubmenuOpen] = React.useState(false);
+  const [importSubmenuOpen, setImportSubmenuOpen] = React.useState(false);
+  const [showGistImportDialog, setShowGistImportDialog] = React.useState(false);
+  const [gistImportUrl, setGistImportUrl] = React.useState("");
+  const [gistImportBusy, setGistImportBusy] = React.useState(false);
   const [showNewWs, setShowNewWs] = React.useState(false);
   const [newWsName, setNewWsName] = React.useState("");
   const newWsInputRef = React.useRef();
@@ -183,10 +187,29 @@ function NavbarSidebar(props) {
         {props.showTableConverter ? <StickyNote size={15} /> : <TableProperties size={15} />}
         <span>{props.showTableConverter ? "Back to Notes" : "Table Converter"}</span>
       </button>
-      <button className="sidebar-hamburger-item" role="menuitem" onClick={() => { closeHamburger(); uploadRef.current && uploadRef.current.click(); }} disabled={isPageActive}>
+      <div
+        className="sidebar-hamburger-item sidebar-hamburger-submenu-trigger"
+        role="menuitem"
+        aria-haspopup="true"
+        aria-expanded={importSubmenuOpen}
+        onMouseEnter={() => setImportSubmenuOpen(true)}
+        onMouseLeave={() => setImportSubmenuOpen(false)}
+        onClick={() => setImportSubmenuOpen(v => !v)}
+      >
         <Upload size={15} />
-        <span>Upload .md</span>
-      </button>
+        <span>Import Note</span>
+        <ChevronRight size={13} className="sidebar-hamburger-submenu-arrow" />
+        {importSubmenuOpen && (
+          <ul className="sidebar-hamburger-submenu" role="menu" onClick={(e) => e.stopPropagation()}>
+            <li className="sidebar-hamburger-item" role="menuitem" onClick={() => { closeHamburger(); setImportSubmenuOpen(false); uploadRef.current && uploadRef.current.click(); }}>
+              <FileUp size={13} style={{ marginRight: 4 }} />From File
+            </li>
+            <li className="sidebar-hamburger-item" role="menuitem" onClick={() => { closeHamburger(); setImportSubmenuOpen(false); setShowGistImportDialog(true); setGistImportUrl(""); }}>
+              <Github size={13} style={{ marginRight: 4 }} />From Gist
+            </li>
+          </ul>
+        )}
+      </div>
       <div className="sidebar-hamburger-divider" role="separator" />
       {workspaces.length > 0 && (
         <div
@@ -232,8 +255,60 @@ function NavbarSidebar(props) {
     </div>
   );
 
+  const gistDialog = showGistImportDialog && (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowGistImportDialog(false); }}>
+      <div className={`modal-dialog ${props.darkMode ? "modal-dialog-dark" : ""}`} style={{ maxWidth: 480 }}>
+        <div className="modal-header">
+          <h3><Github size={18} /> Import from Gist</h3>
+          <button onClick={() => setShowGistImportDialog(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 4 }}><X size={18} /></button>
+        </div>
+        <div className="modal-body">
+          <p className="settings-hint" style={{ marginBottom: 12 }}>
+            Paste a GitHub Gist URL or ID. All markdown files in the gist will be imported as notes.
+          </p>
+          <input
+            type="text"
+            className="settings-input"
+            style={{ width: "100%" }}
+            placeholder="https://gist.github.com/user/abc123"
+            value={gistImportUrl}
+            autoFocus
+            onChange={(e) => setGistImportUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && gistImportUrl.trim() && !gistImportBusy) {
+                e.preventDefault();
+                setGistImportBusy(true);
+                props.onImportFromGist(gistImportUrl).then((res) => {
+                  setGistImportBusy(false);
+                  if (res?.success) { setGistImportUrl(""); setShowGistImportDialog(false); }
+                });
+              }
+              if (e.key === "Escape") setShowGistImportDialog(false);
+            }}
+          />
+        </div>
+        <div className="modal-footer">
+          <button className="btn-cancel" onClick={() => setShowGistImportDialog(false)}>Cancel</button>
+          <button
+            className="btn-save"
+            disabled={!gistImportUrl.trim() || gistImportBusy}
+            onClick={() => {
+              setGistImportBusy(true);
+              props.onImportFromGist(gistImportUrl).then((res) => {
+                setGistImportBusy(false);
+                if (res?.success) { setGistImportUrl(""); setShowGistImportDialog(false); }
+              });
+            }}
+          >
+            {gistImportBusy ? "Importing…" : "Import"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   if (props.sidebarCollapsed) {
-    return (
+    const collapsedNav = (
       <nav aria-label="Sidebar navigation" className="sidebar-collapsed-nav">
         <div className="sidebar-hamburger-wrapper" ref={hamburgerRef}>
           <button onClick={() => setHamburgerOpen(v => !v)} className={`icon-btn ${hamburgerOpen ? "icon-btn-active" : ""}`} title="Menu" aria-label="Menu" aria-expanded={hamburgerOpen} aria-haspopup="menu">
@@ -254,9 +329,10 @@ function NavbarSidebar(props) {
         )}
       </nav>
     );
+    return <>{collapsedNav}{gistDialog}</>;
   }
 
-  return (
+  const content = (
     <nav aria-label="Sidebar navigation">
       {/* Header: Hamburger + Title + New Note */}
       <div className="sidebar-header">
@@ -358,6 +434,8 @@ function NavbarSidebar(props) {
       <input ref={uploadRef} type="file" accept=".md" style={{ display: "none" }} onChange={(e) => { if (props.onUploadNote) props.onUploadNote(e); e.target.value = ""; }} />
     </nav>
   );
+
+  return <>{content}{gistDialog}</>;
 }
 
 export default NavbarSidebar;

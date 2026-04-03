@@ -729,7 +729,7 @@ handleUnpinNote = async (noteid) => {
     if (this.state.viewingArchive) {
       this.setState({ viewingArchive: false });
     } else {
-      const archived = await db.getArchivedNotes();
+      const archived = await db.getArchivedNotes(this.state.activeDb);
       this.setState({
         viewingArchive: true,
         archivedNotes: archived,
@@ -746,9 +746,8 @@ handleUnpinNote = async (noteid) => {
   handleRestoreNote = async (noteid) => {
     const result = await db.restoreNoteFromArchive(noteid);
     if (result) {
-      // Refresh archive list
-      const archived = await db.getArchivedNotes();
-      this.setState({ archivedNotes: archived });
+      // Remove from displayed archive list
+      this.setState(prev => ({ archivedNotes: prev.archivedNotes.filter(n => n.noteid !== noteid) }));
       // If restored to current workspace, refresh notes
       if (result.workspace === this.state.activeDb) {
         const notes = await db.getAllNotes(this.state.activeDb);
@@ -767,8 +766,7 @@ handleUnpinNote = async (noteid) => {
       "This will permanently delete the archived note. This cannot be undone.",
       async () => {
         await db.permanentlyDeleteArchived(noteid);
-        const archived = await db.getArchivedNotes();
-        this.setState({ archivedNotes: archived });
+        this.setState(prev => ({ archivedNotes: prev.archivedNotes.filter(n => n.noteid !== noteid) }));
       },
       { confirmText: "Delete Forever", danger: true }
     );
@@ -1408,47 +1406,85 @@ handleUnpinNote = async (noteid) => {
     });
   };
 
-  handleNotesBackup() {
+  handleNotesBackup(exportAll = false) {
     const JSZip = require("jszip");
     const zip = new JSZip();
-    this.state.allnotes.forEach((note) => {
-      const title = `${(note.title || "note").replace(/[^A-Z0-9]+/gi, "_")}.md`;
-      zip.file(title, note.body);
-    });
 
-    // Include full note metadata (tags, timestamps) as JSON
-    const notesMeta = this.state.allnotes.map((n) => ({
-      noteid: n.noteid,
-      title: n.title,
-      tags: n.tags || [],
-      created_at: n.created_at,
-      updated_at: n.updated_at,
-    }));
-    zip.file("_notes.json", JSON.stringify(notesMeta, null, 2));
+    const doExport = async () => {
+      const workspacesToExport = exportAll
+        ? this.state.workspaces
+        : [this.state.workspaces.find(w => w.dbName === this.state.activeDb) || { name: "Default", dbName: "notesdb" }];
 
-    // Include snippets/templates and predefined tags
-    Promise.all([
-      db.getAllSnippets(this.state.activeDb),
-      db.getAllTags(this.state.activeDb),
-    ]).then(([snippets, tags]) => {
-      if (snippets.length > 0) {
-        zip.file("_templates.json", JSON.stringify(snippets, null, 2));
+      let totalNotes = 0;
+      let totalTemplates = 0;
+      let totalTags = 0;
+      let totalVersions = 0;
+      let totalImages = 0;
+      let totalPins = 0;
+
+      for (const ws of workspacesToExport) {
+        const wsData = await db.exportWorkspaceData(ws.dbName);
+        const folder = exportAll ? zip.folder(ws.name) : zip;
+
+        // Write individual .md files for readability
+        wsData.notes.forEach((note) => {
+          const fname = `${(note.title || "note").replace(/[^A-Z0-9]+/gi, "_")}.md`;
+          folder.file(fname, note.body || "");
+        });
+
+        // Write full workspace data as JSON (all stores, excluding credentials)
+        folder.file("_workspace.json", JSON.stringify({
+          workspace: ws.name,
+          dbName: ws.dbName,
+          exportedAt: new Date().toISOString(),
+          notes: wsData.notes,
+          pins: wsData.pins,
+          tags: wsData.tags,
+          snippets: wsData.snippets,
+          versions: wsData.versions,
+          settings: wsData.settings,
+          images: wsData.images,
+        }, null, 2));
+
+        totalNotes += wsData.notes.length;
+        totalTemplates += wsData.snippets.length;
+        totalTags += wsData.tags.length;
+        totalVersions += wsData.versions.length;
+        totalImages += wsData.images.length;
+        totalPins += wsData.pins.length;
       }
-      if (tags.length > 0) {
-        zip.file("_tags.json", JSON.stringify(tags, null, 2));
-      }
-      zip.generateAsync({ type: "blob" }).then((content) => {
-        const wsName = ((this.state.workspaces || []).find(w => w.dbName === this.state.activeDb) || {}).name || "default";
-        const profile = this.state.profileName || "backup";
-        const date = new Date().toISOString().slice(0, 10);
-        const filename = `noteapp_${profile}_${wsName}_${date}.zip`;
-        saveAs(content, filename);
 
-        const exportParts = [`${this.state.allnotes.length} note${this.state.allnotes.length !== 1 ? "s" : ""}`];
-        if (snippets.length > 0) exportParts.push(`${snippets.length} template${snippets.length !== 1 ? "s" : ""}`);
-        if (tags.length > 0) exportParts.push(`${tags.length} tag${tags.length !== 1 ? "s" : ""}`);
-        this.showAlert("Export Complete", `Exported ${exportParts.join(", ")} to ${filename}`);
-      });
+      // Include workspace list metadata for all-workspaces export
+      if (exportAll) {
+        zip.file("_manifest.json", JSON.stringify({
+          app: "NoteCache",
+          version: 1,
+          exportType: "all-workspaces",
+          exportedAt: new Date().toISOString(),
+          workspaces: workspacesToExport.map(w => ({ name: w.name, dbName: w.dbName })),
+        }, null, 2));
+      }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const profile = this.state.profileName || "backup";
+      const date = new Date().toISOString().slice(0, 10);
+      const scope = exportAll ? "all" : ((workspacesToExport[0] || {}).name || "default");
+      const filename = `notecache_${profile}_${scope}_${date}.zip`;
+      saveAs(content, filename);
+
+      const parts = [];
+      if (totalNotes > 0) parts.push(`${totalNotes} note${totalNotes !== 1 ? "s" : ""}`);
+      if (totalTemplates > 0) parts.push(`${totalTemplates} template${totalTemplates !== 1 ? "s" : ""}`);
+      if (totalTags > 0) parts.push(`${totalTags} tag${totalTags !== 1 ? "s" : ""}`);
+      if (totalVersions > 0) parts.push(`${totalVersions} version snapshot${totalVersions !== 1 ? "s" : ""}`);
+      if (totalImages > 0) parts.push(`${totalImages} image${totalImages !== 1 ? "s" : ""}`);
+      if (totalPins > 0) parts.push(`${totalPins} pin${totalPins !== 1 ? "s" : ""}`);
+      const wsLabel = exportAll ? ` across ${workspacesToExport.length} workspace${workspacesToExport.length !== 1 ? "s" : ""}` : "";
+      this.showAlert("Export Complete", `Exported ${parts.join(", ")}${wsLabel} to ${filename}`);
+    };
+
+    doExport().catch((err) => {
+      this.showAlert("Export Failed", err.message || "Could not create backup.");
     });
   }
 
@@ -1541,6 +1577,57 @@ handleUnpinNote = async (noteid) => {
       },
       { confirmText: "Restore" }
     );
+  };
+
+  handleImportFromGist = async (gistInput) => {
+    try {
+      const result = await gistSync.fetchGistNotes(gistInput, this.state.activeDb);
+      const existingHashes = await buildHashSet(this.state.allnotes);
+      const importedNotes = [];
+      let skippedCount = 0;
+
+      for (const { title, body } of result.notes) {
+        const hash = await computeContentHash(title, body);
+        if (existingHashes.has(hash)) {
+          skippedCount++;
+          continue;
+        }
+        existingHashes.add(hash);
+
+        const newNote = {
+          noteid: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+          title,
+          body,
+          contentHash: hash,
+          created_at: Date.now(),
+          updated_at: Date.now(),
+        };
+        await db.addNote(newNote, this.state.activeDb);
+        importedNotes.push(newNote);
+      }
+
+      if (importedNotes.length > 0) {
+        this.setState(
+          (prev) => ({
+            allnotes: [...prev.allnotes, ...importedNotes],
+          }),
+          () => {
+            this.handleSortNotes(this.state.sortby);
+            this.initializeFuse();
+          }
+        );
+      }
+
+      const parts = [];
+      if (importedNotes.length > 0) parts.push(`${importedNotes.length} note${importedNotes.length !== 1 ? "s" : ""}`);
+      if (skippedCount > 0) parts.push(`${skippedCount} duplicate${skippedCount !== 1 ? "s" : ""} skipped`);
+      const from = result.owner !== "anonymous" ? ` from @${result.owner}` : "";
+      this.showAlert("Gist Import Complete", `Imported ${parts.join(", ")}${from}.`);
+      return { success: true };
+    } catch (err) {
+      this.showAlert("Gist Import Failed", err.message);
+      return { success: false, error: err.message };
+    }
   };
 
   handleZipImport = async (event) => {
@@ -1669,6 +1756,101 @@ handleUnpinNote = async (noteid) => {
       this.showAlert("Import Complete", `Imported ${parts.join(", ")}.`);
     } catch {
       this.showAlert("Import Failed", "Failed to read ZIP archive. Please ensure it's a valid .zip file.");
+    }
+    event.target.value = "";
+  };
+
+  handleFullBackupImport = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const JSZip = require("jszip");
+    try {
+      const zip = await JSZip.loadAsync(file);
+
+      // Detect format: new full backup has _workspace.json or _manifest.json
+      const hasManifest = !!zip.files["_manifest.json"];
+      const hasWorkspaceJson = !!zip.files["_workspace.json"];
+
+      if (!hasManifest && !hasWorkspaceJson) {
+        // Legacy format — delegate to existing ZIP import
+        this.handleZipImport(event);
+        return;
+      }
+
+      if (hasManifest) {
+        // All-workspaces backup: each top-level folder is a workspace
+        const manifestJson = await zip.files["_manifest.json"].async("text");
+        const manifest = JSON.parse(manifestJson);
+        const totalCounts = { notes: 0, pins: 0, tags: 0, snippets: 0, versions: 0, images: 0 };
+        let wsCount = 0;
+
+        for (const wsInfo of (manifest.workspaces || [])) {
+          const wsFile = zip.files[`${wsInfo.name}/_workspace.json`];
+          if (!wsFile) continue;
+          const wsJson = await wsFile.async("text");
+          const wsData = JSON.parse(wsJson);
+
+          // Ensure workspace exists
+          let targetDb = wsInfo.dbName;
+          const existing = db.getWorkspaces();
+          if (!existing.some(w => w.dbName === targetDb)) {
+            const created = db.addWorkspace(wsInfo.name);
+            if (created) targetDb = created.dbName;
+          }
+
+          const counts = await db.importWorkspaceData(wsData, targetDb);
+          for (const k of Object.keys(totalCounts)) totalCounts[k] += (counts[k] || 0);
+          wsCount++;
+        }
+
+        // Refresh current workspace
+        const notes = await db.getAllNotes(this.state.activeDb);
+        const pins = await db.getAllPins(this.state.activeDb);
+        this.setState({
+          allnotes: notes,
+          pinnedNotes: pins || [],
+          workspaces: db.getWorkspaces(),
+        }, () => {
+          this.handleSortNotes(this.state.sortby);
+          this.initializeFuse();
+        });
+
+        const parts = [];
+        if (totalCounts.notes > 0) parts.push(`${totalCounts.notes} note${totalCounts.notes !== 1 ? "s" : ""}`);
+        if (totalCounts.snippets > 0) parts.push(`${totalCounts.snippets} template${totalCounts.snippets !== 1 ? "s" : ""}`);
+        if (totalCounts.tags > 0) parts.push(`${totalCounts.tags} tag${totalCounts.tags !== 1 ? "s" : ""}`);
+        if (totalCounts.versions > 0) parts.push(`${totalCounts.versions} version${totalCounts.versions !== 1 ? "s" : ""}`);
+        if (totalCounts.images > 0) parts.push(`${totalCounts.images} image${totalCounts.images !== 1 ? "s" : ""}`);
+        if (totalCounts.pins > 0) parts.push(`${totalCounts.pins} pin${totalCounts.pins !== 1 ? "s" : ""}`);
+        this.showAlert("Full Import Complete", `Imported ${parts.join(", ")} across ${wsCount} workspace${wsCount !== 1 ? "s" : ""}.`);
+      } else {
+        // Single-workspace full backup
+        const wsJson = await zip.files["_workspace.json"].async("text");
+        const wsData = JSON.parse(wsJson);
+        const counts = await db.importWorkspaceData(wsData, this.state.activeDb);
+
+        // Refresh state
+        const notes = await db.getAllNotes(this.state.activeDb);
+        const pins = await db.getAllPins(this.state.activeDb);
+        this.setState({
+          allnotes: notes,
+          pinnedNotes: pins || [],
+        }, () => {
+          this.handleSortNotes(this.state.sortby);
+          this.initializeFuse();
+        });
+
+        const parts = [];
+        if (counts.notes > 0) parts.push(`${counts.notes} note${counts.notes !== 1 ? "s" : ""}`);
+        if (counts.snippets > 0) parts.push(`${counts.snippets} template${counts.snippets !== 1 ? "s" : ""}`);
+        if (counts.tags > 0) parts.push(`${counts.tags} tag${counts.tags !== 1 ? "s" : ""}`);
+        if (counts.versions > 0) parts.push(`${counts.versions} version${counts.versions !== 1 ? "s" : ""}`);
+        if (counts.images > 0) parts.push(`${counts.images} image${counts.images !== 1 ? "s" : ""}`);
+        if (counts.pins > 0) parts.push(`${counts.pins} pin${counts.pins !== 1 ? "s" : ""}`);
+        this.showAlert("Import Complete", `Imported ${parts.join(", ")}.`);
+      }
+    } catch (err) {
+      this.showAlert("Import Failed", err.message || "Failed to read backup archive.");
     }
     event.target.value = "";
   };
@@ -1941,6 +2123,7 @@ handleUnpinNote = async (noteid) => {
             searchResultCount={this.state.searchQuery ? this.state.filteredNotes.length : null}
             allNotes={allnotes}
             onUploadNote={this.handleNotesUpload}
+            onImportFromGist={this.handleImportFromGist}
             onClosePages={() => this.setState({ showSettings: false, showTableConverter: false })}
             darkMode={this.state.darkMode}
             showSettings={this.state.showSettings}
@@ -2150,18 +2333,21 @@ handleUnpinNote = async (noteid) => {
               archivedNotes={this.state.archivedNotes}
               onRestoreNote={this.handleRestoreNote}
               onPermanentDelete={this.handlePermanentDelete}
-              onLoadArchive={async () => {
-                const archived = await db.getArchivedNotes();
+              onLoadArchive={async (showAll) => {
+                const archived = await db.getArchivedNotes(showAll ? undefined : this.state.activeDb);
                 this.setState({ archivedNotes: archived });
               }}
-              onBackup={this.handleNotesBackup}
+              onBackup={(exportAll) => this.handleNotesBackup(exportAll)}
               onUploadNote={this.handleNotesUpload}
               onZipImport={this.handleZipImport}
+              onFullBackupImport={this.handleFullBackupImport}
               onRestoreFromGist={this.handleRestoreFromGist}
-              onPurgeArchive={async () => {
-                await db.purgeArchive();
-                this.setState({ archivedNotes: [] });
-                this.showAlert("Archive Purged", "All archived notes have been permanently deleted.");
+              onImportFromGist={this.handleImportFromGist}
+              onPurgeArchive={async (purgeAll) => {
+                await db.purgeArchive(purgeAll ? undefined : this.state.activeDb);
+                const remaining = await db.getArchivedNotes(purgeAll ? undefined : this.state.activeDb);
+                this.setState({ archivedNotes: remaining });
+                this.showAlert("Archive Purged", purgeAll ? "All archived notes have been permanently deleted." : "Archived notes for this workspace have been deleted.");
               }}
               onPurgeWorkspace={async (dbName) => {
                 await db.purgeWorkspace(dbName);
@@ -2198,6 +2384,17 @@ handleUnpinNote = async (noteid) => {
               }}
               onClose={() => this.setState({ showSettings: false })}
               allNotes={allnotes}
+              onGdriveRestore={async (notes) => {
+                for (const n of notes) {
+                  await db.updateNote(n, this.state.activeDb);
+                }
+                const refreshed = await db.getAllNotes(this.state.activeDb);
+                this.setState({ allnotes: refreshed }, () => {
+                  this.handleSortNotes(this.state.sortby);
+                  this.initializeFuse();
+                });
+                this.showAlert("Restored", `${notes.length} note${notes.length !== 1 ? "s" : ""} restored from Google Drive.`);
+              }}
             />
           ) : this.state.showTableConverter ? (
             <div className="full-table-converter">
