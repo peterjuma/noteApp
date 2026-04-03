@@ -1,8 +1,8 @@
 {
   "files": {
-    "main.css": "/noteApp/static/css/main.aa1a83da.css",
-    "main.js": "/noteApp/static/js/main.f20a8c26.js",
-    "static/js/9649.8a943047.chunk.js": "/noteApp/static/js/9649.8a943047.chunk.js",
+    "main.css": "/noteApp/static/css/main.bf871634.css",
+    "main.js": "/noteApp/static/js/main.3e1f6902.js",
+    "static/js/3371.04968eb3.chunk.js": "/noteApp/static/js/3371.04968eb3.chunk.js",
     "static/js/7230.ae6e2292.chunk.js": "/noteApp/static/js/7230.ae6e2292.chunk.js",
     "static/js/3169.fa3a6eda.chunk.js": "/noteApp/static/js/3169.fa3a6eda.chunk.js",
     "static/js/8081.b97dde90.chunk.js": "/noteApp/static/js/8081.b97dde90.chunk.js",
@@ -187,13 +187,13 @@
     "static/media/KaTeX_Main-BoldItalic.woff": "/noteApp/static/media/KaTeX_Main-BoldItalic.428978dc7837d46de091.woff",
     "static/media/KaTeX_Math-Italic.woff": "/noteApp/static/media/KaTeX_Math-Italic.96759856b4e70f3a8338.woff",
     "static/media/KaTeX_Math-BoldItalic.woff": "/noteApp/static/media/KaTeX_Math-BoldItalic.3f07ed67f06c720120ce.woff",
+    "static/media/README.md": "/noteApp/static/media/README.929ba10b76c97f809534.md",
     "static/media/KaTeX_Main-Italic.woff2": "/noteApp/static/media/KaTeX_Main-Italic.fe2176f79edaa716e621.woff2",
     "static/media/KaTeX_Main-BoldItalic.woff2": "/noteApp/static/media/KaTeX_Main-BoldItalic.20f389c4120be058d80a.woff2",
     "static/media/KaTeX_Script-Regular.ttf": "/noteApp/static/media/KaTeX_Script-Regular.fc9ba5249878cd8f8d88.ttf",
     "static/media/KaTeX_Math-Italic.woff2": "/noteApp/static/media/KaTeX_Math-Italic.6d3d25f4820d0da8f01f.woff2",
     "static/media/KaTeX_Math-BoldItalic.woff2": "/noteApp/static/media/KaTeX_Math-BoldItalic.dcbcbd93bac0470b462d.woff2",
     "static/media/KaTeX_Typewriter-Regular.woff": "/noteApp/static/media/KaTeX_Typewriter-Regular.4c6b94fd1d07f8beff7c.woff",
-    "static/media/README.md": "/noteApp/static/media/README.48e8092cb68ea4df2ec7.md",
     "static/media/KaTeX_SansSerif-Bold.woff": "/noteApp/static/media/KaTeX_SansSerif-Bold.b9cd458ac6d5889ff9c3.woff",
     "static/media/KaTeX_SansSerif-Italic.woff": "/noteApp/static/media/KaTeX_SansSerif-Italic.8d593cfaa96238d5e2f8.woff",
     "static/media/KaTeX_Typewriter-Regular.woff2": "/noteApp/static/media/KaTeX_Typewriter-Regular.c295e7f71970f03c0549.woff2",
@@ -226,9 +226,9 @@
     "static/media/KaTeX_Size3-Regular.woff": "/noteApp/static/media/KaTeX_Size3-Regular.7947224e8a9914fa332b.woff",
     "static/media/KaTeX_Size3-Regular.woff2": "/noteApp/static/media/KaTeX_Size3-Regular.e1951519f6f0596f7356.woff2",
     "index.html": "/noteApp/index.html",
-    "main.aa1a83da.css.map": "/noteApp/static/css/main.aa1a83da.css.map",
-    "main.f20a8c26.js.map": "/noteApp/static/js/main.f20a8c26.js.map",
-    "9649.8a943047.chunk.js.map": "/noteApp/static/js/9649.8a943047.chunk.js.map",
+    "main.bf871634.css.map": "/noteApp/static/css/main.bf871634.css.map",
+    "main.3e1f6902.js.map": "/noteApp/static/js/main.3e1f6902.js.map",
+    "3371.04968eb3.chunk.js.map": "/noteApp/static/js/3371.04968eb3.chunk.js.map",
     "7230.ae6e2292.chunk.js.map": "/noteApp/static/js/7230.ae6e2292.chunk.js.map",
     "3169.fa3a6eda.chunk.js.map": "/noteApp/static/js/3169.fa3a6eda.chunk.js.map",
     "8081.b97dde90.chunk.js.map": "/noteApp/static/js/8081.b97dde90.chunk.js.map",
@@ -385,7 +385,7 @@
     "2996.13a0f321.chunk.js.map": "/noteApp/static/js/2996.13a0f321.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.aa1a83da.css",
-    "static/js/main.f20a8c26.js"
+    "static/css/main.bf871634.css",
+    "static/js/main.3e1f6902.js"
   ]
 }
