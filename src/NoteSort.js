@@ -1,27 +1,24 @@
 function NoteSort(props) {
   return (
-    <div className="sort-order-selector">
-      <label>
-        Sort by:
-        <select
-          id="sort-selection"
-          defaultValue="<option> Choose here</option>"
-          onChange={(e) => props.handleSortNotes()}
-        >
-          <option> Choose here</option>
-          <option value="3">Created: Oldest</option>
-          <option value="2">Created: Newest</option>
-          <option value="0">Title: A-Z</option>
-          <option value="1">Title: Z-A</option>
-          <option value="4">Modified: Newest</option>
-          <option value="5">Modified: Oldest</option>
-        </select>
-      </label>
-      <div className="backupbtn">
-        <i
-          className="fas fa-download btn"
-          onClick={props.handleNotesBackup}
-        ></i>
+    <div className="sort-bar-container">
+      <div className="sort-bar">
+        <div className="sort-bar-left">
+          <span className="sort-label">Sort:</span>
+          <select
+            id="sort-selection"
+            value={props.sortby || "4"}
+            aria-label="Sort notes by"
+            onChange={(e) => props.handleSortNotes(e.target.value)}
+          >
+            <option value="4">Modified: Newest</option>
+            <option value="5">Modified: Oldest</option>
+            <option value="2">Created: Newest</option>
+            <option value="3">Created: Oldest</option>
+            <option value="0">Title: A-Z</option>
+            <option value="1">Title: Z-A</option>
+            {props.sortby === "manual" && <option value="manual">Manual</option>}
+          </select>
+        </div>
       </div>
     </div>
   );

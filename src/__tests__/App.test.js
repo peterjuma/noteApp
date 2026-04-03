@@ -1,0 +1,285 @@
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import "@testing-library/jest-dom";
+
+// Mock NoteEditor (uses CodeMirror ESM which Jest can't parse)
+jest.mock("../NoteEditor", () => {
+  return function MockNoteEditor(props) {
+    return (
+      <div data-testid="note-editor">
+        <input
+          name="notetitle"
+          id="notetitle"
+          placeholder="Untitled"
+          data-action={props.editNoteData.action}
+          defaultValue={props.editNoteData.notetitle}
+        />
+        <textarea
+          data-testid="note-body"
+          defaultValue={props.editNoteData.notebody}
+        />
+        <button onClick={(e) => {
+          const note = { ...props.editNoteData };
+          note.notetitle = "Test Title";
+          note.notebody = "Test Body";
+          props.handleSaveNote(e, note);
+        }}>Save</button>
+        <button onClick={() => props.handleClickHomeBtn()}>Cancel</button>
+      </div>
+    );
+  };
+});
+
+// Mock lazy-loaded components
+jest.mock("../SettingsPanel", () => {
+  return function MockSettings(props) {
+    return (
+      <div data-testid="settings-panel">
+        <h2>Settings</h2>
+        <span>Appearance</span>
+        <span>Dark Mode</span>
+        <button role="switch" aria-label="dark-mode" onClick={props.onToggleDarkMode}>Toggle Dark</button>
+        <button onClick={props.onClose}>Close</button>
+      </div>
+    );
+  };
+});
+
+jest.mock("../VersionHistory", () => {
+  return function MockVersionHistory(props) {
+    return (
+      <div data-testid="version-history">
+        <button onClick={props.onClose}>Close History</button>
+      </div>
+    );
+  };
+});
+
+jest.mock("../TableConverter", () => {
+  return function MockTableConverter(props) {
+    return (
+      <div data-testid="table-converter">
+        <h3>Table Converter</h3>
+        <button onClick={props.onClose}>Back to Notes</button>
+      </div>
+    );
+  };
+});
+
+// Mock notesDB service
+const mockNotes = [
+  { noteid: "1", title: "First Note", body: "Body of first note", tags: ["test"], created_at: 1000, updated_at: 2000 },
+  { noteid: "2", title: "Second Note", body: "Body of second note with **markdown**", tags: ["demo"], created_at: 1500, updated_at: 2500 },
+];
+
+jest.mock("../services/notesDB", () => {
+  const defaultWorkspaces = [{ name: "Default", dbName: "notesdb" }];
+  return {
+    getAllNotes: jest.fn(() => Promise.resolve([...mockNotes])),
+    getAllPins: jest.fn(() => Promise.resolve([])),
+    getNote: jest.fn((id) => Promise.resolve(mockNotes.find((n) => n.noteid === id))),
+    addNote: jest.fn(() => Promise.resolve()),
+    updateNote: jest.fn(() => Promise.resolve()),
+    deleteNote: jest.fn(() => Promise.resolve()),
+    saveVersion: jest.fn(() => Promise.resolve()),
+    getVersions: jest.fn(() => Promise.resolve([])),
+    getWorkspaces: jest.fn(() => [...defaultWorkspaces]),
+    getActiveWorkspace: jest.fn(() => "notesdb"),
+    setActiveWorkspace: jest.fn(),
+    getDefaultWorkspace: jest.fn(() => "notesdb"),
+    setDefaultWorkspace: jest.fn(),
+    addWorkspace: jest.fn((name) => ({ name, dbName: "notesdb_" + name.toLowerCase() })),
+    removeWorkspace: jest.fn(),
+    renameWorkspace: jest.fn(),
+    getArchivedNotes: jest.fn(() => Promise.resolve([])),
+    archiveNote: jest.fn(() => Promise.resolve()),
+    permanentlyDeleteArchived: jest.fn(() => Promise.resolve()),
+    restoreNoteFromArchive: jest.fn(() => Promise.resolve()),
+    saveImage: jest.fn(() => Promise.resolve()),
+    getImageURL: jest.fn(() => Promise.resolve(null)),
+    moveNote: jest.fn(() => Promise.resolve()),
+    purgeArchive: jest.fn(() => Promise.resolve()),
+    purgeWorkspace: jest.fn(() => Promise.resolve()),
+    purgeAllWorkspaces: jest.fn(() => Promise.resolve()),
+    deleteWorkspaceDB: jest.fn(() => Promise.resolve()),
+    addPin: jest.fn(() => Promise.resolve()),
+    removePin: jest.fn(() => Promise.resolve()),
+    getAllSnippets: jest.fn(() => Promise.resolve([])),
+    addSnippet: jest.fn(() => Promise.resolve()),
+    updateSnippet: jest.fn(() => Promise.resolve()),
+    deleteSnippet: jest.fn(() => Promise.resolve()),
+    getAllTags: jest.fn(() => Promise.resolve([])),
+    putTag: jest.fn(() => Promise.resolve()),
+    deleteTag: jest.fn(() => Promise.resolve()),
+    clearTags: jest.fn(() => Promise.resolve()),
+    getSetting: jest.fn(() => Promise.resolve(undefined)),
+    setSetting: jest.fn(() => Promise.resolve()),
+    deleteSetting: jest.fn(() => Promise.resolve()),
+    getAllSettings: jest.fn(() => Promise.resolve({})),
+  };
+});
+
+// Mock gistSync
+jest.mock("../services/gistSync", () => ({
+  isSyncEnabled: jest.fn(() => Promise.resolve(false)),
+  push: jest.fn(() => Promise.resolve()),
+  getToken: jest.fn(() => Promise.resolve("")),
+  getLastSync: jest.fn(() => Promise.resolve(null)),
+  getGistId: jest.fn(() => Promise.resolve(null)),
+  getSyncInterval: jest.fn(() => Promise.resolve(0)),
+  setSyncInterval: jest.fn(() => Promise.resolve()),
+}));
+
+// Mock README.md import (CRA treats it as a file URL)
+jest.mock("../README.md", () => "mock-readme-path");
+
+// Mock file-saver
+jest.mock("file-saver", () => ({ saveAs: jest.fn() }));
+
+// Mock fetch
+beforeEach(() => {
+  global.fetch = jest.fn(() =>
+    Promise.resolve({
+      ok: true,
+      text: () => Promise.resolve("# Welcome\\nThis is the home page."),
+    })
+  );
+});
+
+// Suppress mermaid and clipboard errors in test
+Object.defineProperty(navigator, "clipboard", {
+  value: {
+    writeText: jest.fn(() => Promise.resolve()),
+    write: jest.fn(() => Promise.resolve()),
+  },
+  writable: true,
+});
+
+import App from "../App";
+
+// Patch: render App without React.StrictMode to avoid double-mount issues with class component
+// (Class components with setState in componentDidMount callbacks don't work well with strict mode double-invoke)
+function AppWithoutStrictMode() {
+  return <App />;
+}
+
+// Helper to render App and wait for initial load
+async function renderApp() {
+  let result;
+  await act(async () => {
+    result = render(<AppWithoutStrictMode />);
+  });
+  // Let componentDidMount async operations settle
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 200));
+  });
+  return result;
+}
+
+describe("App integration tests", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorage.clear();
+    window.history.replaceState(null, "", "/");
+  });
+
+  // ===== Initial Load =====
+
+  test("renders app with sidebar", async () => {
+    await renderApp();
+    expect(screen.getByLabelText("Sidebar navigation")).toBeInTheDocument();
+  });
+
+  test("renders sort dropdown", async () => {
+    await renderApp();
+    expect(screen.getByLabelText("Sort notes by")).toBeInTheDocument();
+  });
+
+  // ===== Sidebar Navigation =====
+
+  test("home button in menu triggers fetch", async () => {
+    await renderApp();
+    fireEvent.click(screen.getByLabelText("Menu"));
+    await act(async () => {
+      fireEvent.click(screen.getByText("Home"));
+    });
+    expect(global.fetch).toHaveBeenCalled();
+  });
+
+  test("settings button triggers state change", async () => {
+    await renderApp();
+    fireEvent.click(screen.getByLabelText("Menu"));
+    const settingsBtn = await screen.findByText("Settings");
+    await act(async () => {
+      fireEvent.click(settingsBtn);
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("settings-panel")).toBeInTheDocument();
+    }, { timeout: 2000 });
+  });
+
+  test("settings shows General content", async () => {
+    await renderApp();
+    fireEvent.click(screen.getByLabelText("Menu"));
+    const settingsBtn = await screen.findByText("Settings");
+    await act(async () => {
+      fireEvent.click(settingsBtn);
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Appearance")).toBeInTheDocument();
+    }, { timeout: 2000 });
+  });
+
+  // ===== Editor =====
+
+  test("new note button creates editor", async () => {
+    await renderApp();
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Create new note"));
+    });
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Untitled")).toBeInTheDocument();
+    });
+  });
+
+  // ===== Download =====
+
+  test("handleDownloadNote works with note using title/body properties", async () => {
+    const { saveAs } = require("file-saver");
+    await renderApp();
+    // Access the App instance to directly test handleDownloadNote
+    // Notes from the list use title/body (not notetitle/notebody)
+    const listNote = { noteid: "1", title: "First Note", body: "Body of first note" };
+    // Get the App instance from the rendered tree
+    const appInstance = document.querySelector(".app-container");
+    expect(appInstance).toBeInTheDocument();
+    // Call handleDownloadNote directly via the module
+    const App = require("../App").default;
+    const instance = new App({});
+    instance.handleDownloadNote(listNote);
+    expect(saveAs).toHaveBeenCalledWith(
+      expect.any(Blob),
+      "First_Note.md"
+    );
+  });
+
+  test("handleDownloadNote works with note using notetitle/notebody properties", async () => {
+    const { saveAs } = require("file-saver");
+    await renderApp();
+    const App = require("../App").default;
+    const instance = new App({});
+    const stateNote = { noteid: "1", notetitle: "My Note", notebody: "Some content" };
+    instance.handleDownloadNote(stateNote);
+    expect(saveAs).toHaveBeenCalledWith(
+      expect.any(Blob),
+      "My_Note.md"
+    );
+  });
+
+  // ===== Search =====
+
+  test("search input is rendered", async () => {
+    await renderApp();
+    expect(screen.getByLabelText("Search notes")).toBeInTheDocument();
+  });
+
+});
