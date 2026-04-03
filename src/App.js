@@ -84,6 +84,7 @@ class App extends Component {
       showSettings: false,
       showTableConverter: false,
       showVersionHistory: false,
+      settingsTab: "general",
       autoSave: localStorage.getItem("noteapp_autosave") === "true",
       tagSuggestEnabled: localStorage.getItem("noteapp_tag_suggest") !== "false",
       vimMode: localStorage.getItem("noteapp_vim_mode") === "true",
@@ -121,8 +122,13 @@ class App extends Component {
       }
       this.handleSortNotes(this.state.sortby);
 
-      // Navigate to note from URL hash on initial load
-      this.navigateFromHash();
+      // Navigate from URL hash on initial load (notes, settings, table-converter)
+      const hash = window.location.hash;
+      if (hash && hash !== "#") {
+        this.handleHashChange();
+      } else {
+        this.navigateFromHash();
+      }
       this.initializeFuse();
 
       // Backfill contentHash on notes that don't have one yet
@@ -665,7 +671,7 @@ handleUnpinNote = async (noteid) => {
         updates.allnotes = prevState.allnotes.filter(n => n.noteid !== discardNoteId);
       }
       if (page) {
-        if (page === "settings") { updates.showSettings = true; updates.showTableConverter = false; }
+        if (page === "settings") { updates.showSettings = true; updates.showTableConverter = false; updates.settingsTab = "general"; }
         if (page === "tableConverter") { updates.showTableConverter = true; updates.showSettings = false; }
         updates.activepage = "viewnote";
         updates.action = "";
@@ -675,7 +681,8 @@ handleUnpinNote = async (noteid) => {
       if (discardNoteId) db.deleteNote(discardNoteId, this.state.activeDb);
       if (nav) this._navigateToNote(nav);
       if (edit) this._openEditor(edit.note, edit.isNew, edit.action);
-      if (page) window.history.replaceState(null, "", window.location.pathname);
+      if (page === "settings") window.history.pushState(null, "", "#settings");
+      else if (page === "tableConverter") window.history.pushState(null, "", "#table-converter");
     });
   };
 
@@ -692,9 +699,14 @@ handleUnpinNote = async (noteid) => {
       if (nav) this._navigateToNote(nav);
       if (edit) this._openEditor(edit.note, edit.isNew, edit.action);
       if (page) {
-        if (page === "settings") this.setState({ showSettings: true, showTableConverter: false, activepage: "viewnote", action: "" });
-        if (page === "tableConverter") this.setState({ showTableConverter: true, showSettings: false, activepage: "viewnote", action: "" });
-        window.history.replaceState(null, "", window.location.pathname);
+        if (page === "settings") {
+          this.setState({ showSettings: true, showTableConverter: false, activepage: "viewnote", action: "", settingsTab: "general" });
+          window.history.pushState(null, "", "#settings");
+        }
+        if (page === "tableConverter") {
+          this.setState({ showTableConverter: true, showSettings: false, activepage: "viewnote", action: "" });
+          window.history.pushState(null, "", "#table-converter");
+        }
       }
     }, 150);
   };
@@ -824,12 +836,50 @@ handleUnpinNote = async (noteid) => {
 
   handleHashChange = () => {
     const hash = window.location.hash;
-    if (!hash || !hash.startsWith("#note/")) {
-      // Hash cleared or no note hash — go home
+
+    // No hash or just "#" — go home
+    if (!hash || hash === "#") {
+      this.setState({ showSettings: false, showTableConverter: false, viewingArchive: false });
       this.handleClickHomeBtn();
       return;
     }
-    this.navigateFromHash();
+
+    // Settings: #settings or #settings/tabname
+    if (hash.startsWith("#settings")) {
+      const tab = hash.split("/")[1] || "general";
+      this.setState({
+        showSettings: true,
+        showTableConverter: false,
+        viewingArchive: false,
+        activepage: "viewnote",
+        action: "",
+        settingsTab: tab,
+      });
+      return;
+    }
+
+    // Table Converter: #table-converter
+    if (hash === "#table-converter") {
+      this.setState({
+        showTableConverter: true,
+        showSettings: false,
+        viewingArchive: false,
+        activepage: "viewnote",
+        action: "",
+      });
+      return;
+    }
+
+    // Note: #note/slug
+    if (hash.startsWith("#note/")) {
+      this.setState({ showSettings: false, showTableConverter: false, viewingArchive: false });
+      this.navigateFromHash();
+      return;
+    }
+
+    // Unknown hash — go home
+    this.setState({ showSettings: false, showTableConverter: false, viewingArchive: false });
+    this.handleClickHomeBtn();
   };
 
   // Handle click home button
@@ -2124,7 +2174,10 @@ handleUnpinNote = async (noteid) => {
             allNotes={allnotes}
             onUploadNote={this.handleNotesUpload}
             onImportFromGist={this.handleImportFromGist}
-            onClosePages={() => this.setState({ showSettings: false, showTableConverter: false })}
+            onClosePages={() => {
+              this.setState({ showSettings: false, showTableConverter: false });
+              if (window.location.hash) window.history.pushState(null, "", window.location.pathname);
+            }}
             darkMode={this.state.darkMode}
             showSettings={this.state.showSettings}
             showTableConverter={this.state.showTableConverter}
@@ -2143,22 +2196,27 @@ handleUnpinNote = async (noteid) => {
                 this.setState({ showNavConfirm: true, pendingPage: "settings" });
                 return;
               }
-              this.setState((s) => {
-                const next = !s.showSettings;
-                if (next) window.history.replaceState(null, "", window.location.pathname);
-                return { showSettings: next, showTableConverter: false, viewingArchive: false };
-              });
+              if (this.state.showSettings) {
+                // Close settings — go back to clean URL
+                this.setState({ showSettings: false });
+                window.history.pushState(null, "", window.location.pathname);
+              } else {
+                this.setState({ showSettings: true, showTableConverter: false, viewingArchive: false, settingsTab: "general" });
+                window.history.pushState(null, "", "#settings");
+              }
             }}
             onOpenTableConverter={() => {
               if (this.state.activepage === "editnote") {
                 this.setState({ showNavConfirm: true, pendingPage: "tableConverter" });
                 return;
               }
-              this.setState((s) => {
-                const next = !s.showTableConverter;
-                if (next) window.history.replaceState(null, "", window.location.pathname);
-                return { showTableConverter: next, showSettings: false };
-              });
+              if (this.state.showTableConverter) {
+                this.setState({ showTableConverter: false });
+                window.history.pushState(null, "", window.location.pathname);
+              } else {
+                this.setState({ showTableConverter: true, showSettings: false });
+                window.history.pushState(null, "", "#table-converter");
+              }
             }}
             onAddWorkspace={this.handleAddWorkspace}
             onToggleDarkMode={() => this.setState((s) => {
@@ -2382,7 +2440,15 @@ handleUnpinNote = async (noteid) => {
                 this._teardownLockTimeout();
                 this._setupLockTimeout();
               }}
-              onClose={() => this.setState({ showSettings: false })}
+              onClose={() => {
+                this.setState({ showSettings: false });
+                window.history.pushState(null, "", window.location.pathname);
+              }}
+              initialTab={this.state.settingsTab}
+              onTabChange={(tab) => {
+                this.setState({ settingsTab: tab });
+                window.history.replaceState(null, "", `#settings/${tab}`);
+              }}
               allNotes={allnotes}
               onGdriveRestore={async (notes) => {
                 for (const n of notes) {
@@ -2401,7 +2467,10 @@ handleUnpinNote = async (noteid) => {
               <TableConverter
                 darkMode={this.state.darkMode}
                 fullPage
-                onClose={() => this.setState({ showTableConverter: false })}
+                onClose={() => {
+                  this.setState({ showTableConverter: false });
+                  window.history.pushState(null, "", window.location.pathname);
+                }}
               />
             </div>
           ) : (

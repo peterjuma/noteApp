@@ -50,8 +50,15 @@ function SettingsPanel({
   onLockTimeoutChange,
   allNotes,
   onGdriveRestore,
+  initialTab,
+  onTabChange,
 }) {
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useState(initialTab || "general");
+
+  // Sync tab state when parent changes it (e.g., browser back/forward)
+  useEffect(() => {
+    if (initialTab && initialTab !== activeTab) setActiveTab(initialTab);
+  }, [initialTab]); // eslint-disable-line react-hooks/exhaustive-deps
   const [wsName, setWsName] = useState("");
   const [showNewWs, setShowNewWs] = useState(false);
   const [editingWs, setEditingWs] = useState(null);
@@ -184,7 +191,10 @@ function SettingsPanel({
           <button
             key={tab.id}
             className={`settings-tab ${activeTab === tab.id ? "settings-tab-active" : ""}`}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id);
+              if (onTabChange) onTabChange(tab.id);
+            }}
           >
             <tab.icon size={14} />
             {tab.label}
