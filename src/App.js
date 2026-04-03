@@ -448,7 +448,8 @@ class App extends Component {
       this.setState({ sidebarCollapsed: next });
     }},
     { id: "open-settings", label: "Open Settings", shortcut: "", icon: Settings, action: () => {
-      this.setState({ showSettings: true, showTableConverter: false });
+      this.setState({ showSettings: true, showTableConverter: false, settingsTab: "general" });
+      window.history.pushState(null, "", "#settings");
     }},
     { id: "export-md", label: "Export Note as Markdown", shortcut: "", icon: Download, action: () => {
       if (this.state.noteid) this.handleDownloadNote({ noteid: this.state.noteid, notetitle: this.state.notetitle, notebody: this.state.notebody });
@@ -589,6 +590,10 @@ handleUnpinNote = async (noteid) => {
         this.handleClickHomeBtn();
       } else {
         this.handleSortNotes(this.state.sortby);
+      }
+      // Clear any note-specific hash since workspace changed
+      if (window.location.hash.startsWith("#note/")) {
+        window.history.replaceState(null, "", window.location.pathname);
       }
     });
   };
@@ -846,7 +851,9 @@ handleUnpinNote = async (noteid) => {
 
     // Settings: #settings or #settings/tabname
     if (hash.startsWith("#settings")) {
-      const tab = hash.split("/")[1] || "general";
+      const VALID_TABS = new Set(["general", "workspaces", "tags", "data", "archive", "templates", "sync"]);
+      const rawTab = hash.split("/")[1] || "general";
+      const tab = VALID_TABS.has(rawTab) ? rawTab : "general";
       this.setState({
         showSettings: true,
         showTableConverter: false,
@@ -859,7 +866,7 @@ handleUnpinNote = async (noteid) => {
     }
 
     // Table Converter: #table-converter
-    if (hash === "#table-converter") {
+    if (hash === "#table-converter" || hash === "#table-converter/") {
       this.setState({
         showTableConverter: true,
         showSettings: false,
@@ -900,6 +907,9 @@ handleUnpinNote = async (noteid) => {
           notebody: readmebody,
           activepage: "viewnote",
           action: "homepage",
+          showSettings: false,
+          showTableConverter: false,
+          viewingArchive: false,
         });
         // Clear URL hash when going home
         window.history.replaceState(null, "", window.location.pathname);
@@ -912,6 +922,9 @@ handleUnpinNote = async (noteid) => {
           notebody: "Create a new note to get started.",
           activepage: "viewnote",
           action: "homepage",
+          showSettings: false,
+          showTableConverter: false,
+          viewingArchive: false,
         });
         window.history.replaceState(null, "", window.location.pathname);
       });
