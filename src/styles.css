@@ -3120,7 +3120,7 @@ a:hover { text-decoration: underline; }
 
 /* ===== Print Styles ===== */
 @media print {
-  *, *::before, *::after { color-adjust: exact; -webkit-print-color-adjust: exact; }
+  *, *::before, *::after { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   body { overflow: visible !important; background: #fff !important; color: #000 !important; }
   #root { height: auto !important; }
   .sidebar, .view-toolbar, .sidebar-toggle, .sidebar-overlay,
