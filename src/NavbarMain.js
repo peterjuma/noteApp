@@ -1,4 +1,4 @@
-import { Download, Trash2, FolderOutput, Copy, Check, FileText, Clock, PencilLine, Share2, MoreVertical, ChevronRight, Pin, Info, X } from "lucide-react";
+import { Download, Trash2, FolderOutput, Copy, Check, FileText, Clock, PencilLine, Share2, MoreVertical, ChevronRight, Pin, Info, X, MonitorPlay } from "lucide-react";
 
 const SidebarIcon = ({ size = 16, collapsed, ...rest }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...rest}>
@@ -172,6 +172,12 @@ function NavbarMain(props) {
               <Clock size={15} />
               <span>Version History</span>
             </button>
+            {props.onPresent && (
+              <button className="note-actions-menu-item" role="menuitem" onClick={() => { closeMenu(); props.onPresent(note); }}>
+                <MonitorPlay size={15} />
+                <span>Present</span>
+              </button>
+            )}
             <button className="note-actions-menu-item" role="menuitem" onClick={() => { closeMenu(); setShowNoteInfo(true); }}>
               <Info size={15} />
               <span>Note Info</span>

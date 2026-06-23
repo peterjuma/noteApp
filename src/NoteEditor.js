@@ -1,8 +1,8 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { html2md, md2html } from "./useMarkDown";
 import DOMPurify from "dompurify";
-import { EditorView, keymap, placeholder } from "@codemirror/view";
-import { EditorState } from "@codemirror/state";
+import { EditorView, keymap, placeholder, lineNumbers, highlightActiveLineGutter } from "@codemirror/view";
+import { EditorState, Compartment } from "@codemirror/state";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
@@ -15,6 +15,7 @@ import { suggestTags } from "./services/tagSuggester";
 import { getPredefinedTags, harvestTags } from "./services/tagManager";
 import { ensureDefaults as loadSnippets } from "./services/snippets";
 import { getActiveWorkspace } from "./services/notesDB";
+import { createHybridEditorExtensions } from "./hybridEditorPlugin";
 import TableConverter from "./TableConverter";
 import TableEditor from "./TableEditor";
 import {
@@ -25,6 +26,19 @@ import {
   FileText, Network, Workflow, PieChart, GitMerge, Footprints, AlertTriangle,
   TerminalSquare, Regex, Brackets, Superscript, Subscript, Highlighter,
 } from "lucide-react";
+
+// Custom icon: toggle editor line numbers (1/2/3 rows)
+const LineNumbersIcon = ({ size = 15 }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <text x="2" y="8" fontSize="7" stroke="none" fill="currentColor">1</text>
+    <text x="2" y="15" fontSize="7" stroke="none" fill="currentColor">2</text>
+    <text x="2" y="22" fontSize="7" stroke="none" fill="currentColor">3</text>
+    <line x1="9" y1="6" x2="21" y2="6" />
+    <line x1="9" y1="12" x2="21" y2="12" />
+    <line x1="9" y1="18" x2="21" y2="18" />
+  </svg>
+);
+
 
 // Image types natively renderable by all modern browsers
 const WEB_IMAGE_TYPES = new Set([
@@ -123,7 +137,8 @@ function NoteEditor(props) {
   const [bodytxt, setBodyTxt] = useState(initialBody);
   const [title, setTitle] = useState(initialTitle);
   const [splitscreen, setSplitscreen] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
+  const [hybridMode, setHybridMode] = useState(() => localStorage.getItem("noteapp_hybrid_mode") === "true");
+  const [showLineNumbers, setShowLineNumbers] = useState(() => localStorage.getItem("noteapp_line_numbers") === "true");
   const [splitRatio, setSplitRatio] = useState(50); // percentage for editor
   const [isDirty, setIsDirty] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
@@ -151,6 +166,9 @@ function NoteEditor(props) {
   const titleRef = useRef();
   const editorRef = useRef(null);
   const viewRef = useRef(null);
+  // Compartments allow toggling extensions live without recreating the editor
+  const hybridCompartment = useRef(new Compartment());
+  const lineNumberCompartment = useRef(new Compartment());
   const insertMarkdownRef = useRef(null);
   const autosaveTimerRef = useRef(null);
 
@@ -601,7 +619,7 @@ function NoteEditor(props) {
   }, []);
 
   // Create CodeMirror extensions with GitHub-like keyboard shortcuts
-  const createExtensions = useCallback((isDark, useVim) => {
+  const createExtensions = useCallback((isDark, useVim, useHybrid, useLineNumbers) => {
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         setBodyTxt(update.state.doc.toString());
@@ -778,7 +796,17 @@ function NoteEditor(props) {
           lineHeight: "1.6",
         },
         ".cm-content": { padding: "16px 20px", minHeight: "100%" },
-        ".cm-gutters": { display: "none" },
+        ".cm-gutters": {
+          backgroundColor: isDark ? "#111827" : "#f8fafc",
+          color: isDark ? "#4b5563" : "#9ca3af",
+          border: "none",
+          borderRight: isDark ? "1px solid #1f2937" : "1px solid #eef1f4",
+        },
+        ".cm-lineNumbers .cm-gutterElement": { padding: "0 8px 0 14px", minWidth: "2.5em" },
+        ".cm-activeLineGutter": {
+          backgroundColor: isDark ? "#1e293b" : "#eef2f7",
+          color: isDark ? "#9ca3af" : "#6b7280",
+        },
         ".cm-activeLine": { backgroundColor: isDark ? "#1e293b" : "#f8fafc" },
         ".cm-selectionBackground": { backgroundColor: isDark ? "#1e40af44" : "#bfdbfe66" },
         "&.cm-focused .cm-selectionBackground": { backgroundColor: isDark ? "#1e40af66" : "#93c5fd66" },
@@ -787,15 +815,17 @@ function NoteEditor(props) {
     ];
     if (isDark) exts.push(oneDark);
     if (useVim) exts.push(vim());
+    exts.unshift(lineNumberCompartment.current.of(useLineNumbers ? [lineNumbers(), highlightActiveLineGutter()] : []));
+    exts.push(hybridCompartment.current.of(useHybrid ? createHybridEditorExtensions({ activeDb: getActiveWorkspace() }) : []));
     return exts;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track latest doc content for dark mode switch
   const docRef = useRef(initialBody);
 
-  // Initialize / recreate editor when darkMode or showPreview changes
+  // Initialize / recreate editor when darkMode or view options change
   useEffect(() => {
-    if (!editorRef.current || showPreview) return;
+    if (!editorRef.current) return;
     // Read current content before destroying
     if (viewRef.current) {
       docRef.current = viewRef.current.state.doc.toString();
@@ -803,7 +833,7 @@ function NoteEditor(props) {
       viewRef.current = null;
     }
     const vimMode = props.vimMode;
-    const state = EditorState.create({ doc: docRef.current, extensions: createExtensions(darkMode, vimMode) });
+    const state = EditorState.create({ doc: docRef.current, extensions: createExtensions(darkMode, vimMode, hybridMode, showLineNumbers) });
     viewRef.current = new EditorView({ state, parent: editorRef.current });
     // Track vim mode changes for status bar
     if (vimMode && viewRef.current.cm) {
@@ -825,10 +855,31 @@ function NoteEditor(props) {
         viewRef.current = null;
       }
     };
-  }, [darkMode, showPreview, createExtensions, initialBody, props.vimMode]);
+  }, [darkMode, createExtensions, initialBody, props.vimMode]);
+
+  // Toggle hybrid live-preview without recreating the editor (preserves cursor/scroll)
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: hybridCompartment.current.reconfigure(
+        hybridMode ? createHybridEditorExtensions({ activeDb: getActiveWorkspace() }) : []
+      ),
+    });
+  }, [hybridMode]);
+
+  // Toggle line numbers without recreating the editor
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: lineNumberCompartment.current.reconfigure(
+        showLineNumbers ? [lineNumbers(), highlightActiveLineGutter()] : []
+      ),
+    });
+  }, [showLineNumbers]);
 
   // Resolve noteapp-img: references, mermaid, and PlantUML in preview panels
-  const previewRef = useRef(null);
   const splitPreviewRef = useRef(null);
   const mermaidRef = useRef(null);
 
@@ -893,9 +944,8 @@ function NoteEditor(props) {
       });
     };
 
-    if (showPreview && previewRef.current) postProcess(previewRef.current);
     if (splitscreen && splitPreviewRef.current) postProcess(splitPreviewRef.current);
-  }, [bodytxt, showPreview, splitscreen, darkMode]);
+  }, [bodytxt, splitscreen, darkMode]);
 
   const handleCancelBtn = () => {
     if (isDirty) {
@@ -1042,16 +1092,26 @@ function NoteEditor(props) {
             </button>
             <button
               onClick={() => {
-                // Save current doc before toggling preview
-                if (!showPreview && viewRef.current) {
-                  docRef.current = viewRef.current.state.doc.toString();
-                }
-                setShowPreview(!showPreview);
+                if (viewRef.current) docRef.current = viewRef.current.state.doc.toString();
+                const next = !hybridMode;
+                localStorage.setItem("noteapp_hybrid_mode", next);
+                setHybridMode(next);
               }}
-              className={`toolbar-btn ${darkMode ? "toolbar-btn-dark" : ""} ${showPreview ? "toolbar-btn-active" : ""}`}
-              title={showPreview ? "Write" : "Preview"}
+              className={`toolbar-btn ${darkMode ? "toolbar-btn-dark" : ""} ${hybridMode ? "toolbar-btn-active" : ""}`}
+              title={hybridMode ? "Show raw markdown" : "Live preview (inline rendering)"}
             >
-              {showPreview ? <EyeOff size={15} /> : <Eye size={15} />}
+              {hybridMode ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+            <button
+              onClick={() => {
+                const next = !showLineNumbers;
+                localStorage.setItem("noteapp_line_numbers", next);
+                setShowLineNumbers(next);
+              }}
+              className={`toolbar-btn ${darkMode ? "toolbar-btn-dark" : ""} ${showLineNumbers ? "toolbar-btn-active" : ""}`}
+              title={showLineNumbers ? "Hide line numbers" : "Show line numbers"}
+            >
+              <LineNumbersIcon size={15} />
             </button>
             <button
               onClick={() => setSplitscreen(!splitscreen)}
@@ -1108,9 +1168,8 @@ function NoteEditor(props) {
           </div>
         )}
 
-        {/* Title — hidden in preview mode */}
-        {!showPreview && (
-          <input
+        {/* Title */}
+        <input
             name="notetitle"
             type="text"
             id="notetitle"
@@ -1129,20 +1188,10 @@ function NoteEditor(props) {
             }}
             className={`editor-title ${darkMode ? "editor-title-dark" : ""}`}
           />
-        )}
 
-        {/* Editor / Preview */}
+        {/* Editor */}
         <div className={`editor-codemirror ${darkMode ? "editor-codemirror-dark" : ""}`}>
-          {showPreview ? (
-            <div className="editor-preview-inline" ref={previewRef}>
-              <h1 className="note-view-title" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(title || "Untitled"), PURIFY_OPTS) }}></h1>
-              <div
-                className="markdown-body"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md2html.render(bodytxt || ""), PURIFY_OPTS) }}
-              />
-            </div>
-          ) : (
-            <div style={{ position: "relative", height: "100%" }}>
+          <div style={{ position: "relative", height: "100%" }}>
               <div
                 ref={editorRef}
                 style={{ height: "100%" }}
@@ -1205,7 +1254,6 @@ function NoteEditor(props) {
                 ) : null;
               })()}
             </div>
-          )}
         </div>
 
         {/* Tags + Bottom bar */}

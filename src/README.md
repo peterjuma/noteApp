@@ -17,9 +17,10 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 - **Image support** — Paste, drag-and-drop, or upload images; stored as blobs in IndexedDB
 - **Language-aware code blocks** — Toolbar dropdown with 40+ languages for fenced code block insertion
 - **Auto-close brackets** — Quotes, brackets, and backticks auto-pair
+- **Toggleable line numbers** — Show/hide a line-number gutter with active-line highlighting from the editor toolbar; preference persists
 - **Autosave** — Toggleable 3-second debounced autosave, controlled from Settings
-- **Split preview** — Resizable side-by-side editor and rendered preview
-- **Inline preview** — Full rendered preview toggle
+- **Split preview** — Resizable side-by-side editor and full rendered preview
+- **Live preview (Eye toggle)** — Inline WYSIWYG-style rendering inside the editor: headings, bold/italic, links, inline code, highlight, strikethrough, wiki links, emoji, checkboxes, bullets, blockquotes, horizontal rules, and image previews render in place; the raw markdown reappears on whichever line holds the cursor. Toggle from the editor toolbar; preference persists.
 - **Vim keybindings** — Optional Vim-style editing mode, toggled in Settings
 - **Vim status line** — Live mode indicator (`--NORMAL--`, `--INSERT--`, `--VISUAL--`, `--REPLACE--`) displayed in the editor status bar when Vim mode is active
 - **Visual table editor** — Grid-based table editing overlay: add/remove rows and columns, cycle column alignment (left/center/right), Tab/Shift+Tab cell navigation, and Enter/Escape to save or cancel — works on existing tables or creates new ones from the toolbar
@@ -40,6 +41,17 @@ NoteApp runs entirely in your browser. Your notes are stored locally in [Indexed
 - **Anchor navigation** — Click any heading link to scroll smoothly; URL updates to reflect position
 - **Copy code blocks** — One-click copy button on every code block with language labels
 - **Nested lists** — Proper marker styles at each nesting level (disc → circle → square, decimal → lower-alpha → lower-roman)
+
+### Presentation
+- **Slide mode** — Present any note as a fullscreen slideshow; slides are split on `---` / `***` / `___` separator lines (separators inside fenced code blocks are ignored)
+- **Heading fallback** — A note with no separators is automatically split on its `## ` headings, so any note can be presented
+- **Real slide frame** — Content is centered in a 16:9 slide canvas with subtle shadow, light/dark aware
+- **Presenter view** — Side-by-side current slide, next-slide preview, speaker notes, and an elapsed timer with reset (toggle with `s`)
+- **Speaker notes** — Authored as HTML comments `<!-- note: ... -->` (Marp style) or after a lone `???` line (remark style); hidden from the audience, shown only in presenter view
+- **Slide overview** — Thumbnail grid of all slides for quick jumping (toggle with `o`)
+- **Full keyboard control** — `←/→`, `Space`, `PageUp/PageDown`, `Home/End` to navigate, `f` for native fullscreen, `Esc` to exit
+- **Diagram & image support** — Reuses the app's renderer, so Mermaid, KaTeX, code highlighting, and IndexedDB images all work on slides
+
 
 ### Templates & Zendesk
 - **Snippet/Template system** — Save reusable response templates with CRUD management in Settings

@@ -18,8 +18,9 @@ import { computeContentHash, buildHashSet } from "./services/contentHash";
 const SettingsPanel = lazy(() => import("./SettingsPanel"));
 const VersionHistory = lazy(() => import("./VersionHistory"));
 const TableConverter = lazy(() => import("./TableConverter"));
+const Presentation = lazy(() => import("./Presentation"));
 import * as gistSync from "./services/gistSync";
-import { Menu, FilePlus, Search, Moon, Sun, Settings, Trash2, Download, FileDown, RefreshCw, Keyboard, Home } from "lucide-react";
+import { Menu, FilePlus, Search, Moon, Sun, Settings, Trash2, Download, FileDown, RefreshCw, Keyboard, Home, Presentation as PresentIcon } from "lucide-react";
 import QuickSwitcher from "./QuickSwitcher";
 import CommandPalette from "./CommandPalette";
 import LockScreen, { isPinSet, getSessionTimeout } from "./LockScreen";
@@ -84,6 +85,7 @@ class App extends Component {
       showSettings: false,
       showTableConverter: false,
       showVersionHistory: false,
+      showPresentation: false,
       settingsTab: "general",
       autoSave: localStorage.getItem("noteapp_autosave") === "true",
       tagSuggestEnabled: localStorage.getItem("noteapp_tag_suggest") !== "false",
@@ -456,6 +458,9 @@ class App extends Component {
     }},
     { id: "export-pdf", label: "Export Note as PDF", shortcut: "", icon: FileDown, action: () => {
       if (this.state.noteid) this.handleDownloadPdf({ noteid: this.state.noteid, notetitle: this.state.notetitle, notebody: this.state.notebody });
+    }},
+    { id: "present-note", label: "Present Note as Slides", shortcut: "", icon: PresentIcon, action: () => {
+      if (this.state.noteid && this.state.action !== "homepage") this.setState({ showPresentation: true });
     }},
     { id: "delete-note", label: "Delete Current Note", shortcut: "", icon: Trash2, action: () => {
       if (this.state.noteid) this.handleDeleteNote(null, { noteid: this.state.noteid, notetitle: this.state.notetitle });
@@ -1972,6 +1977,7 @@ handleUnpinNote = async (noteid) => {
           handleDownloadNote={this.handleDownloadNote}
           handleDownloadPdf={this.handleDownloadPdf}
           onShowHistory={() => this.setState({ showVersionHistory: true })}
+          onPresent={() => this.setState({ showPresentation: true })}
           sidebarCollapsed={this.state.sidebarCollapsed}
           onToggleCollapse={() => this.setState((s) => {
             const next = !s.sidebarCollapsed;
@@ -2531,6 +2537,16 @@ handleUnpinNote = async (noteid) => {
                     this.showAlert("Version Restored", "The note has been restored to the selected version.");
                   }}
                   onClose={() => this.setState({ showVersionHistory: false })}
+                />
+              </Suspense>
+            )}
+            {this.state.showPresentation && this.state.noteid && (
+              <Suspense fallback={null}>
+                <Presentation
+                  title={this.state.notetitle}
+                  body={this.state.notebody}
+                  darkMode={this.state.darkMode}
+                  onClose={() => this.setState({ showPresentation: false })}
                 />
               </Suspense>
             )}
