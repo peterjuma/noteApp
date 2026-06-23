@@ -4,48 +4,71 @@ const DB_VERSION = 6;
 const dbConnections = new Map();
 const MAX_VERSIONS_PER_NOTE = 50;
 
+// Object stores this app requires to function
+const REQUIRED_STORES = ["notes", "pinnedNotes", "images", "versions", "snippets", "tags", "settings"];
+
+// Idempotent schema upgrade — only creates stores/indexes that don't already exist
+function upgradeDB(db) {
+  // Notes store
+  if (!db.objectStoreNames.contains("notes")) {
+    const store = db.createObjectStore("notes", { keyPath: "noteid" });
+    store.createIndex("created_at", "created_at");
+  }
+  // Pinned notes store
+  if (!db.objectStoreNames.contains("pinnedNotes")) {
+    db.createObjectStore("pinnedNotes", { keyPath: "noteid" });
+  }
+  // Images store (blob storage)
+  if (!db.objectStoreNames.contains("images")) {
+    const imgStore = db.createObjectStore("images", { keyPath: "id" });
+    imgStore.createIndex("created_at", "created_at");
+  }
+  // Version history store
+  if (!db.objectStoreNames.contains("versions")) {
+    const vStore = db.createObjectStore("versions", { keyPath: "versionId" });
+    vStore.createIndex("noteid", "noteid");
+    vStore.createIndex("timestamp", "timestamp");
+  }
+  // Snippets/Templates store (v5)
+  if (!db.objectStoreNames.contains("snippets")) {
+    const sStore = db.createObjectStore("snippets", { keyPath: "id" });
+    sStore.createIndex("category", "category");
+  }
+  // Predefined tags store (v6)
+  if (!db.objectStoreNames.contains("tags")) {
+    db.createObjectStore("tags", { keyPath: "name" });
+  }
+  // Key-value settings store (v6) — for sync config, etc.
+  if (!db.objectStoreNames.contains("settings")) {
+    db.createObjectStore("settings", { keyPath: "key" });
+  }
+}
+
 // Get or create a DB connection per database name
 async function getDB(dbName) {
   const existing = dbConnections.get(dbName);
   if (existing) return existing;
 
-  const db = await openDB(dbName, DB_VERSION, {
-    upgrade(db) {
-      // Notes store
-      if (!db.objectStoreNames.contains("notes")) {
-        const store = db.createObjectStore("notes", { keyPath: "noteid" });
-        store.createIndex("created_at", "created_at");
+  let db;
+  try {
+    db = await openDB(dbName, DB_VERSION, { upgrade: upgradeDB });
+  } catch (err) {
+    // The DB may already exist at a HIGHER version — e.g. another app sharing the
+    // same origin (localhost) created `notesdb` at a newer schema version. Opening
+    // at a lower version throws a VersionError. Fall back to the existing version
+    // and ensure our required stores exist.
+    if (err && err.name === "VersionError") {
+      db = await openDB(dbName);
+      const missing = REQUIRED_STORES.filter((s) => !db.objectStoreNames.contains(s));
+      if (missing.length > 0) {
+        const nextVersion = db.version + 1;
+        db.close();
+        db = await openDB(dbName, nextVersion, { upgrade: upgradeDB });
       }
-      // Pinned notes store
-      if (!db.objectStoreNames.contains("pinnedNotes")) {
-        db.createObjectStore("pinnedNotes", { keyPath: "noteid" });
-      }
-      // Images store (blob storage)
-      if (!db.objectStoreNames.contains("images")) {
-        const imgStore = db.createObjectStore("images", { keyPath: "id" });
-        imgStore.createIndex("created_at", "created_at");
-      }
-      // Version history store
-      if (!db.objectStoreNames.contains("versions")) {
-        const vStore = db.createObjectStore("versions", { keyPath: "versionId" });
-        vStore.createIndex("noteid", "noteid");
-        vStore.createIndex("timestamp", "timestamp");
-      }
-      // Snippets/Templates store (v5)
-      if (!db.objectStoreNames.contains("snippets")) {
-        const sStore = db.createObjectStore("snippets", { keyPath: "id" });
-        sStore.createIndex("category", "category");
-      }
-      // Predefined tags store (v6)
-      if (!db.objectStoreNames.contains("tags")) {
-        db.createObjectStore("tags", { keyPath: "name" });
-      }
-      // Key-value settings store (v6) — for sync config, etc.
-      if (!db.objectStoreNames.contains("settings")) {
-        db.createObjectStore("settings", { keyPath: "key" });
-      }
-    },
-  });
+    } else {
+      throw err;
+    }
+  }
   dbConnections.set(dbName, db);
   return db;
 }
