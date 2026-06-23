@@ -4,7 +4,7 @@ import { md2html } from "./useMarkDown";
 import * as noteDB from "./services/notesDB";
 import { suggestTags } from "./services/tagSuggester";
 import { getPredefinedTags } from "./services/tagManager";
-import { Wand2, Check, X, Link2, ChevronDown, ChevronRight } from "lucide-react";
+import { Wand2, Check, X, Link2, ChevronDown, ChevronRight, List } from "lucide-react";
 
 // Lazy-load mermaid only when needed
 let mermaidModule = null;
@@ -75,6 +75,32 @@ function NoteMain(props) {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showBacklinks, setShowBacklinks] = useState(true);
+  const [showOutline, setShowOutline] = useState(false);
+
+  // Build a document outline from markdown headings (skipping fenced code blocks)
+  const outline = (() => {
+    if (notesData.action === "homepage") return [];
+    const body = notesData.notebody || "";
+    const lines = body.replace(/\r\n/g, "\n").split("\n");
+    const items = [];
+    let inFence = false;
+    for (const line of lines) {
+      if (/^\s{0,3}(```|~~~)/.test(line)) { inFence = !inFence; continue; }
+      if (inFence) continue;
+      const m = line.match(/^(#{1,6})\s+(.*)$/);
+      if (!m) continue;
+      const text = m[2].replace(/[*_`~]/g, "").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").trim();
+      if (!text) continue;
+      const id = text.toLowerCase().replace(/[^\w]+/g, "-").replace(/(^-|-$)/g, "");
+      items.push({ level: m[1].length, text, id });
+    }
+    return items;
+  })();
+
+  const handleOutlineClick = (id) => {
+    const target = document.getElementById(id);
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   // Compute backlinks: notes that contain [[Current Title]]
   const backlinks = (() => {
@@ -261,6 +287,41 @@ function NoteMain(props) {
               __html: DOMPurify.sanitize(md2html.render(notesData.notetitle), PURIFY_OPTS),
             }}
           ></h1>
+        )}
+
+        {notesData.action !== "homepage" && (() => {
+          const words = (notesData.notebody || "").trim() ? (notesData.notebody || "").trim().split(/\s+/).length : 0;
+          if (words === 0) return null;
+          const minutes = Math.max(1, Math.round(words / 200));
+          return (
+            <div className="note-view-meta">
+              {words.toLocaleString()} word{words !== 1 ? "s" : ""} · {minutes} min read
+            </div>
+          );
+        })()}
+
+        {outline.length >= 3 && (
+          <div className="note-outline">
+            <button className="note-outline-toggle" onClick={() => setShowOutline((s) => !s)} aria-expanded={showOutline}>
+              {showOutline ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <List size={14} />
+              <span>Outline · {outline.length} heading{outline.length !== 1 ? "s" : ""}</span>
+            </button>
+            {showOutline && (
+              <ul className="note-outline-list">
+                {outline.map((h, i) => (
+                  <li
+                    key={`${h.id}-${i}`}
+                    className="note-outline-item"
+                    style={{ paddingLeft: `${(h.level - 1) * 14 + 8}px` }}
+                    onClick={() => handleOutlineClick(h.id)}
+                  >
+                    {h.text}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
 
         {/* Tag suggestions — only for notes without tags */}

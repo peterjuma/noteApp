@@ -24,7 +24,7 @@ import {
   Columns2, Maximize2, Eye, EyeOff, Minus, Wand2, Check,
   Indent, Outdent, ChevronDown, Hash, Minus as MinusIcon, GitBranch, Sigma,
   FileText, Network, Workflow, PieChart, GitMerge, Footprints, AlertTriangle,
-  TerminalSquare, Regex, Brackets, Superscript, Subscript, Highlighter,
+  TerminalSquare, Regex, Brackets, Superscript, Subscript, Highlighter, Presentation as PresentationIcon,
 } from "lucide-react";
 
 // Custom icon: toggle editor line numbers (1/2/3 rows)
@@ -106,6 +106,8 @@ const SLASH_COMMANDS = [
   { id: "tasklist", label: "Task List", icon: CheckSquare, insert: "- [ ] ", description: "Checklist" },
   { id: "table", label: "Table", icon: Table, insert: "| Column 1 | Column 2 |\n| -------- | -------- |\n| Cell     | Cell     |", description: "Markdown table" },
   { id: "hr", label: "Divider", icon: MinusIcon, insert: "\n---\n", description: "Horizontal rule" },
+  { id: "slide", label: "Slide Break", icon: PresentationIcon, insert: "\n\n---\n\n## Slide title\n\nYour content here\n\n<!-- notes: speaker notes for this slide -->\n", description: "New presentation slide" },
+  { id: "presentation", label: "Presentation Deck", icon: PresentationIcon, insert: "# Presentation Title\n\nSubtitle or author\n\n<!-- notes: Welcome the audience and introduce the topic. -->\n\n---\n\n## Agenda\n\n- Point one\n- Point two\n- Point three\n\n---\n\n## Slide Title\n\nYour content here\n\n<!-- notes: Talk through the key points. -->\n\n---\n\n## Thank You\n\nQuestions?\n", description: "Starter slide deck with speaker notes" },
   { id: "link", label: "Link", icon: Link, insert: "[text](url)", description: "Hyperlink" },
   { id: "image", label: "Image", icon: Image, insert: "![alt](url)", description: "Image" },
   { id: "math", label: "Math Block", icon: Sigma, insert: "$$\n\n$$", description: "KaTeX math block" },

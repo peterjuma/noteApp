@@ -91,6 +91,11 @@ function NavbarMain(props) {
       )}
       <div style={{ flex: 1 }} />
       <span className="toolbar-group">
+        {props.onPresent && (
+          <button onClick={() => props.onPresent(note)} className="view-toolbar-text-btn" title="Present as slides" aria-label="Present note as slides">
+            <MonitorPlay size={13} style={{ marginRight: 4 }} />Present
+          </button>
+        )}
         <button onClick={handleCopy} className="view-toolbar-text-btn" title="Copy note (rich HTML + markdown)" aria-label="Copy note">
           {copied ? <><Check size={13} style={{ marginRight: 4 }} />Copied</> : <><Copy size={13} style={{ marginRight: 4 }} />Copy</>}
         </button>
@@ -172,12 +177,6 @@ function NavbarMain(props) {
               <Clock size={15} />
               <span>Version History</span>
             </button>
-            {props.onPresent && (
-              <button className="note-actions-menu-item" role="menuitem" onClick={() => { closeMenu(); props.onPresent(note); }}>
-                <MonitorPlay size={15} />
-                <span>Present</span>
-              </button>
-            )}
             <button className="note-actions-menu-item" role="menuitem" onClick={() => { closeMenu(); setShowNoteInfo(true); }}>
               <Info size={15} />
               <span>Note Info</span>

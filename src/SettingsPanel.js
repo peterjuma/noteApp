@@ -54,6 +54,19 @@ function SettingsPanel({
   onTabChange,
 }) {
   const [activeTab, setActiveTab] = useState(initialTab || "general");
+  // Editor view preferences (persisted in localStorage, applied on next editor open)
+  const [lineNumbers, setLineNumbers] = useState(() => localStorage.getItem("noteapp_line_numbers") === "true");
+  const [livePreview, setLivePreview] = useState(() => localStorage.getItem("noteapp_hybrid_mode") === "true");
+  const toggleLineNumbers = () => {
+    const next = !lineNumbers;
+    localStorage.setItem("noteapp_line_numbers", next);
+    setLineNumbers(next);
+  };
+  const toggleLivePreview = () => {
+    const next = !livePreview;
+    localStorage.setItem("noteapp_hybrid_mode", next);
+    setLivePreview(next);
+  };
 
   // Sync tab state when parent changes it (e.g., browser back/forward)
   useEffect(() => {
@@ -276,6 +289,40 @@ function SettingsPanel({
                 onClick={onToggleVimMode}
                 role="switch"
                 aria-checked={vimMode}
+              >
+                <span className="settings-switch-thumb" />
+              </button>
+            </label>
+
+            <label className="settings-toggle-row">
+              <div className="settings-toggle-info">
+                <span className="settings-toggle-label">
+                  👁️ Live Preview
+                </span>
+                <span className="settings-toggle-hint">Render markdown inline as you type (applies when you open the editor)</span>
+              </div>
+              <button
+                className={`settings-switch ${livePreview ? "settings-switch-on" : ""}`}
+                onClick={toggleLivePreview}
+                role="switch"
+                aria-checked={livePreview}
+              >
+                <span className="settings-switch-thumb" />
+              </button>
+            </label>
+
+            <label className="settings-toggle-row">
+              <div className="settings-toggle-info">
+                <span className="settings-toggle-label">
+                  🔢 Line Numbers
+                </span>
+                <span className="settings-toggle-hint">Show a line-number gutter in the editor</span>
+              </div>
+              <button
+                className={`settings-switch ${lineNumbers ? "settings-switch-on" : ""}`}
+                onClick={toggleLineNumbers}
+                role="switch"
+                aria-checked={lineNumbers}
               >
                 <span className="settings-switch-thumb" />
               </button>

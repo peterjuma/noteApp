@@ -453,6 +453,61 @@ a:hover { text-decoration: underline; }
 }
 .dark .note-view-title { color: #f3f4f6; border-color: #374151; }
 
+.note-view-meta {
+  margin-top: -12px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: #6b7280;
+}
+.dark .note-view-meta { color: #9ca3af; }
+
+/* Document outline (TOC) */
+.note-outline {
+  margin: 0 0 22px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.dark .note-outline { border-color: #374151; }
+.note-outline-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+}
+.dark .note-outline-toggle { background: #1f2937; color: #9ca3af; }
+.note-outline-toggle:hover { color: #111827; }
+.dark .note-outline-toggle:hover { color: #f3f4f6; }
+.note-outline-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.note-outline-item {
+  padding: 4px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #4b5563;
+  cursor: pointer;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dark .note-outline-item { color: #cbd5e1; }
+.note-outline-item:hover { background: #eef2f7; color: #0969da; }
+.dark .note-outline-item:hover { background: #1e293b; color: #4493f8; }
+
 /* Backlinks panel */
 .backlinks-panel {
   margin-top: 32px;
@@ -643,16 +698,6 @@ a:hover { text-decoration: underline; }
   min-height: 0;
 }
 .editor-codemirror-dark { background: #111827; }
-
-/* Inline Preview */
-.editor-preview-inline {
-  height: 100%;
-  overflow-y: auto;
-  padding: 24px 32px;
-}
-.editor-preview-inline .markdown-body {
-  margin: 0 auto;
-}
 
 /* Editor bottom bar */
 .editor-bottom {

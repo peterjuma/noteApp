@@ -3,7 +3,8 @@ import DOMPurify from "dompurify";
 import { md2html } from "./useMarkDown";
 import * as noteDB from "./services/notesDB";
 import { parseDeck } from "./services/slides";
-import { ChevronLeft, ChevronRight, X, Maximize2, Minimize2, Monitor, LayoutGrid, Timer, RotateCcw } from "lucide-react";
+import { exportDeckToPdf } from "./services/pdfExport";
+import { ChevronLeft, ChevronRight, X, Maximize2, Minimize2, Monitor, LayoutGrid, Timer, RotateCcw, FileDown } from "lucide-react";
 
 // Allow noteapp-img: protocol for inline images stored in IndexedDB (matches NoteMain)
 const PURIFY_URI_REGEX = /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix|noteapp-img):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
@@ -93,6 +94,7 @@ export default function Presentation({ title, body, darkMode, onClose }) {
   const [presenterMode, setPresenterMode] = useState(false);
   const [showOverview, setShowOverview] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [exporting, setExporting] = useState(false);
   const rootRef = useRef(null);
   const startRef = useRef(Date.now());
 
@@ -118,6 +120,16 @@ export default function Presentation({ title, body, darkMode, onClose }) {
     startRef.current = Date.now();
     setElapsed(0);
   }, []);
+
+  const handleExportPdf = useCallback(async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      await exportDeckToPdf(title, deck.map((d) => d.content));
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting, title, deck]);
 
   // Elapsed timer ticks only while presenter mode is active.
   useEffect(() => {
@@ -207,6 +219,9 @@ export default function Presentation({ title, body, darkMode, onClose }) {
           </button>
           <button className={`present-icon-btn ${presenterMode ? "present-icon-btn-active" : ""}`} onClick={() => setPresenterMode((v) => !v)} title="Presenter view (s)" aria-label="Presenter view" aria-pressed={presenterMode}>
             <Monitor size={18} />
+          </button>
+          <button className="present-icon-btn" onClick={handleExportPdf} disabled={exporting} title="Export deck to PDF" aria-label="Export deck to PDF">
+            <FileDown size={18} />
           </button>
           <button className="present-icon-btn" onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen (f)" : "Fullscreen (f)"} aria-label="Toggle fullscreen">
             {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
