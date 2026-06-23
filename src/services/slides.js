@@ -1,4 +1,22 @@
 /**
+ * Strip a leading YAML/Marp frontmatter block delimited by `---` fences.
+ * The block is only treated as frontmatter when the document starts with a
+ * `---` line and the fenced content contains at least one `key:` YAML line.
+ * This keeps a stray pair of horizontal rules around plain markdown intact
+ * (e.g. `---\n# Title\n---`) while removing real deck configuration such as
+ * `marp: true` / `title:` from the rendered slides.
+ * @param {string} markdown line-ending-normalized markdown
+ * @returns {string}
+ */
+function stripFrontmatter(markdown) {
+  const match = markdown.match(/^---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n|$)/);
+  if (!match) return markdown;
+  const hasYamlKey = /^[ \t]*[A-Za-z][\w-]*[ \t]*:/m.test(match[1]);
+  if (!hasYamlKey) return markdown;
+  return markdown.slice(match[0].length);
+}
+
+/**
  * Split markdown into individual slides on horizontal-rule separators
  * (lines containing only `---`, `***`, or `___`, optionally space-separated).
  * Separators inside fenced code blocks are ignored. A note with no separators
@@ -8,7 +26,7 @@
  */
 export function splitSlides(markdown) {
   if (!markdown || !markdown.trim()) return [""];
-  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  const lines = stripFrontmatter(markdown.replace(/\r\n/g, "\n")).split("\n");
   const isSeparator = (line) => /^\s{0,3}([-*_])[ \t]*(?:\1[ \t]*){2,}$/.test(line);
   const slides = [];
   let current = [];

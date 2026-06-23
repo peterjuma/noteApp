@@ -59,6 +59,20 @@ describe("splitSlides", () => {
     const md = "## One\n## Two\n\n---\n\n## Three";
     expect(splitSlides(md)).toEqual(["## One\n## Two", "## Three"]);
   });
+
+  test("strips leading Marp/YAML frontmatter before splitting", () => {
+    const md = "---\nmarp: true\ntitle: My Deck\npaginate: true\n---\n\n# One\n\n---\n\n# Two";
+    expect(splitSlides(md)).toEqual(["# One", "# Two"]);
+  });
+
+  test("does not treat horizontal rules around plain markdown as frontmatter", () => {
+    expect(splitSlides("---\n# Only\n---")).toEqual(["# Only"]);
+  });
+
+  test("strips frontmatter with CRLF line endings", () => {
+    const md = "---\r\ntitle: Deck\r\n---\r\n\r\n# Slide";
+    expect(splitSlides(md)).toEqual(["# Slide"]);
+  });
 });
 
 describe("extractNotes", () => {
