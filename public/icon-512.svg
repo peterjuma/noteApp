@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#2563eb"/>
+  <!-- M with arrow-shaped valley -->
+  <polygon points="80,405 80,112 155,112 224,203 181,203 256,293 331,203 288,203 357,112 432,112 432,405 368,405 368,192 299,267 341,267 256,368 171,267 213,267 144,192 144,405" fill="#ffffff"/>
+</svg>
