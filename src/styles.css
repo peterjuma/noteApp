@@ -2165,6 +2165,22 @@ a:hover { text-decoration: underline; }
 
 /* Section header as drop target */
 .section-header-drop { transition: background 0.15s ease; }
+.section-header-collapsible {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+}
+.section-header-collapsible:hover {
+  color: #6b7280;
+}
+.dark .section-header-collapsible:hover {
+  color: #9ca3af;
+}
+.section-header-chevron {
+  flex-shrink: 0;
+}
 .section-header-dragover {
   background: #dbeafe !important;
   color: #0969da !important;

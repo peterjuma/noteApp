@@ -20,7 +20,7 @@ const VersionHistory = lazy(() => import("./VersionHistory"));
 const TableConverter = lazy(() => import("./TableConverter"));
 const Presentation = lazy(() => import("./Presentation"));
 import * as gistSync from "./services/gistSync";
-import { Menu, FilePlus, Search, Moon, Sun, Settings, Trash2, Download, FileDown, RefreshCw, Keyboard, Home, Presentation as PresentIcon } from "lucide-react";
+import { Menu, FilePlus, Search, Moon, Sun, Settings, Trash2, Download, FileDown, RefreshCw, Keyboard, Home, Presentation as PresentIcon, ChevronDown, ChevronRight } from "lucide-react";
 import QuickSwitcher from "./QuickSwitcher";
 import CommandPalette from "./CommandPalette";
 import LockScreen, { isPinSet, getSessionTimeout } from "./LockScreen";
@@ -67,6 +67,8 @@ class App extends Component {
       filteredNotes: [],
       searchQuery: "",
       pinnedNotes: [],
+      pinnedSectionCollapsed: localStorage.getItem("noteapp_pinned_collapsed") === "true",
+      notesSectionCollapsed: localStorage.getItem("noteapp_notes_collapsed") === "true",
       darkMode: localStorage.getItem("noteapp_dark_mode") !== null
         ? localStorage.getItem("noteapp_dark_mode") === "true"
         : window.matchMedia("(prefers-color-scheme: dark)").matches,
@@ -2252,7 +2254,13 @@ handleUnpinNote = async (noteid) => {
             {totalPinned > 0 && (
             <>
             <h4
-              className="section-header section-header-drop"
+              className="section-header section-header-drop section-header-collapsible"
+              onClick={() => this.setState((s) => {
+                const next = !s.pinnedSectionCollapsed;
+                localStorage.setItem("noteapp_pinned_collapsed", next);
+                return { pinnedSectionCollapsed: next };
+              })}
+              aria-expanded={!this.state.pinnedSectionCollapsed}
               onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; e.currentTarget.classList.add("section-header-dragover"); }}
               onDragLeave={(e) => { e.currentTarget.classList.remove("section-header-dragover"); }}
               onDrop={(e) => {
@@ -2264,14 +2272,21 @@ handleUnpinNote = async (noteid) => {
                 }
               }}
             >
+              {this.state.pinnedSectionCollapsed ? <ChevronRight size={14} className="section-header-chevron" /> : <ChevronDown size={14} className="section-header-chevron" />}
               Pinned ({totalPinned})
             </h4>
-            <ul>{pinnedNoteListItems}</ul>
+            {!this.state.pinnedSectionCollapsed && <ul>{pinnedNoteListItems}</ul>}
             </>
             )}
 
             <h4
-              className="section-header section-header-drop"
+              className="section-header section-header-drop section-header-collapsible"
+              onClick={() => this.setState((s) => {
+                const next = !s.notesSectionCollapsed;
+                localStorage.setItem("noteapp_notes_collapsed", next);
+                return { notesSectionCollapsed: next };
+              })}
+              aria-expanded={!this.state.notesSectionCollapsed}
               onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; e.currentTarget.classList.add("section-header-dragover"); }}
               onDragLeave={(e) => { e.currentTarget.classList.remove("section-header-dragover"); }}
               onDrop={(e) => {
@@ -2283,9 +2298,10 @@ handleUnpinNote = async (noteid) => {
                 }
               }}
             >
+              {this.state.notesSectionCollapsed ? <ChevronRight size={14} className="section-header-chevron" /> : <ChevronDown size={14} className="section-header-chevron" />}
               Notes ({totalUnpinned})
             </h4>
-            {totalUnpinned > 0 ? (
+            {this.state.notesSectionCollapsed ? null : totalUnpinned > 0 ? (
               <ul>{otherNoteListItems}</ul>
             ) : filteredNotes.length === 0 && allnotes.length === 0 ? (
               <div className="empty-state">
